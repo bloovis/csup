@@ -1,0 +1,17 @@
+name: csup
+version: 0.1.0
+
+authors:
+  - Mark Alexander <marka@pobox.com>
+
+targets:
+  csup:
+    main: src/csup.cr
+
+dependencies:
+  ncurses:
+    github: agatan/ncurses.cr
+
+crystal: 0.28.0
+
+license: MIT
