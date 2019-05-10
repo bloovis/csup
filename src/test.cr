@@ -3,6 +3,7 @@ require "./unicode.cr"
 require "./util.cr"
 require "./person.cr"
 require "./contact.cr"
+require "./shellwords.cr"
 
 puts "Notmuch tests"
 puts "-------------"
@@ -75,3 +76,12 @@ puts "New person = '#{p.to_s}'"
 ContactManager.update_alias(p, "joeblow")
 ContactManager.save
 puts "Saved /tmp/contacts.txt"
+
+puts "Shellwords tests"
+puts "----------------"
+s1 = "this is a test"
+s2 = Shellwords.escape(s1)
+puts "#{s1} => #{s2}"
+a1 = ["this is", "a test"]
+s2 = Shellwords.join(a1)
+puts "#{a1} => #{s2}"
