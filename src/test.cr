@@ -2,6 +2,7 @@ require "./index.cr"
 require "./unicode.cr"
 require "./util.cr"
 require "./person.cr"
+require "./contact.cr"
 
 puts "Notmuch tests"
 puts "-------------"
@@ -51,3 +52,26 @@ p = Person.from_address("marka@pobox.com")
 puts "Person = '#{p.to_s}'"
 p = Person.from_address("\"A real somebody!\" <somebody@pobox.com>")
 puts "Person = '#{p.to_s}'"
+
+puts "Contact tests"
+puts "-------------"
+ContactManager.init("/tmp/contacts.txt")
+ContactManager.contacts.each do |p|
+  puts "Contact person = '#{p.to_s}'"
+end
+ContactManager.contacts_with_aliases.each do |p|
+  puts "Contact person with alias = '#{p.to_s}'"
+end
+p = ContactManager.contact_for("self")
+puts "Person for alias self = '#{p.to_s}'"
+al = ContactManager.alias_for(p)
+puts "Alias for '#{p.to_s}' = #{al}"
+p = ContactManager.person_for("marka@pobox.com")
+puts "Person for email marka@pobox.com = '#{p.to_s}'"
+isa = ContactManager.is_aliased_contact?(p)
+puts "is_aliased_contact for '#{p.to_s}' = #{isa}"
+p = Person.new("Joe Blow", "joeblow@example.com")
+puts "New person = '#{p.to_s}'"
+ContactManager.update_alias(p, "joeblow")
+ContactManager.save
+puts "Saved /tmp/contacts.txt"

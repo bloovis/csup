@@ -20,11 +20,27 @@ class Person
     end
   end
 
+  def full_address
+    Person.full_address @name, @email
+  end
+
   # Class methods
 
   def self.from_name_and_email(name : (String | Nil), email : String)
     # ContactManager.instantiated? && ContactManager.person_for(email) || Person.new(name, email)
     Person.new(name, email)
+  end
+
+  def self.full_address(name : (String | Nil), email : (String | Nil))
+    if name && email
+      if name =~ /[",@]/
+	"#{name.inspect} <#{email}>" # escape quotes
+      else
+	"#{name} <#{email}>"
+      end
+    else
+      email
+    end
   end
 
   def self.from_address(s : String)

@@ -7,7 +7,7 @@ module Notmuch
   extend self
 
   def run(args : Array(String),
-	  opts : Array(String) = [] of String,
+	  opts : Hash(Symbol, String) = {} of Symbol => String,
           check_status : Bool = true,
 	  check_stderr : Bool = true,
 	  filter : String = "",
@@ -103,4 +103,8 @@ module Notmuch
   def tags_from_message_id(mid : String)
     search(["id:#{mid}"], exclude: false, output: "tags")
   end
+
+  def load_contacts(email_addresses : Array(String), limit : Int32 = 20)
+  end
+
 end
