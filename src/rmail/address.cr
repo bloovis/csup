@@ -32,6 +32,9 @@
 
 module RMail
 
+  class TypeError < Exception
+  end
+
   # This class provides the following functionality:
   #
   # * Parses RFC2822 address lists into a list of Address
@@ -53,7 +56,7 @@ module RMail
     property domain : (String | Nil)
 
     # The comments in this address as an array of strings.
-    property comments : (Array(String) | Nil)
+    property comments : Array(String)
 
     # The display name of this address.  The display name is
     # present only for "angle addr" style addresses such as:
@@ -72,7 +75,8 @@ module RMail
     # is parsed for mail addresses and if one is found, it is used to
     # initialize this object.
     def initialize(string : (String | Nil) = nil)
-      @local = @domain = @comments = @display_name = nil
+      @local = @domain = @display_name = nil
+      @comments = [] of String
 
       if string
 	addrs = Address.parse(string)
@@ -150,7 +154,7 @@ module RMail
     #
     # See also display_name, #comments, #comments=
     def name
-      @display_name || (@comments && @comments.last)
+      @display_name || (@comments.size > 0 ? @comments[-1] : "")
     end
 
     # Set the comments for this address.  The +comments+ argument can
@@ -161,16 +165,16 @@ module RMail
     def comments=(comments)
       case comments
       when nil
-        @comments = comments
+        @comments = [] of String
       when Array
         @comments = comments
       when String
         @comments = [ comments ]
       else
-        raise TypeError, "Argument to RMail::Address#comments= must be " +
-          "String, Array or nil, was #{comments.type}."
+        raise TypeError.new("Argument to RMail::Address#comments= must be " +
+          "String, Array or nil, was #{comments.type}.")
       end
-      @comments.freeze
+      # @comments.freeze	 # blotz
     end
 
     # Assign a domain name to this address.  This is the portion after
@@ -202,7 +206,7 @@ module RMail
       if @domain.nil?
 	@local || ""
       else
-	(@local || "") + "@" + @domain
+	(@local || "") + "@" + (@domain || "")
       end
     end
 
@@ -214,13 +218,13 @@ module RMail
 		     elsif @display_name =~ /^[-\/\w=!#\$%&'*+?^`{|}~ ]+$/
 		       @display_name
 		     else
-		       "\"" + @display_name.gsub(/["\\]/, "\\\\\&") + "\""
+		       "\"" + (@display_name || "").gsub(/["\\]/, "\\\\\&") + "\""
 		     end
       local = if (@local !~ /^[-\w=!#\$%&'*+?^`{|}~\.\/]+$/ ||
 		  @local =~ /^\./ ||
 		  @local =~ /\.$/ ||
 		  @local =~ /\.\./)
-		"\"" + @local.gsub(/["\\]/, "\\\\\&") + "\""
+		"\"" + (@local || "").gsub(/["\\]/, "\\\\\&") + "\""
 	      else
 		@local
 	      end
@@ -230,20 +234,20 @@ module RMail
 		    @domain =~ /\.$/ ||
 		    @domain =~ /\.\./))
 	       # then
-		 "[" + if @domain =~ /^\[(.*)\]$/
+		 "[" + ((if @domain =~ /^\[(.*)\]$/
 			 $1
 		       else
 			 @domain
-		       end.gsub(/[\[\]\\]/, "\\\\\&") + "]"
+		       end) || "").gsub(/[\[\]\\]/, "\\\\\&") + "]"
 	       else
 		 @domain
 	       end
       address = if domain.nil?
 		  local
 		elsif !display_name.nil? || domain[-1] == ']'
-		  "<" + local + "@" + domain + ">"
+		  "<" + (local || "") + "@" + domain + ">"
 		else
-		  local + "@" + domain
+		  (local || "") + "@" + domain
 		end
       comments = nil
       comments = unless @comments.nil?
@@ -293,22 +297,22 @@ module RMail
       # of addresses in the <tt>To:</tt>, <tt>From:</tt>, etc. headers
       # in email.
       def parse
-	puts "Allocating @lexemes"
+	#puts "Allocating @lexemes"
         @lexemes = [] of String
-	puts "Allocating @tokens"
+	#puts "Allocating @tokens"
 	@tokens = TokenArray.new
-	puts "Allocating @addresses"
+	#puts "Allocating @addresses"
 	@addresses = RMail::Address::List.new
 	@errors = 0
-	puts "Calling new_address"
+	#puts "Calling new_address"
 	new_address
-	puts "Calling get"
+	#puts "Calling get"
         get
-	puts "Calling address_list"
+	#puts "Calling address_list"
         address_list
-	puts "Calling reset_errors"
+	#puts "Calling reset_errors"
 	reset_errors
-	puts "Calling @addresses.reject!"
+	#puts "Calling @addresses.reject!"
 	@addresses.reject! { |a| a.local.nil? || a.domain.nil? }
       end
 
@@ -364,20 +368,20 @@ module RMail
       # Parse this:
       # address_list = ([address] SYNC ",") {[address] SYNC "," } [address] .
       private def address_list
-	puts "entering address_list"
+	#puts "entering address_list"
 	if @sym == SYM_ATOM ||
             @sym == SYM_ATOM_NON_ASCII ||
 	    @sym == SYM_QTEXT ||
 	    @sym == SYM_LESS_THAN
-	  puts "init: calling address"
+	  #puts "init: calling address"
 	  address
 	end
-	puts "calling sync"
+	#puts "calling sync"
 	sync(SYM_COMMA)
 	return if @sym.nil?
-	puts "calling expect"
+	#puts "calling expect"
 	expect(SYM_COMMA)
-	puts "calling new_address"
+	#puts "calling new_address"
 	new_address
         while @sym == SYM_ATOM ||
             @sym == SYM_ATOM_NON_ASCII ||
@@ -390,16 +394,16 @@ module RMail
               @sym == SYM_LESS_THAN
 	    address
 	  end
-	  puts "loop: calling sync"
+	  #puts "loop: calling sync"
 	  sync(SYM_COMMA)
 	  return if @sym.nil?
-	  puts "loop: calling expect"
+	  #puts "loop: calling expect"
 	  expect(SYM_COMMA)
-	  puts "loop: calling new_address"
+	  #puts "loop: calling new_address"
 	  new_address
         end
         if @sym == SYM_ATOM || @sym == SYM_QTEXT || @sym == SYM_LESS_THAN
-	  puts "final: calling address"
+	  #puts "final: calling address"
           address
         end
       end
@@ -437,14 +441,14 @@ module RMail
 
 	# set lookahead to '@' '<' or ':' (or another value for
 	# invalid input)
-	puts "address: calling address_lookahead"
+	#puts "address: calling address_lookahead"
 	lookahead = address_lookahead
 
 	if lookahead == SYM_COLON
-	  puts "address: group"
+	  #puts "address: group"
 	  group
 	else
-	  puts "address: mailbox(#{lookahead})"
+	  #puts "address: mailbox(#{lookahead})"
 	  mailbox(lookahead)
 	end
       end

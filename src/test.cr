@@ -4,6 +4,7 @@ require "./util.cr"
 require "./person.cr"
 require "./contact.cr"
 require "./shellwords.cr"
+require "./rmail/address.cr"
 
 puts "Notmuch tests"
 puts "-------------"
@@ -13,9 +14,10 @@ threads = Notmuch.search(["tag:inbox and date:yesterday"])
 puts "threads for yesterday = '#{threads}'"
 json = Notmuch.show(["tag:inbox and date:yesterday"])
 puts "JSON for yesterday: '#{json}'"
-addrs = Notmuch.address(["--output=sender", "from:marka@pobox.com or to:marka@pobox.com"])
-puts "addresses from or to marka@pobox.com:"
-addrs.each { |addr| puts "  #{addr.to_s}" }
+# The following code takes several seconds.
+# addrs = Notmuch.address(["--output=sender", "from:marka@pobox.com or to:marka@pobox.com"])
+# puts "addresses from or to marka@pobox.com:"
+# addrs.each { |addr| puts "  #{addr.to_s}" }
 lm = Notmuch.lastmod
 puts "notmuch lastmod = #{lm}"
 tagoutput = Notmuch.tag_batch([{"id:101649.65756.qm@web111507.mail.gq1.yahoo.com", ["marianne"]},
@@ -85,3 +87,19 @@ puts "#{s1} => #{s2}"
 a1 = ["this is", "a test"]
 s2 = Shellwords.join(a1)
 puts "#{a1} => #{s2}"
+
+test_addresses = ["A Group:a@b.c,d@e.f;", "Mark Alexander <marka@pobox.com> (Some User)"]
+test_addresses.each do |addr|
+  puts "Parsing #{addr}"
+  parser = RMail::Address::Parser.new(addr)
+  addrs = parser.parse
+  addrs.each do |a|
+    puts ">>addr: #{a.address}"
+    puts "  local: #{a.local}"
+    puts "  name: #{a.name}"
+    puts "  display name: #{a.display_name}"
+    puts "  domain: #{a.domain}"
+    puts "  format: #{a.format}"
+    puts "  comments: #{a.comments}"
+  end
+end
