@@ -46,15 +46,15 @@ module ContactManager
   end
 
   def contact_for(aalias)
-    @@a2p[aalias]
+    @@a2p[aalias]?
   end
 
   def alias_for(person)
-    @@p2a[person]
+    @@p2a[person]?
   end
 
   def person_for(email)
-    @@e2p[email]
+    @@e2p[email]?
   end
 
   def is_aliased_contact?(person)

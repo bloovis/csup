@@ -75,7 +75,12 @@ isa = ContactManager.is_aliased_contact?(p)
 puts "is_aliased_contact for '#{p.to_s}' = #{isa}"
 p = Person.new("Joe Blow", "joeblow@example.com")
 puts "New person = '#{p.to_s}'"
-ContactManager.update_alias(p, "joeblow")
+if ContactManager.contact_for("joeblow")
+  puts "joeblow is already a contact alias"
+else
+  puts "adding joeblow as alias"
+  ContactManager.update_alias(p, "joeblow")
+end
 ContactManager.save
 puts "Saved /tmp/contacts.txt"
 
