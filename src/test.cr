@@ -6,8 +6,14 @@ require "./contact.cr"
 require "./shellwords.cr"
 require "./rmail/address.cr"
 
-puts "Notmuch tests"
-puts "-------------"
+def start_test(str : String)
+  l = "-" * str.size
+  puts l
+  puts str
+  puts l
+end
+
+start_test("Notmuch tests")
 inbox_count = Notmuch.count(["tag:inbox"])
 puts "inbox count = #{inbox_count}"
 threads = Notmuch.search(["tag:inbox and date:yesterday"])
@@ -30,23 +36,20 @@ puts "threadid: #{threadid}"
 tags = Notmuch.tags_from_message_id("101649.65756.qm@web111507.mail.gq1.yahoo.com")
 puts "tags: #{tags}"
 
-puts "Unicode tests"
-puts "-------------"
+start_test("Unicode tests")
 LibNCurses.setlocale(0, "")
 s = "this is a test"
 puts "display width of '#{s}' = #{Unicode.width(s)}"
 s = "你好"
 puts "display width of '#{s}' = #{Unicode.width(s)}"
 
-puts "String tests"
-puts "------------"
+start_test("String tests")
 s = "this is a test"
 puts "display width of '#{s}' = #{s.display_length}"
 s = "你好"
 puts "display width of '#{s}' = #{s.display_length}"
 
-puts "Person tests"
-puts "------------"
+start_test("Person tests")
 p = Person.new("Mark Alexander", "marka@pobox.com")
 puts "Person = '#{p.to_s}'"
 p = Person.new(nil, "noname@pobox.com")
@@ -56,8 +59,7 @@ puts "Person = '#{p.to_s}'"
 p = Person.from_address("\"A real somebody!\" <somebody@pobox.com>")
 puts "Person = '#{p.to_s}'"
 
-puts "Contact tests"
-puts "-------------"
+start_test("Contact tests")
 ContactManager.init("/tmp/contacts.txt")
 ContactManager.contacts.each do |p|
   puts "Contact person = '#{p.to_s}'"
@@ -84,8 +86,7 @@ end
 ContactManager.save
 puts "Saved /tmp/contacts.txt"
 
-puts "Shellwords tests"
-puts "----------------"
+start_test("Shellwords tests")
 s1 = "this is a test"
 s2 = Shellwords.escape(s1)
 puts "#{s1} => #{s2}"
@@ -93,6 +94,7 @@ a1 = ["this is", "a test"]
 s2 = Shellwords.join(a1)
 puts "#{a1} => #{s2}"
 
+start_test("RMail::Address tests")
 test_addresses = ["A Group:a@b.c,d@e.f;", "Mark Alexander <marka@pobox.com> (Some User)"]
 test_addresses.each do |addr|
   puts "Parsing #{addr}"
