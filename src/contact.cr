@@ -2,9 +2,9 @@ require "./person.cr"
 
 module ContactManager
   @@fn = ""
-  @@p2a : Hash(Person, String) = {} of Person => String		# person to alias
-  @@a2p : Hash(String, Person) = {} of String => Person		# alias to person
-  @@e2p : Hash(String, Person) = {} of String => Person		# email to person
+  @@p2a = {} of Person => String		# person to alias
+  @@a2p = {} of String => Person		# alias to person
+  @@e2p = {} of String => Person		# email to person
 
   extend self
 
