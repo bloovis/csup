@@ -27,7 +27,7 @@ module Notmuch
       command = "notmuch"
       shell = false
     end
-    puts "Process.run(#{command}, #{args}, shell: #{shell})"
+    puts "Process.run(#{command}, #{args}, input: #{input}, shell: #{shell})"
     status = Process.run(command, args, input: io_input, output: io_output,
                          error: io_error, shell: shell)
     puts "Process success: #{status.success?}"
