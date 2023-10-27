@@ -26,14 +26,16 @@ puts "JSON for yesterday: '#{json}'"
 # addrs.each { |addr| puts "  #{addr.to_s}" }
 lm = Notmuch.lastmod
 puts "notmuch lastmod = #{lm}"
-tagoutput = Notmuch.tag_batch([{"id:101649.65756.qm@web111507.mail.gq1.yahoo.com", ["marianne"]},
-                               {"id:182504.40420.qm@web111514.mail.gq1.yahoo.com", ["marianne"]}])
+msgid1 = "242CB392-E8B6-47CA-B7BB-F791BCBC2911@gmail.com"
+msgid2 = "111E9314-98B1-440F-8A6C-1B89257EAC0C@gmail.com"
+tagoutput = Notmuch.tag_batch([{"id:#{msgid1}", ["joan"]},
+                               {"id:#{msgid2}", ["joan"]}])
 puts "tag batch output: #{tagoutput}"
-filename = Notmuch.filenames_from_message_id("101649.65756.qm@web111507.mail.gq1.yahoo.com")
+filename = Notmuch.filenames_from_message_id(msgid1)
 puts "filename: #{filename}"
-threadid = Notmuch.thread_id_from_message_id("101649.65756.qm@web111507.mail.gq1.yahoo.com")
+threadid = Notmuch.thread_id_from_message_id(msgid1)
 puts "threadid: #{threadid}"
-tags = Notmuch.tags_from_message_id("101649.65756.qm@web111507.mail.gq1.yahoo.com")
+tags = Notmuch.tags_from_message_id(msgid1)
 puts "tags: #{tags}"
 
 start_test("Unicode tests")
@@ -60,31 +62,37 @@ p = Person.from_address("\"A real somebody!\" <somebody@pobox.com>")
 puts "Person = '#{p.to_s}'"
 
 start_test("Contact tests")
-ContactManager.init("/tmp/contacts.txt")
-ContactManager.contacts.each do |p|
-  puts "Contact person = '#{p.to_s}'"
-end
-ContactManager.contacts_with_aliases.each do |p|
-  puts "Contact person with alias = '#{p.to_s}'"
-end
-p = ContactManager.contact_for("self")
-puts "Person for alias self = '#{p.to_s}'"
-al = ContactManager.alias_for(p)
-puts "Alias for '#{p.to_s}' = #{al}"
-p = ContactManager.person_for("marka@pobox.com")
-puts "Person for email marka@pobox.com = '#{p.to_s}'"
-isa = ContactManager.is_aliased_contact?(p)
-puts "is_aliased_contact for '#{p.to_s}' = #{isa}"
-p = Person.new("Joe Blow", "joeblow@example.com")
-puts "New person = '#{p.to_s}'"
-if ContactManager.contact_for("joeblow")
-  puts "joeblow is already a contact alias"
+contacts_file = "/tmp/contacts.txt"
+unless File.exists?(contacts_file)
+  puts "Can't find #{contacts_file}.  Have you copied it from ~/.sup ?"
+  puts "Skipping contacts test."
 else
-  puts "adding joeblow as alias"
-  ContactManager.update_alias(p, "joeblow")
+  ContactManager.init(contacts_file)
+  ContactManager.contacts.each do |p|
+    puts "Contact person = '#{p.to_s}'"
+  end
+  ContactManager.contacts_with_aliases.each do |p|
+    puts "Contact person with alias = '#{p.to_s}'"
+  end
+  p = ContactManager.contact_for("self")
+  puts "Person for alias self = '#{p.to_s}'"
+  al = ContactManager.alias_for(p)
+  puts "Alias for '#{p.to_s}' = #{al}"
+  p = ContactManager.person_for("marka@pobox.com")
+  puts "Person for email marka@pobox.com = '#{p.to_s}'"
+  isa = ContactManager.is_aliased_contact?(p)
+  puts "is_aliased_contact for '#{p.to_s}' = #{isa}"
+  p = Person.new("Joe Blow", "joeblow@example.com")
+  puts "New person = '#{p.to_s}'"
+  if ContactManager.contact_for("joeblow")
+    puts "joeblow is already a contact alias"
+  else
+    puts "adding joeblow as alias"
+    ContactManager.update_alias(p, "joeblow")
+  end
+  ContactManager.save
+  puts "Saved #{contacts_file}"
 end
-ContactManager.save
-puts "Saved /tmp/contacts.txt"
 
 start_test("Shellwords tests")
 s1 = "this is a test"
