@@ -1,4 +1,5 @@
 require "./spec_helper"
+require "../src/person"
 
 describe Person do
   it "creates a person with a name" do

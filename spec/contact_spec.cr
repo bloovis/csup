@@ -1,4 +1,14 @@
 require "./spec_helper"
+require "../src/contact"
+
+def create_contacts(filename)
+  s = <<-EOS
+self: Mark Alexander <marka@pobox.com>
+potus: Robert L. Peters <potus@whitehouse.gov>
+putin: Vladimir Putin <vlad@kremlin.ru>
+EOS
+  File.write(filename, s)
+end
 
 describe ContactManager do
   it "creates contacts file" do
