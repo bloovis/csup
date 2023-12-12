@@ -9,8 +9,13 @@ targets:
     main: src/csup.cr
 
 dependencies:
+#  quoted_printable:
+#    github: arcage/crystal-quotedprintable
+#    version: 0.1.3
+  email:
+    github: arcage/crystal-email
   ncurses:
-    github: agatan/ncurses.cr
+    github: SamualLB/ncurses
 
 crystal: 0.28.0
 
