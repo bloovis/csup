@@ -66,8 +66,8 @@ module NCurses
   REPORT_MOUSE_POSITION = 0x10000000
 
   @@func_keynames = {
-    KEY_BACKSPACE => "C-H",
-    KEY_RESIZE => "C-L",
+    KEY_BACKSPACE => "C-h",
+    KEY_RESIZE => "C-l",
     KEY_IC => "Insert",
     KEY_DC => "Delete",
     KEY_UP => "Up",
@@ -110,7 +110,7 @@ module NCurses
       end
     else
       if ch >= 0x00 && ch <= 0x1f
-	return "C-#{(ch + 0x40).chr}"
+	return "C-#{(ch + 0x60).chr}"
       else
 	return ch.chr.to_s
       end
