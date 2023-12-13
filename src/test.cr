@@ -13,6 +13,24 @@ def start_test(str : String)
   puts l
 end
 
+
+start_test("RMail::Address tests")
+test_addresses = ["A Group:a@b.c,d@e.f;", "Mark Alexander <marka@pobox.com> (Some User)"]
+test_addresses.each do |addr|
+  puts "Parsing #{addr}"
+  parser = RMail::Address::Parser.new(addr)
+  addrs = parser.parse
+  addrs.each do |a|
+    puts ">>addr: #{a.address}"
+    puts "  local: #{a.local}"
+    puts "  name: #{a.name}"
+    puts "  display name: #{a.display_name}"
+    puts "  domain: #{a.domain}"
+    puts "  format: #{a.format}"
+    puts "  comments: #{a.comments}"
+  end
+end
+
 start_test("Notmuch tests")
 inbox_count = Notmuch.count(["tag:inbox"])
 puts "inbox count = #{inbox_count}"
@@ -101,20 +119,3 @@ puts "#{s1} => #{s2}"
 a1 = ["this is", "a test"]
 s2 = Shellwords.join(a1)
 puts "#{a1} => #{s2}"
-
-start_test("RMail::Address tests")
-test_addresses = ["A Group:a@b.c,d@e.f;", "Mark Alexander <marka@pobox.com> (Some User)"]
-test_addresses.each do |addr|
-  puts "Parsing #{addr}"
-  parser = RMail::Address::Parser.new(addr)
-  addrs = parser.parse
-  addrs.each do |a|
-    puts ">>addr: #{a.address}"
-    puts "  local: #{a.local}"
-    puts "  name: #{a.name}"
-    puts "  display name: #{a.display_name}"
-    puts "  domain: #{a.domain}"
-    puts "  format: #{a.format}"
-    puts "  comments: #{a.comments}"
-  end
-end
