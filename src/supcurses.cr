@@ -6,6 +6,7 @@ lib LibNCurses
   fun getbegx(window : Window) : LibC::Int
   fun getbegy(window : Window) : LibC::Int
   fun get_wch(Wint_t*) : LibC::Int
+  fun doupdate : LibC::Int
 end
 
 # Ruby ncurses class is called Ncurses (lower-case c)
@@ -13,6 +14,18 @@ alias Ncurses = NCurses
 
 # Definitions needed for sup
 module NCurses
+  alias Wint_t = LibNCurses::Wint_t
+
+  # Wrapper for `get_wch()`
+  def get_wch(w : Wint_t) : LibC::Int
+    LibNCurses.get_wch(w)
+  end
+
+  # Wrapper for `doupdate()`
+  def doupdate
+    LibNCurses.doupdate
+  end
+
   A_BOLD = 0x200000
   BUTTON1_CLICKED = 0x4
   BUTTON1_DOUBLE_CLICKED = 0x8

@@ -13,6 +13,8 @@ Ncurses.start_color
 Ncurses.print "COLOR_PAIRS = #{LibNCurses.color_pairs}\n"
 Ncurses.print "A_BOLD = #{sprintf("%0x", Ncurses::A_BOLD)}\n"
 Ncurses.print "KEY_ENTER = #{sprintf("%0x", Ncurses::KEY_ENTER)}\n"
+err = Ncurses.doupdate
+Ncurses.print "doupdate returned #{err}"
 Ncurses.print "\nPress any key to continue: "
 Ncurses.getkey
 Ncurses.clear
