@@ -2,10 +2,11 @@
 	crystal build $<
 
 .PHONY: tests
-tests : keymap_test ncurses_test
+tests : keymap_test ncurses_test email_test
 
 keymap_test : test/keymap_test.cr
 ncurses_test : test/ncurses_test.cr
+email_test : test/email_test.cr
 
 test : src/test.cr src/index.cr
 	crystal build src/test.cr
