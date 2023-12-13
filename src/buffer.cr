@@ -1,15 +1,39 @@
 
 # class InputSequenceAborted < StandardError; end
 
+class Buffer
+  property mode : Mode | Nil
+
+  def initialize(mode)	# eventually will be window, mode, width, height, opts={}
+    @mode = mode
+  end
+end
+
 class BufferManager
 
-  @mode : Mode
+  # Eventually replace this with focus_buf.
+  @focus_buf : Buffer | Nil
 
-  def initialize(@mode)
+  def initialize
+    puts "BufferManager.initialize"
   end
     
+  def focus_on(buf : Buffer)
+    @focus_buf = buf
+  end
+
   def handle_input(c : String)
-    @mode.handle_input(c)
+    b = @focus_buf
+    if b
+      m = b.mode
+      if m
+	m.handle_input(c)
+      else
+	puts "Buffer has no mode!"
+      end
+    else
+      puts "BufferManager.handle_input: no focus_buf!"
+    end
   end
 
   def self.ask_getch(help : String) : String

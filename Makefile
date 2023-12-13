@@ -1,6 +1,9 @@
 % : test/%.cr
 	crystal build $<
 
+.PHONY: tests
+tests : keymap_test ncurses_test
+
 keymap_test : test/keymap_test.cr
 ncurses_test : test/ncurses_test.cr
 

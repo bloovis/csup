@@ -1,43 +1,31 @@
-class Mode
+abstract class Mode
   @@keymaps = Hash(String, Keymap).new
 
   def register_keymap(classname)
-    puts "register_keymap for class #{classname}"
+    puts "register_keymap for class #{classname}, keymaps #{@@keymaps.object_id}"
     if  @@keymaps.has_key?(classname)
+      puts "#{classname} already has a keymap"
       k = @@keymaps[classname]
     else
+      puts "Creating keymap for #{classname}"
       k = Keymap.new
       @@keymaps[classname] = k
+      yield k
     end
-    yield k
     k
   end
 
   def ancestors
-    puts "Mode.ancestors"
+    #puts "Mode.ancestors"
     ["Mode"]
   end
 
   def initialize
-    puts "Initializing Mode object #{object_id}"
-    register_keymap("Mode") do |k|
-      k.add(-> kcommand, "Mode k command", "k")
-      k.add(-> lcommand, "Mode l command", "l")
-    end
+    puts "Mode.initialize"
   end
 
   def keymap
     @@keymaps[self.class.name]
-  end
-
-  def kcommand
-    puts "Mode.kcommand in object #{object_id}"
-    return true
-  end
-
-  def lcommand
-    puts "Mode.lcommand in object #{object_id}"
-    return false
   end
 
   def process_input(level = 1)
