@@ -1,3 +1,5 @@
+# Ncurses functions used by sup that are missing in the NCurses shard.
+
 require "../lib/ncurses/src/ncurses"
 
 lib LibNCurses
@@ -7,12 +9,12 @@ lib LibNCurses
   fun getbegy(window : Window) : LibC::Int
   fun get_wch(Wint_t*) : LibC::Int
   fun doupdate : LibC::Int
+  fun wnoutrefresh(window : Window) : LibC::Int
 end
 
 # Ruby ncurses class is called Ncurses (lower-case c)
 alias Ncurses = NCurses
 
-# Definitions needed for sup
 module NCurses
   alias Wint_t = LibNCurses::Wint_t
 
@@ -145,6 +147,30 @@ module NCurses
 	return prefix + keyname(ch, false)
       end
     end
+  end
+
+  class Window
+    # Set a window's attributes
+    #
+    # Wrapper for `wattrset()` (`attrset()`)
+    def attrset(attr)
+      raise "wattrset error" if LibNCurses.wattrset(self, attr) == ERR
+    end
+
+    # Add string to window and move cursor
+    #
+    # Wrapper for `mvwaddstr()` (`mvaddstr()`)
+    def mvaddstr(y, x, str)
+      raise "mvwaddstr error" if LibNCurses.mvwaddstr(self, y, x, str) == ERR
+    end
+
+    # Copy window to virtual screen
+    #
+    # Wrapper for `wnoutrefresh()` (`noutrefresh()`)
+    def noutrefresh
+      raise "wnoutrefresh error" if LibNCurses.wnoutrefresh(self) == ERR
+    end
+
   end
 
 end

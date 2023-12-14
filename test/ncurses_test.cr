@@ -15,6 +15,11 @@ Ncurses.print "A_BOLD = #{sprintf("%0x", Ncurses::A_BOLD)}\n"
 Ncurses.print "KEY_ENTER = #{sprintf("%0x", Ncurses::KEY_ENTER)}\n"
 err = Ncurses.doupdate
 Ncurses.print "doupdate returned #{err}"
+w = Ncurses.stdscr
+w.attrset(NCurses::Attribute::Blink)
+w.mvaddstr(40, 0, "Test of attrset and mvaddstr.  This text should be blinking.")
+w.attrset(NCurses::Attribute::Normal)
+w.noutrefresh
 Ncurses.print "\nPress any key to continue: "
 Ncurses.getkey
 Ncurses.clear
