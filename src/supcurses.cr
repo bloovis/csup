@@ -16,6 +16,9 @@ end
 alias Ncurses = NCurses
 
 module NCurses
+  class NameError < Exception
+  end
+
   alias Wint_t = LibNCurses::Wint_t
 
   # Wrapper for `get_wch()`
@@ -32,12 +35,13 @@ module NCurses
   BUTTON1_CLICKED = 0x4
   BUTTON1_DOUBLE_CLICKED = 0x8
   COLOR_BLACK = 0x0
-  COLOR_BLUE = 0x4
-  COLOR_CYAN = 0x6
-  COLOR_GREEN = 0x2
   COLOR_RED = 0x1
-  COLOR_WHITE = 0x7
+  COLOR_GREEN = 0x2
   COLOR_YELLOW = 0x3
+  COLOR_BLUE = 0x4
+  COLOR_MAGENTA = 0x5
+  COLOR_CYAN = 0x6
+  COLOR_WHITE = 0x7
 #  ERR = 0xffffffffffffffff
   KEY_CANCEL = 0x163
 
@@ -114,6 +118,28 @@ module NCurses
     KEY_F19 => "F19",
     KEY_F20 => "F20"
   }
+
+  @@consts = {
+    "A_BOLD" => A_BOLD,
+    "COLOR_BLACK" => COLOR_BLACK,
+    "COLOR_RED" => COLOR_RED,
+    "COLOR_GREEN" => COLOR_GREEN,
+    "COLOR_YELLOW" => COLOR_YELLOW,
+    "COLOR_BLUE" => COLOR_BLUE,
+    "COLOR_MAGENTA" => COLOR_MAGENTA,
+    "COLOR_CYAN" => COLOR_CYAN,
+    "COLOR_WHITE" => COLOR_WHITE
+  }
+
+  # Ugly hack to make sup's colormap code happy.
+  def const_get(name : String) : Int32
+    if @@consts.has_key?(name)
+      return @@consts[name]
+    else
+      raise NameError.new
+      return 0
+    end
+  end
 
   def keyname(ch : Int32, function_key = false) : String
     # Ncurses.print("keyname: ch #{sprintf("0x%x", ch)}, function_key #{function_key}\n")
