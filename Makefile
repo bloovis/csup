@@ -1,10 +1,11 @@
 % : test/%.cr
-	crystal build $<
+	crystal build --no-color --error-trace $<
 
 .PHONY: tests
-tests : keymap_test ncurses_test email_test
+tests : colormap_test keymap_test ncurses_test email_test
 
-keymap_test : test/keymap_test.cr
+colormap_test : test/colormap_test.cr src/colormap.cr
+keymap_test : test/keymap_test.cr src/keymap.cr
 ncurses_test : test/ncurses_test.cr src/supcurses.cr
 email_test : test/email_test.cr
 

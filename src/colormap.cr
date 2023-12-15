@@ -1,4 +1,15 @@
 class Colormap
+  class ColorEntry
+    property fg : Int32
+    property bg : Int32
+    property attrs : Array(Int32)
+    property color : Int32 | Nil
+
+    def initialize(@fg, @bg, @attrs = [] of Int32, @color = nil)
+    end
+  end
+
+  # Class variables.
   @@instance = nil
 
   @@default_colors = {
@@ -45,35 +56,40 @@ class Colormap
     "size_widget" => { "fg" => "white", "bg" => "default"},
   }
 
+  # Instance variables
+  @highlights = {} of String => String
+  @entries = {} of String => ColorEntry
+
   def initialize
     raise "only one instance can be created" if @@instance
-    @@instance = self
     @color_pairs = {[Ncurses::COLOR_WHITE, Ncurses::COLOR_BLACK] => 0}
-    @users = []
+    @users = Hash(Int32, Array(String)).new     # colorpair => [names of colors]
     @next_id = 0
     reset
+    @@instance = self
     yield self # if block_given?
   end
 
   def reset
-    @entries = {}
+    @entries = Hash(String, ColorEntry).new
     @highlights = { "none" => highlight_sym("none")}
     @entries[highlight_sym("none")] = highlight_for(Ncurses::COLOR_WHITE,
                                                    Ncurses::COLOR_BLACK,
-                                                   []) + [nil]
+                                                   [] of Int32)
   end
 
-  def add sym, fg, bg, attr=nil, highlight=nil
+#  def add sym, fg, bg, attr=nil, highlight=nil
+  def add(sym : String, fg : Int32, bg : Int32, attr : Array(Int32), highlight : Int32 )
     raise ArgumentError, "color for #{sym} already defined" if @entries.member? sym
-    raise ArgumentError, "color '#{fg}' unknown" unless (-1...Ncurses::NUM_COLORS).include? fg
-    raise ArgumentError, "color '#{bg}' unknown" unless (-1...Ncurses::NUM_COLORS).include? bg
+    raise ArgumentError, "color '#{fg}' unknown" unless (-1...Ncurses::NUM_COLORS).includes? fg
+    raise ArgumentError, "color '#{bg}' unknown" unless (-1...Ncurses::NUM_COLORS).includes? bg
     attrs = [attr].flatten.compact
 
-    @entries[sym] = [fg, bg, attrs, nil]
+    @entries[sym] = ColorEntry.new(fg, bg, attrs, nil)
 
     if not highlight
       highlight = highlight_sym(sym)
-      @entries[highlight] = highlight_for(fg, bg, attrs) + [nil]
+      @entries[highlight] = highlight_for(fg, bg, attrs)
     end
 
     @highlights[sym] = highlight
@@ -87,7 +103,7 @@ class Colormap
     end
   end
 
-  def highlight_for fg, bg, attrs
+  def highlight_for(fg, bg, attrs)
     hfg =
       case fg
       when Ncurses::COLOR_BLUE
@@ -109,20 +125,20 @@ class Colormap
       end
 
     attrs =
-      if fg == Ncurses::COLOR_WHITE && attrs.include?(Ncurses::A_BOLD)
+      if fg == Ncurses::COLOR_WHITE && attrs.includes?(Ncurses::A_BOLD)
         [Ncurses::A_BOLD]
       else
         case hfg
         when Ncurses::COLOR_BLACK
-          []
+          [] of Int32
         else
           [Ncurses::A_BOLD]
         end
       end
-    [hfg, hbg, attrs]
+    return ColorEntry.new(hfg, hbg, attrs)
   end
 
-  def color_for sym, highlight=false
+  def color_for(sym, highlight=false)
     sym = @highlights[sym] if highlight
     return Ncurses::COLOR_BLACK if sym == "none"
     raise ArgumentError, "undefined color #{sym}" unless @entries.member? sym
@@ -143,24 +159,32 @@ class Colormap
 
       cp = @color_pairs[[fg, bg]] = Ncurses.COLOR_PAIR(id)
       ## delete the old mapping, if it exists
-      if @users[cp]
-        @users[cp].each do |usym|
-          warn "dropping color #{usym} (#{id})"
-          @entries[usym][3] = nil
+      if @users.has_key?(cp)
+        u = @users[cp]
+	if u
+	  u.each do |usym|
+            warn "dropping color #{usym} (#{id})"
+            @entries[usym].color = nil
+	  end
         end
-        @users[cp] = []
+        @users[cp] = [] of String
       end
     end
 
     ## by now we have a color pair
     color = attrs.inject(cp) { |color, attr| color | attr }
     @entries[sym][3] = color # fill the cache
-    (@users[cp] ||= []) << sym # record entry as a user of that color pair
+    # record entry as a user of that color pair
+    if @users.has_key?(cp)
+      @users[cp] << sym
+    else
+      @users[cp] = [sym]
+    end
     color
   end
 
-  def sym_is_defined sym
-      return sym if @entries.member? sym
+  def sym_is_defined(sym)
+      return sym if @entries.has_key?(sym)
   end
 
   # Eventually, the code for obtaining color_fn should be
@@ -210,7 +234,7 @@ class Colormap
       user_colors["with_attachment"] = user_colors["to_me"] unless user_colors.has_key? "with_attachment"
     end
 
-    @@default_colors.merge(user_colors||{}).each_pair do |k, v|
+    @@default_colors.merge(user_colors).each_pair do |k, v|
       fg = begin
         Ncurses.const_get "COLOR_#{v["fg"].to_s.upcase}"
       rescue NameError
@@ -225,7 +249,7 @@ class Colormap
         Ncurses::COLOR_RED
       end
 
-      attrs = (v["attrs"]||[]).map do |a|
+      attrs = (v["attrs"]||[] of String).map do |a|
         begin
           Ncurses.const_get "A_#{a.upcase}"
         rescue NameError
@@ -234,18 +258,18 @@ class Colormap
         end
       end.compact
 
-      highlight_symbol = v["highlight"] ? :"#{v["highlight"]}_color" : nil
+      highlight_symbol = v["highlight"] ? "#{v["highlight"]}_color" : nil
 
       symbol = (k.to_s + "_color").to_sym
       add symbol, fg, bg, attrs, highlight_symbol
     end
   end
 
-  def self.instance; @@instance; end
-  def self.method_missing meth, *a
-    Colormap.new unless @@instance
-    @@instance.send meth, *a
-  end
+#  def self.instance; @@instance; end
+#  def self.method_missing meth, *a
+#    Colormap.new unless @@instance
+#    @@instance.send meth, *a
+#  end
   # Performance shortcut
-  def self.color_for(*a); @@instance.color_for(*a); end
+#  def self.color_for(*a); @@instance.color_for(*a); end
 end
