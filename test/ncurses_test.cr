@@ -10,7 +10,11 @@ Ncurses.raw
 Ncurses.nonl	# don't translate Enter to C-J on input
 
 Ncurses.start_color
+Ncurses.print "COLORS = #{LibNCurses.colors}\n"
 Ncurses.print "COLOR_PAIRS = #{LibNCurses.color_pairs}\n"
+Ncurses.print "COLOR_PAIR(0) = #{LibNCurses.COLOR_PAIR(0)}\n"
+Ncurses.init_pair(10, 4, 5)
+Ncurses.print "COLOR_PAIR(10) = #{LibNCurses.COLOR_PAIR(10)}\n"
 Ncurses.print "A_BOLD = #{sprintf("%0x", Ncurses::A_BOLD)}\n"
 red = Ncurses.const_get("COLOR_RED")
 Ncurses.print "COLOR_RED = #{red}\n"

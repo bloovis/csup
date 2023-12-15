@@ -10,6 +10,7 @@ lib LibNCurses
   fun get_wch(Wint_t*) : LibC::Int
   fun doupdate : LibC::Int
   fun wnoutrefresh(window : Window) : LibC::Int
+  fun COLOR_PAIR(LibC::Int) : LibC::Int
 end
 
 # Ruby ncurses class is called Ncurses (lower-case c)
@@ -24,6 +25,11 @@ module NCurses
   # Wrapper for `get_wch()`
   def get_wch(w : Wint_t) : LibC::Int
     LibNCurses.get_wch(w)
+  end
+
+  # Wrapper for `init_pair()`
+  def init_pair(slot : LibC::Short, foreground : LibC::Short, background : LibC::Short) : LibC::Int
+    LibNCurses.init_pair(slot, foreground, background)
   end
 
   # Wrapper for `doupdate()`
