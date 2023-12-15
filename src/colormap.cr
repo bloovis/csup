@@ -57,8 +57,8 @@ class Colormap
 
   def reset
     @entries = {}
-    @highlights = { :none => highlight_sym(:none)}
-    @entries[highlight_sym(:none)] = highlight_for(Ncurses::COLOR_WHITE,
+    @highlights = { "none" => highlight_sym("none")}
+    @entries[highlight_sym("none")] = highlight_for(Ncurses::COLOR_WHITE,
                                                    Ncurses::COLOR_BLACK,
                                                    []) + [nil]
   end
@@ -124,7 +124,7 @@ class Colormap
 
   def color_for sym, highlight=false
     sym = @highlights[sym] if highlight
-    return Ncurses::COLOR_BLACK if sym == :none
+    return Ncurses::COLOR_BLACK if sym == "none"
     raise ArgumentError, "undefined color #{sym}" unless @entries.member? sym
 
     ## if this color is cached, return it
@@ -206,8 +206,8 @@ class Colormap
     user_colors = load_user_colors
 
     ## Set attachment sybmol to sane default for existing colorschemes
-    if user_colors and user_colors.has_key? :to_me
-      user_colors[:with_attachment] = user_colors[:to_me] unless user_colors.has_key? :with_attachment
+    if user_colors and user_colors.has_key? "to_me"
+      user_colors["with_attachment"] = user_colors["to_me"] unless user_colors.has_key? "with_attachment"
     end
 
     @@default_colors.merge(user_colors||{}).each_pair do |k, v|
@@ -234,7 +234,7 @@ class Colormap
         end
       end.compact
 
-      highlight_symbol = v[:highlight] ? :"#{v[:highlight]}_color" : nil
+      highlight_symbol = v["highlight"] ? :"#{v["highlight"]}_color" : nil
 
       symbol = (k.to_s + "_color").to_sym
       add symbol, fg, bg, attrs, highlight_symbol
