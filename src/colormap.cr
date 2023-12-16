@@ -1,3 +1,5 @@
+require "yaml"
+
 class Colormap
   class ColorEntry
     property fg : Int32
@@ -79,15 +81,17 @@ class Colormap
   end
 
 #  def add sym, fg, bg, attr=nil, highlight=nil
-  def add(sym : String, fg : Int32, bg : Int32, attr : Array(Int32), highlight : Int32 )
-    raise ArgumentError, "color for #{sym} already defined" if @entries.member? sym
-    raise ArgumentError, "color '#{fg}' unknown" unless (-1...Ncurses::NUM_COLORS).includes? fg
-    raise ArgumentError, "color '#{bg}' unknown" unless (-1...Ncurses::NUM_COLORS).includes? bg
+  def add(sym : String, fg : Int32, bg : Int32, attr : Array(Int32), highlight : String | Nil)
+    # Ruby raise accepts a second string parameter, not supported in Crystal.
+    # How to handle this difference correctly?
+    raise "ArgumentError: color for #{sym} already defined" if @entries.has_key?(sym)
+    raise "ArgumentError: fg color '#{fg}' unknown" unless (-1...Ncurses.num_colors).includes? fg
+    raise "ArgumentError: bg color '#{bg}' unknown" unless (-1...Ncurses.num_colors).includes? bg
     attrs = [attr].flatten.compact
 
     @entries[sym] = ColorEntry.new(fg, bg, attrs, nil)
 
-    if not highlight
+    if highlight.nil?
       highlight = highlight_sym(sym)
       @entries[highlight] = highlight_for(fg, bg, attrs)
     end
@@ -150,7 +154,7 @@ class Colormap
     if(cp = @color_pairs[[fg, bg]])
       ## nothing
     else ## need to get a new colorpair
-      @next_id = (@next_id + 1) % Ncurses::MAX_PAIRS
+      @next_id = (@next_id + 1) % Ncurses.max_pairs
       @next_id += 1 if @next_id == 0 # 0 is always white on black
       id = @next_id
       debug "colormap: for color #{sym}, using id #{id} -> #{fg}, #{bg}"
@@ -230,11 +234,11 @@ class Colormap
     user_colors = load_user_colors
 
     ## Set attachment sybmol to sane default for existing colorschemes
-    if user_colors and user_colors.has_key? "to_me"
+    if user_colors && user_colors.has_key? "to_me"
       user_colors["with_attachment"] = user_colors["to_me"] unless user_colors.has_key? "with_attachment"
     end
 
-    @@default_colors.merge(user_colors).each_pair do |k, v|
+    @@default_colors.merge(user_colors).each do |k, v|
       fg = begin
         Ncurses.const_get "COLOR_#{v["fg"].to_s.upcase}"
       rescue NameError
@@ -249,18 +253,24 @@ class Colormap
         Ncurses::COLOR_RED
       end
 
-      attrs = (v["attrs"]||[] of String).map do |a|
-        begin
-          Ncurses.const_get "A_#{a.upcase}"
-        rescue NameError
-          warn "there is no attribute named \"#{a}\", using fallback."
-          nil
-        end
-      end.compact
-
-      highlight_symbol = v["highlight"] ? "#{v["highlight"]}_color" : nil
-
-      symbol = (k.to_s + "_color").to_sym
+      attrs = [] of Int32
+      if v.has_key?("attrs")
+	at = v["attrs"].as(Array(String))
+	at.each do |a|
+	  begin
+	    attrs << Ncurses.const_get "A_#{a.upcase}"
+	  rescue NameError
+	    warn "there is no attribute named \"#{a}\", using fallback."
+	  end
+	end
+      end
+      if v.has_key?("highlight")
+	s = v["highlight"].as(String)
+	highlight_symbol = s + "_color"
+      else
+	highlight_symbol = nil
+      end
+      symbol = k + "_color"
       add symbol, fg, bg, attrs, highlight_symbol
     end
   end

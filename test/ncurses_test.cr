@@ -21,7 +21,7 @@ Ncurses.print "COLOR_RED = #{red}\n"
 begin
   none = Ncurses.const_get("COLOR_NONE")
   Ncurses.print "COLOR_NONE = #{none}\n"
-rescue Ncurses::NameError
+rescue NameError
   Ncurses.print "No such constant COLOR_NONE\n"
 end
 Ncurses.print "KEY_ENTER = #{sprintf("%0x", Ncurses::KEY_ENTER)}\n"

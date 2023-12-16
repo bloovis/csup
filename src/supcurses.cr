@@ -2,6 +2,15 @@
 
 require "../lib/ncurses/src/ncurses"
 
+# These definitions should be in another source file used by every Csup moduls.
+class NameError < Exception
+end
+
+def warn(s : String)
+  puts s
+end
+
+# Extend tht LibNcurses library.
 lib LibNCurses
   alias Wint_t = Int32
 
@@ -17,10 +26,24 @@ end
 alias Ncurses = NCurses
 
 module NCurses
-  class NameError < Exception
+  alias Wint_t = LibNCurses::Wint_t
+
+  @@num_colors = 0
+  @@max_pairs = 0
+
+  def num_colors
+    if @@num_colors = 0
+      @@num_colors = `tput colors`.to_i
+    end
+    return @@num_colors
   end
 
-  alias Wint_t = LibNCurses::Wint_t
+  def max_pairs
+    if @@max_pairs = 0
+      @@max_pairs = `tput pairs`.to_i
+    end
+    return @@max_pairs
+  end
 
   # Wrapper for `get_wch()`
   def get_wch(w : Wint_t) : LibC::Int
