@@ -242,14 +242,14 @@ class Colormap
       fg = begin
         Ncurses.const_get "COLOR_#{v["fg"].to_s.upcase}"
       rescue NameError
-        warn "there is no color named \"#{v["fg"]}\""
+        warn "there is no fg color named \"#{v["fg"]}\""
         Ncurses::COLOR_GREEN
       end
 
       bg = begin
         Ncurses.const_get "COLOR_#{v["bg"].to_s.upcase}"
       rescue NameError
-        warn "there is no color named \"#{v["bg"]}\""
+        warn "there is no bg color named \"#{v["bg"]}\""
         Ncurses::COLOR_RED
       end
 

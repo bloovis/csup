@@ -63,6 +63,7 @@ module NCurses
   A_BOLD = 0x200000
   BUTTON1_CLICKED = 0x4
   BUTTON1_DOUBLE_CLICKED = 0x8
+  COLOR_DEFAULT = -1
   COLOR_BLACK = 0x0
   COLOR_RED = 0x1
   COLOR_GREEN = 0x2
@@ -150,6 +151,7 @@ module NCurses
 
   @@consts = {
     "A_BOLD" => A_BOLD,
+    "COLOR_DEFAULT" => -1,
     "COLOR_BLACK" => COLOR_BLACK,
     "COLOR_RED" => COLOR_RED,
     "COLOR_GREEN" => COLOR_GREEN,
