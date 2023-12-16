@@ -9,6 +9,10 @@ class Colormap
 
     def initialize(@fg, @bg, @attrs = [] of Int32, @color = nil)
     end
+
+    def tuple
+      {fg, bg, attrs, color}
+    end
   end
 
   # Class variables.
@@ -142,26 +146,30 @@ class Colormap
     return ColorEntry.new(hfg, hbg, attrs)
   end
 
-  def color_for(sym, highlight=false)
+  def color_for(sym_or_string : Symbol | String, highlight=false)
+    sym = sym_or_string.to_s
     sym = @highlights[sym] if highlight
     return Ncurses::COLOR_BLACK if sym == "none"
-    raise ArgumentError, "undefined color #{sym}" unless @entries.member? sym
+    raise "ArgumentError: undefined color #{sym}" unless @entries.has_key?(sym)
 
     ## if this color is cached, return it
-    fg, bg, attrs, color = @entries[sym]
+    fg, bg, attrs, color = @entries[sym].tuple
+    debug "entries[#{sym}] = #{fg}, #{bg}, #{attrs}, #{color}"
     return color if color
 
-    if(cp = @color_pairs[[fg, bg]])
+    if @color_pairs.has_key?([fg, bg])
+      cp = @color_pairs[[fg, bg]]
       ## nothing
     else ## need to get a new colorpair
       @next_id = (@next_id + 1) % Ncurses.max_pairs
       @next_id += 1 if @next_id == 0 # 0 is always white on black
       id = @next_id
       debug "colormap: for color #{sym}, using id #{id} -> #{fg}, #{bg}"
-      Ncurses.init_pair id, fg, bg or raise ArgumentError,
-        "couldn't initialize curses color pair #{fg}, #{bg} (key #{id})"
+      Ncurses.init_pair(id.to_i16, fg.to_i16, bg.to_i16) ||
+        raise "ArgumentError: couldn't initialize curses color pair #{fg}, #{bg} (key #{id})"
 
-      cp = @color_pairs[[fg, bg]] = Ncurses.COLOR_PAIR(id)
+      cp = @color_pairs[[fg, bg]] = LibNCurses.COLOR_PAIR(id)
+      debug "colormap: color_pair for id #{id} = #{cp}"
       ## delete the old mapping, if it exists
       if @users.has_key?(cp)
         u = @users[cp]
@@ -176,8 +184,8 @@ class Colormap
     end
 
     ## by now we have a color pair
-    color = attrs.inject(cp) { |color, attr| color | attr }
-    @entries[sym][3] = color # fill the cache
+    color = attrs.reduce(cp) { |color, attr| color | attr }
+    @entries[sym].color = color # fill the cache
     # record entry as a user of that color pair
     if @users.has_key?(cp)
       @users[cp] << sym
@@ -203,7 +211,7 @@ class Colormap
     h.each do |k, v|
       key = k.as_s
       h1 = v.as_h
-      puts "Key: #{key}"
+      debug "Key: #{key}"
       colors[key] = Hash(String, String | Array(String)).new
       h1.each do |k1, v1|
 	key1 = k1.as_s
@@ -212,19 +220,19 @@ class Colormap
 	  val1 = v1.as_a
 	  val1.each_with_index do |v2, i|
 	    val2 = v2.as_s
-	    puts "  attr[#{i}] = #{val2}"
+	    debug "  attr[#{i}] = #{val2}"
 	    attrs << val2
 	  end
 	  colors[key]["attrs"] = attrs
 	else
 	  val1 = v1.as_s
 	  colors[key][key1] = val1
-	  puts "  #{key1}=#{val1}"
+	  debug "  #{key1}=#{val1}"
 	end
       end
     end
 
-    puts colors.inspect
+    debug "colors after load_user_colors:\n#{colors.inspect}"
     return colors
   end
 

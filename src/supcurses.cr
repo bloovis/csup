@@ -7,7 +7,11 @@ class NameError < Exception
 end
 
 def warn(s : String)
-  puts s
+  puts "warning: #{s}"
+end
+
+def debug(s : String)
+  puts "debug: #{s}"
 end
 
 # Extend tht LibNcurses library.
