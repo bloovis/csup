@@ -94,7 +94,7 @@ class Colormap
     attrs = [attr].flatten.compact
 
     @entries[sym] = ColorEntry.new(fg, bg, attrs, nil)
-
+    #debug "added entry for #{sym}, fg #{fg}, bg #{bg}, attrs #{attrs}"
     if highlight.nil?
       highlight = highlight_sym(sym)
       @entries[highlight] = highlight_for(fg, bg, attrs)
@@ -195,8 +195,10 @@ class Colormap
     color
   end
 
-  def sym_is_defined(sym)
-      return sym if @entries.has_key?(sym)
+  def sym_is_defined(sym_or_string : Symbol | String)
+    sym = sym_or_string.to_s
+    debug "checking if @entries has key #{sym}"
+    return sym if @entries.has_key?(sym)
   end
 
   # Eventually, the code for obtaining color_fn should be
@@ -281,6 +283,7 @@ class Colormap
       symbol = k + "_color"
       add symbol, fg, bg, attrs, highlight_symbol
     end
+    debug "@entries after populate_color_map:\n#{@entries.inspect}"
   end
 
 #  def self.instance; @@instance; end
