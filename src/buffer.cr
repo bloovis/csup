@@ -160,7 +160,7 @@ class BufferManager
     gets || ""
   end
 
-  def self.resolve_input_with_keymap(c : String, keymap : Keymap) : Proc(Bool) | Nil
+  def self.resolve_input_with_keymap(c : String, keymap : Keymap) : Proc(Nil) | Nil
     action, text = keymap.action_for c
     return nil if action.nil? || text.nil?
     while action.is_a? Keymap # multi-key commands, prompt

@@ -64,7 +64,7 @@ abstract class Mode
     puts "unknown command '#{s}'"
   end
 
-  def resolve_input (c : String) : Proc(Bool) | Nil
+  def resolve_input (c : String) : Proc(Nil) | Nil
     ancestors.each do |classname|
       next unless @@keymaps.has_key?(classname)
       action = BufferManager.resolve_input_with_keymap(c, @@keymaps[classname])

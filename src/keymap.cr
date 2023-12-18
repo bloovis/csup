@@ -1,11 +1,13 @@
 module Redwood
 
 class Keymap
-  property map : Hash(String, Proc(Bool) | Keymap)
+  alias Action = Proc(Nil) | Keymap
+
+  property map : Hash(String, Action)
   @desc : Hash(String, String)
 
   def initialize
-    @map = Hash(String, Proc(Bool) | Keymap).new
+    @map = Hash(String, Action).new
     @desc = Hash(String, String).new
   end
 
@@ -13,7 +15,7 @@ class Keymap
     return map.empty?
   end
 
-  def add(action : Proc(Bool), description : String, keyname : String)
+  def add(action : Proc(Nil), description : String, keyname : String)
     puts "Adding key #{keyname}, description #{description}, action #{action}, map #{map.object_id}"
     @map[keyname] = action
     @desc[keyname] = description
@@ -48,7 +50,7 @@ class Keymap
     end
   end
 
-  def action_for(c : String) : Tuple(Proc(Bool) | Keymap | Nil, String | Nil)
+  def action_for(c : String) : Tuple(Action | Nil, String | Nil)
     if has_key?(c)
       action = @map[c]	# runtime error here
       help = @desc[c]

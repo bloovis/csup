@@ -21,12 +21,10 @@ class ParentMode < Mode
 
   def kcommand
     puts "ParentMode.kcommand in object #{object_id}"
-    return true
   end
 
   def lcommand
     puts "ParentMode.lcommand in object #{object_id}"
-    return false
   end
 end
 
@@ -38,12 +36,10 @@ class ChildMode < ParentMode
 
   def kcommand
     puts "ChildMode.kcommand in object #{object_id}"
-    return true
   end
 
   def multicmd
     puts "ChildMode.multicmd"
-    return false
   end
 
   def initialize
