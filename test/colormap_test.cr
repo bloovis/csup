@@ -2,7 +2,7 @@ require "../src/colormap"
 require "../lib/ncurses/src/ncurses"
 require "../src/supcurses"
 
-cm = Colormap.new {}
+cm = Colormap.new
 Colormap.reset
 Colormap.populate_colormap
 x = Colormap.color_for("text_color")

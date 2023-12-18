@@ -16,7 +16,8 @@ class Colormap
   end
 
   # Class variables.
-  @@instance = nil
+  # @@instance : Colormap
+  @@initialized = false
 
   @@default_colors = {
     "text" => { "fg" => "white", "bg" => "black" },
@@ -67,13 +68,14 @@ class Colormap
   @entries = {} of String => ColorEntry
 
   def initialize
-    raise "only one instance can be created" if @@instance
+    raise "Colormap: only one instance can be created" if @@initialized
+    @@initialized = true
     @color_pairs = {[Ncurses::COLOR_WHITE, Ncurses::COLOR_BLACK] => 0}
     @users = Hash(Int32, Array(String)).new     # colorpair => [names of colors]
     @next_id = 0
     reset
     @@instance = self
-    yield self # if block_given?
+    # yield self if block_given?
   end
 
   def reset
@@ -290,32 +292,45 @@ class Colormap
   # or its instance for some functions.  We can't use the Ruby method_missing
   # trick seen below, so we have to do the stubs manually.
 
-  def self.color_for(sym)
-    if obj = @@instance
-      obj.color_for(sym)
+  def self.instance
+    obj = @@instance
+    if obj
+      return obj
     else
-      Ncurses::COLOR_DEFAULT
+      raise "Colormap not instantiated!"
     end
+  end
+
+  def self.color_for(sym)
+#    if obj = @@instance
+#      obj.color_for(sym)
+#    else
+#      Ncurses::COLOR_DEFAULT
+#    end
+    instance.color_for(sym)
   end
 
   def self.sym_is_defined(sym)
-    if obj = @@instance
-      obj.sym_is_defined(sym)
-    else
-      false
-    end
+#    if obj = @@instance
+#      obj.sym_is_defined(sym)
+#    else
+#      false
+#    end
+    instance.sym_is_defined(sym)
   end
 
   def self.reset
-    if obj = @@instance
-      obj.reset
-    end
+#    if obj = @@instance
+#      obj.reset
+#    end
+    instance.reset
   end
 
   def self.populate_colormap
-    if obj = @@instance
-      obj.populate_colormap
-    end
+#    if obj = @@instance
+#      obj.populate_colormap
+#    end
+    instance.populate_colormap
   end
 
 #  def self.instance; @@instance; end
