@@ -1,33 +1,5 @@
 require "yaml"
-
-macro singleton_class(klass)
-  @@initialized = false
-  @@instance : {{klass}}?
-
-  def self.instance
-    inst = @@instance
-    if inst
-      return inst
-    else
-      raise "{{klass}} not instantiated!"
-    end
-  end
-end
-
-macro singleton_pre_init
-    raise self.class.name + " : only one instance can be created" if @@initialized
-    @@initialized = true
-end
-
-macro singleton_post_init
-    @@instance = self
-end
-
-macro singleton_method(klass, name, *args)
-  def {{klass}}.{{name}}(*args)
-    self.instance.{{name}} *args
-  end
-end
+require "./singleton"
 
 class Colormap
 
