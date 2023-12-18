@@ -286,6 +286,38 @@ class Colormap
     debug "@entries after populate_color_map:\n#{@entries.inspect}"
   end
 
+  # The following hacks let the caller use either the Colormap class
+  # or its instance for some functions.  We can't use the Ruby method_missing
+  # trick seen below, so we have to do the stubs manually.
+
+  def self.color_for(sym)
+    if obj = @@instance
+      obj.color_for(sym)
+    else
+      Ncurses::COLOR_DEFAULT
+    end
+  end
+
+  def self.sym_is_defined(sym)
+    if obj = @@instance
+      obj.sym_is_defined(sym)
+    else
+      false
+    end
+  end
+
+  def self.reset
+    if obj = @@instance
+      obj.reset
+    end
+  end
+
+  def self.populate_colormap
+    if obj = @@instance
+      obj.populate_colormap
+    end
+  end
+
 #  def self.instance; @@instance; end
 #  def self.method_missing meth, *a
 #    Colormap.new unless @@instance
