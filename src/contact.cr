@@ -1,5 +1,7 @@
 require "./person.cr"
 
+module Redwood
+
 module ContactManager
   @@fn = ""
   @@p2a = {} of Person => String		# person to alias
@@ -69,4 +71,7 @@ module ContactManager
     end
   end
 
-end
+end	# class ContactManager
+
+end	# module Redwood
+

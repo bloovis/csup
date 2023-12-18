@@ -1,3 +1,5 @@
+module Redwood
+
 class Person
   property name : (String | Nil)
   property email : String
@@ -73,4 +75,6 @@ class Person
     self.from_name_and_email name, email
   end
 
-end
+end	# class Person
+
+end	# module Redwood

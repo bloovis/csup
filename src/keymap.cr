@@ -1,3 +1,5 @@
+module Redwood
+
 class Keymap
   property map : Hash(String, Proc(Bool) | Keymap)
   @desc : Hash(String, String)
@@ -56,4 +58,7 @@ class Keymap
     end
   end
 
-end
+end 	# class Keymap
+
+end	# module Redwood
+

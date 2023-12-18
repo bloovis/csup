@@ -1,5 +1,7 @@
 require "json"
 
+module Redwood
+
 module Notmuch
   class ParseError < Exception
   end
@@ -107,4 +109,6 @@ module Notmuch
   def load_contacts(email_addresses : Array(String), limit : Int32 = 20)
   end
 
-end
+end	# module Notmuch
+
+end	# module Redwood

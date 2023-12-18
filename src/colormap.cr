@@ -1,6 +1,8 @@
 require "yaml"
 require "./singleton"
 
+module Redwood
+
 class Colormap
 
   singleton_class(Colormap)
@@ -310,4 +312,6 @@ class Colormap
 #  end
   # Performance shortcut
 #  def self.color_for(*a); @@instance.color_for(*a); end
-end
+end	# class Colormap
+
+end	# module Redwood

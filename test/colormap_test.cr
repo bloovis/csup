@@ -2,6 +2,8 @@ require "../src/colormap"
 require "../lib/ncurses/src/ncurses"
 require "../src/supcurses"
 
+module Redwood
+
 #Colormap.reset # this causes a "Colormap not instantiated!" exception
 cm = Colormap.new
 Colormap.reset
@@ -17,4 +19,6 @@ if Colormap.sym_is_defined(:index_starred_color)
   puts ":index_starred is #{x}"
 else
   puts ":index_starred is not defined"
+end
+
 end

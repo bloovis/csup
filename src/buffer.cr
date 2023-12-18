@@ -1,3 +1,4 @@
+module Redwood
 
 # class InputSequenceAborted < StandardError; end
 
@@ -175,3 +176,4 @@ class BufferManager
 
 end
 
+end

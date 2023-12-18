@@ -3,6 +3,8 @@ require "../src/buffer"
 require "../src/mode"
 require "../src/supcurses"
 
+module Redwood
+
 class ParentMode < Mode
   def initialize
     puts "Initializing ParentMode object #{object_id}"
@@ -75,3 +77,5 @@ while true
   s = gets || ""
   bm.handle_input s
 end
+
+end	# module Redwood

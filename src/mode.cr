@@ -1,3 +1,5 @@
+module Redwood
+
 abstract class Mode
   @@keymaps = Hash(String, Keymap).new
 
@@ -80,5 +82,6 @@ abstract class Mode
     end
   end
 
-end
+end	# class Mode
 
+end	# module Redwood
