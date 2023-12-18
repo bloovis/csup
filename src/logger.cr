@@ -2,13 +2,13 @@ require "./singleton"
 
 module Redwood
 
+LEVELS = %w(debug info warn error) # in order!
+
 ## simple centralized logger. outputs to multiple sinks by calling << on them.
 ## also keeps a record of all messages, so that adding a new sink will send all
 ## previous messages to it by default.
 class Logger
   singleton_class Logger
-
-  LEVELS = %w(debug info warn error) # in order!
 
   @level = 0
 
@@ -31,7 +31,8 @@ class Logger
   def set_level(level)
     @level = LEVELS.index(level) ||
       raise "ArgumentError: invalid log level #{level.inspect}: should be one of #{LEVELS.join(", ")}"
- end
+  end
+  singleton_method(Logger, set_level, level)
 
   def add_sink(s : IO, copy_current=true)
     #@mutex.synchronize do
@@ -109,5 +110,14 @@ end	# class Logger
 #  Logger::LEVELS.each { |l| define_method(l) { |s, uplevel = 0| Logger.instance.send(l, s) } }
 #end
 
+{% for level in LEVELS %}
+  def Redwood.{{level.id}}(s : String)
+    Logger.{{level.id}}(s)
+  end
+{% end %}
+
+#def Redwood.debug(s)
+#  Logger.debug(s)
+#end
 
 end	# module Redwood
