@@ -48,17 +48,19 @@ class Logger
     #end
   end
 
-  def remove_all_sinks
+  def remove_all_sinks!
     #@mutex.synchronize do
       @sinks.clear
     #end
   end
+  singleton_method(Logger, remove_all_sinks!)
 
   def clear!
     #@mutex.synchronize do
       @buf = IO::Memory.new
     #end
   end
+  singleton_method(Logger, clear!)
 
   {% for level,index in LEVELS %}
     def {{level.id}}(s : String)
