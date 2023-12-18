@@ -1,6 +1,38 @@
 require "yaml"
 
+macro singleton_class(klass)
+  @@initialized = false
+  @@instance : {{klass}}?
+
+  def self.instance
+    inst = @@instance
+    if inst
+      return inst
+    else
+      raise "{{klass}} not instantiated!"
+    end
+  end
+end
+
+macro singleton_pre_init
+    raise self.class.name + " : only one instance can be created" if @@initialized
+    @@initialized = true
+end
+
+macro singleton_post_init
+    @@instance = self
+end
+
+macro singleton_method(klass, name, *args)
+  def {{klass}}.{{name}}(*args)
+    self.instance.{{name}} *args
+  end
+end
+
 class Colormap
+
+  singleton_class(Colormap)
+
   class ColorEntry
     property fg : Int32
     property bg : Int32
@@ -16,8 +48,8 @@ class Colormap
   end
 
   # Class variables.
-  # @@instance : Colormap
-  @@initialized = false
+  #@@initialized = false
+  #@@instance : Colormap?
 
   @@default_colors = {
     "text" => { "fg" => "white", "bg" => "black" },
@@ -68,13 +100,15 @@ class Colormap
   @entries = {} of String => ColorEntry
 
   def initialize
-    raise "Colormap: only one instance can be created" if @@initialized
-    @@initialized = true
+    singleton_pre_init
+
     @color_pairs = {[Ncurses::COLOR_WHITE, Ncurses::COLOR_BLACK] => 0}
     @users = Hash(Int32, Array(String)).new     # colorpair => [names of colors]
     @next_id = 0
     reset
-    @@instance = self
+
+    singleton_post_init
+
     # yield self if block_given?
   end
 
@@ -292,46 +326,10 @@ class Colormap
   # or its instance for some functions.  We can't use the Ruby method_missing
   # trick seen below, so we have to do the stubs manually.
 
-  def self.instance
-    obj = @@instance
-    if obj
-      return obj
-    else
-      raise "Colormap not instantiated!"
-    end
-  end
-
-  def self.color_for(sym)
-#    if obj = @@instance
-#      obj.color_for(sym)
-#    else
-#      Ncurses::COLOR_DEFAULT
-#    end
-    instance.color_for(sym)
-  end
-
-  def self.sym_is_defined(sym)
-#    if obj = @@instance
-#      obj.sym_is_defined(sym)
-#    else
-#      false
-#    end
-    instance.sym_is_defined(sym)
-  end
-
-  def self.reset
-#    if obj = @@instance
-#      obj.reset
-#    end
-    instance.reset
-  end
-
-  def self.populate_colormap
-#    if obj = @@instance
-#      obj.populate_colormap
-#    end
-    instance.populate_colormap
-  end
+  singleton_method Colormap, color_for, sym
+  singleton_method Colormap, sym_is_defined, sym
+  singleton_method Colormap, reset
+  singleton_method Colormap, populate_colormap
 
 #  def self.instance; @@instance; end
 #  def self.method_missing meth, *a

@@ -2,6 +2,7 @@ require "../src/colormap"
 require "../lib/ncurses/src/ncurses"
 require "../src/supcurses"
 
+#Colormap.reset # this causes a "Colormap not instantiated!" exception
 cm = Colormap.new
 Colormap.reset
 Colormap.populate_colormap
