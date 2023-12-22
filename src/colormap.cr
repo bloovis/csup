@@ -221,12 +221,12 @@ class Colormap
     colors = Hash(String, Hash(String, String | Array(String))).new
     h = yaml.as_h
     h.each do |k, v|
-      key = k.as_s
+      key = k.as_s.lstrip(':')
       h1 = v.as_h
       debug "Key: #{key}"
       colors[key] = Hash(String, String | Array(String)).new
       h1.each do |k1, v1|
-	key1 = k1.as_s
+	key1 = k1.as_s.lstrip(':')
 	if key1 == "attrs"
 	  attrs = Array(String).new
 	  val1 = v1.as_a
