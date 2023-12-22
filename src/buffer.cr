@@ -1,3 +1,5 @@
+require "./singleton"
+
 module Redwood
 
 # class InputSequenceAborted < StandardError; end
@@ -129,12 +131,15 @@ class Buffer
 end
 
 class BufferManager
+  singleton_class(BufferManager)
 
   # Eventually replace this with focus_buf.
   @focus_buf : Buffer | Nil
 
   def initialize
+    singleton_pre_init
     puts "BufferManager.initialize"
+    singleton_post_init
   end
     
   def focus_on(buf : Buffer)
@@ -155,12 +160,13 @@ class BufferManager
     end
   end
 
-  def self.ask_getch(help : String) : String
+  def ask_getch(help : String) : String
     print "Enter #{help}: "
     gets || ""
   end
+  singleton_method(BufferManager, ask_getch, help)
 
-  def self.resolve_input_with_keymap(c : String, keymap : Keymap) : Proc(Nil) | Nil
+  def resolve_input_with_keymap(c : String, keymap : Keymap) : Proc(Nil) | Nil
     action, text = keymap.action_for c
     return nil if action.nil? || text.nil?
     while action.is_a? Keymap # multi-key commands, prompt
@@ -173,6 +179,7 @@ class BufferManager
     end
     action
   end
+  singleton_method(BufferManager, resolve_input_with_keymap, c, keymap)
 
 end
 

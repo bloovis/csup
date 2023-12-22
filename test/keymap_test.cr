@@ -92,7 +92,9 @@ end
 while true
   print "Global Command: "
   s = gets || ""
-  action = BufferManager.resolve_input_with_keymap(s, global_keymap)
+  # Either of the following two calls should work.
+  #action = BufferManager.resolve_input_with_keymap(s, global_keymap)
+  action = bm.resolve_input_with_keymap(s, global_keymap)
   if action
     action.call
   else
