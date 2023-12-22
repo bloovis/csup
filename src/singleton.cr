@@ -2,7 +2,6 @@
 
 # Use this macro at the start of the class, passing it the class name.
 macro singleton_class(klass)
-  @@initialized = false
   @@instance : {{klass}}?
 
   def self.instance
@@ -17,8 +16,7 @@ end
 
 # Use this macro at the beginning of the initialize method.
 macro singleton_pre_init
-    raise self.class.name + " : only one instance can be created" if @@initialized
-    @@initialized = true
+    raise self.class.name + " : only one instance can be created" if @@instance
 end
 
 # Use this macro at the end of the initialize method.
