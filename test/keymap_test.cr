@@ -55,6 +55,15 @@ class ChildMode < ParentMode
 
 end
     
+def self.quit
+  puts "Quitting!"
+  exit 0
+end
+
+def self.help
+  puts "This is the help command"
+end
+
 bm = BufferManager.new
 #pm = ParentMode.new	# This would create a Mode object with a different @@keymaps than cm's
 cm = ChildMode.new
@@ -72,6 +81,24 @@ while true
   print "Command: "
   s = gets || ""
   bm.handle_input s
+  break if s == "q"
 end
+
+global_keymap = Keymap.new do |k|
+  k.add(->Redwood.quit, "Quit", "q")
+  k.add(->Redwood.help, "Help", "h")
+end
+
+while true
+  print "Global Command: "
+  s = gets || ""
+  action = BufferManager.resolve_input_with_keymap(s, global_keymap)
+  if action
+    action.call
+  else
+    puts "No action for #{s}"
+  end
+end
+
 
 end	# module Redwood

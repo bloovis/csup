@@ -10,7 +10,7 @@ abstract class Mode
       k = @@keymaps[classname]
     else
       puts "Creating keymap for #{classname}"
-      k = Keymap.new
+      k = Keymap.new {}
       @@keymaps[classname] = k
       yield k
     end

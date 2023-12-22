@@ -6,9 +6,10 @@ class Keymap
   property map : Hash(String, Action)
   @desc : Hash(String, String)
 
-  def initialize
+  def initialize(&)
     @map = Hash(String, Action).new
     @desc = Hash(String, String).new
+    yield self
   end
 
   def empty?
@@ -31,7 +32,7 @@ class Keymap
 
   def add_multi(description : String, keyname : String)
     puts "Add multi key #{keyname}, description #{description}, map #{map.object_id}"
-    submap = Keymap.new
+    submap = Keymap.new {}
     @map[keyname] = submap
     @desc[keyname] = description
     yield submap
