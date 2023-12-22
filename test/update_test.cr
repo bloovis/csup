@@ -1,15 +1,9 @@
 require "../src/mode"
 require "../src/keymap"
 require "../src/update"
+require "../src/message"
 
 module Redwood
-
-class Message
-  property id : String = ""
-
-  def initialize(@id)
-  end
-end
 
 class ListMode < Mode
   def handle_update(type : Symbol, msg : Message)
