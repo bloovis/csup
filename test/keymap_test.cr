@@ -85,8 +85,8 @@ while true
 end
 
 global_keymap = Keymap.new do |k|
-  k.add(->Redwood.quit, "Quit", "q")
-  k.add(->Redwood.help, "Help", "h")
+  k.add(->quit, "Quit", "q")
+  k.add(->help, "Help", "h")
 end
 
 while true
