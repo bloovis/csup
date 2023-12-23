@@ -56,12 +56,12 @@ class ChildMode < ParentMode
 end
     
 def self.quit
-  puts "Quitting!"
+  puts "This is the global quit command."
   exit 0
 end
 
 def self.help
-  puts "This is the help command"
+  puts "This is the global help command."
 end
 
 bm = BufferManager.new
@@ -77,12 +77,6 @@ buf = Buffer.new(w, cm, 80, 25, {:title => "Phony buffer"})
 bm.focus_on(buf)
 puts "Ancestors of ChildMode:"
 puts cm.ancestors
-while true
-  print "Command: "
-  s = gets || ""
-  bm.handle_input s
-  break if s == "q"
-end
 
 global_keymap = Keymap.new do |k|
   k.add(->quit, "Quit", "q")
@@ -90,17 +84,18 @@ global_keymap = Keymap.new do |k|
 end
 
 while true
-  print "Global Command: "
+  print "Command: "
   s = gets || ""
-  # Either of the following two calls should work.
-  #action = BufferManager.resolve_input_with_keymap(s, global_keymap)
-  action = bm.resolve_input_with_keymap(s, global_keymap)
-  if action
-    action.call
-  else
-    puts "No action for #{s}"
+  unless bm.handle_input(s)
+    # Either of the following two calls should work.
+    #action = BufferManager.resolve_input_with_keymap(s, global_keymap)
+    action = bm.resolve_input_with_keymap(s, global_keymap)
+    if action
+      action.call
+    else
+      puts "No action for #{s}"
+    end
   end
 end
-
 
 end	# module Redwood
