@@ -1,17 +1,15 @@
 module Redwood
 
-abstract class Mode
-  @@keymaps = Hash(String, Keymap).new
-
+class Mode
   def register_keymap(classname)
-    puts "register_keymap for class #{classname}, keymaps #{@@keymaps.object_id}"
-    if  @@keymaps.has_key?(classname)
+    puts "register_keymap for class #{classname}, keymaps #{@keymaps.object_id}"
+    if  @keymaps.has_key?(classname)
       puts "#{classname} already has a keymap"
-      k = @@keymaps[classname]
+      k = @keymaps[classname]
     else
       puts "Creating keymap for #{classname}"
       k = Keymap.new {}
-      @@keymaps[classname] = k
+      @keymaps[classname] = k
       yield k
     end
     k
@@ -23,11 +21,12 @@ abstract class Mode
   end
 
   def initialize
+    @keymaps = Hash(String, Keymap).new
     puts "Mode.initialize"
   end
 
   def keymap
-    @@keymaps[self.class.name]
+    @keymaps[self.class.name]
   end
 
   def process_input(level = 1)
@@ -38,8 +37,8 @@ abstract class Mode
     classname = self.class.name
     ancestors.each do |classname|
       puts "Trying keymap for #{classname}"
-      next unless @@keymaps.has_key?(classname)
-      k = @@keymaps[classname]
+      next unless @keymaps.has_key?(classname)
+      k = @keymaps[classname]
       looking = true
       while looking
 	k.dump
@@ -66,8 +65,8 @@ abstract class Mode
 
   def resolve_input (c : String) : Proc(Nil) | Nil
     ancestors.each do |classname|
-      next unless @@keymaps.has_key?(classname)
-      action = BufferManager.resolve_input_with_keymap(c, @@keymaps[classname])
+      next unless @keymaps.has_key?(classname)
+      action = BufferManager.resolve_input_with_keymap(c, @keymaps[classname])
       return action if action
     end
     nil

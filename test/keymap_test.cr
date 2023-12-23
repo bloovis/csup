@@ -7,6 +7,7 @@ module Redwood
 
 class ParentMode < Mode
   def initialize
+    super
     puts "Initializing ParentMode object #{object_id}"
     register_keymap("ParentMode") do |k|
       k.add(-> kcommand, "ParentMode k command", "k")
