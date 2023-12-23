@@ -11,6 +11,7 @@ class ListMode < Mode
   end
 
   def initialize
+    super
     puts "Initializing ListMode"
     UpdateManager.register("ListMode", ->handle_update(Symbol, Message))
   end
