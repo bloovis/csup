@@ -32,6 +32,6 @@ end
 # Use this macro to define a class method that invokes the corresponding instance method.
 macro singleton_method(klass, name, *args)
   def {{klass}}.{{name}}(*args)
-    self.instance.{{name}} *args
+    self.instance.{{name}}(*args)
   end
 end

@@ -9,6 +9,7 @@ class ListMode < Mode
 #  @tags : Tagger
 
   def initialize
+    super
     @tags = Tagger.new
     @tags.setmode(self)
     puts "Initializing ListMode"

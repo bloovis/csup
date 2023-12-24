@@ -1,0 +1,2 @@
+#!/bin/sh
+cat - | w3m -T text/html -dump
