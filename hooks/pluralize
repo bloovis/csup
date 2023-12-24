@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+
+# Simple hook that reads a JSON request containing a noun,
+# and returns a JSON reply containing the plural of the noun.
+
+$:.unshift File.dirname(__FILE__)
+
+require "hook_helper"
+
+# Reading JSON from stdin
+h = read_json
+noun = h["noun"]
+
+# Send reply as JSON
+reply = {"plural" => noun + "s"}
+write_json(reply)
