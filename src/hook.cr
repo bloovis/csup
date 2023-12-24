@@ -32,13 +32,18 @@ class HookManager
     singleton_post_init
   end
 
-  def run(name : String, &)
+  def run(name : String, &) : Bool
     path = @dir + "/" + name
-    pipe = Process.new(path,
-                       input: Process::Redirect::Pipe,
-                       output: Process::Redirect::Pipe)
+    begin
+      pipe = Process.new(path,
+                         input: Process::Redirect::Pipe,
+                         output: Process::Redirect::Pipe)
+    rescue IO::Error
+      return false
+    end
     yield HookPipe.new(pipe)
     pipe.wait
+    return true
   end
 
   def HookManager.run(name : String, &)

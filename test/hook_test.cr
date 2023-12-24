@@ -6,7 +6,7 @@ module Redwood
 hm = HookManager.new("./hooks")
 
 # Run a test of a hook that takes plain text for input and outputs plain text.
-HookManager.run("htmltotext") do |pipe|
+success = HookManager.run("htmltotext") do |pipe|
   pipe.send do |f|
     f.puts("<html><body><p>First paragraph.</p><p>Second paragraph.</p></body></html>")
   end
@@ -16,8 +16,10 @@ HookManager.run("htmltotext") do |pipe|
   end
 end
 
+puts "htmltotext hook failed" unless success
+
 # Run a test of a hook that takes a JSON request and replies with JSON.
-HookManager.run("pluralize") do |pipe|
+success = HookManager.run("pluralize") do |pipe|
   noun = "tree"
   pipe.send do |f|
     h = {"noun" => noun}
@@ -33,5 +35,7 @@ HookManager.run("pluralize") do |pipe|
     puts "Plural of #{noun} is #{plural}"
   end
 end
+
+puts "pluralize hook failed" unless success
 
 end
