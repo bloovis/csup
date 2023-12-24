@@ -33,7 +33,7 @@ class HookManager
   end
 
   def run(name : String, &) : Bool
-    path = @dir + "/" + name
+    path = File.join(@dir, name)
     begin
       pipe = Process.new(path,
                          input: Process::Redirect::Pipe,
