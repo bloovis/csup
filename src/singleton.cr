@@ -12,6 +12,11 @@ macro singleton_class(klass)
       raise "{{klass}} not instantiated!"
     end
   end
+
+  def self.instantiated?
+    !@@instance.nil?
+  end
+
 end
 
 # Use this macro at the beginning of the initialize method.

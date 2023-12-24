@@ -36,7 +36,9 @@ class ViewMode < Mode
 
 end
     
+puts "Before UpdateManager.new, instantiated? = #{UpdateManager.instantiated?}"
 um = UpdateManager.new
+puts "After UpdateManager.new, instantiated? = #{UpdateManager.instantiated?}"
 lm = ListMode.new	# This would create a Mode object with a different @@keymaps than cm's
 vm = ViewMode.new
 
