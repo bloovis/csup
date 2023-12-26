@@ -152,28 +152,23 @@ class Config
 	a = [] of String
 	va.each {|s| a << s.as_s }
 	config[key] = a
-      end
-    end
-{% if false %}	# handle accounts
-      h1.each do |k1, v1|
-	key1 = k1.as_s.lstrip(':')
-	if key1 == "attrs"
-	  attrs = Array(String).new
-	  val1 = v1.as_a
-	  val1.each_with_index do |v2, i|
+      elsif key == "accounts"
+        h = v.as_h
+	accts = Accounts.new
+        h.each do |k1, v1|	# for each account
+	  key1 = k1.as_s.lstrip(':')	# name of account (default, etc.)
+	  val1 = v1.as_h		# hash of values for this account (name, email, etc.)
+	  acct = Account.new
+	  val1.each do |k2, v2|
+	    key2 = k2.as_s
 	    val2 = v2.as_s
-	    debug "  attr[#{i}] = #{val2}"
-	    attrs << val2
+	    acct[key2] = val2
 	  end
-	  colors[key]["attrs"] = attrs
-	else
-	  val1 = v1.as_s
-	  colors[key][key1] = val1
-	  debug "  #{key1}=#{val1}"
+	  accts[key1] = acct
 	end
+	config["accounts"] = accts
       end
     end
-{% end %}
 
     debug "load_user_config: config = \n#{config.inspect}"
     return config

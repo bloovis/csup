@@ -223,7 +223,7 @@ class Colormap
     h.each do |k, v|
       key = k.as_s.lstrip(':')
       h1 = v.as_h
-      debug "Key: #{key}"
+      #debug "Key: #{key}"
       colors[key] = Hash(String, String | Array(String)).new
       h1.each do |k1, v1|
 	key1 = k1.as_s.lstrip(':')
