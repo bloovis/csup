@@ -1,4 +1,5 @@
 require "../src/config"
+require "../src/supcurses"
 
 module Redwood
 
@@ -18,7 +19,7 @@ class Config
 end
 
 @@config = Config.new
-puts @@config.get_gecos
+puts "Full name = #{@@config.get_gecos}"
 @@config.test_setup
 
 editor = Config.str(:editor)
