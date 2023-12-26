@@ -8,14 +8,11 @@ class Config
   alias Account = Hash(String, String)
   alias Accounts = Hash(String, Account)
 
-  alias ConfigEntry = String | Int32 | Bool | Hash(String, String) | Array(String) |
-		      Accounts # Account information
-
-  @entries = Hash(String, ConfigEntry).new
+  alias ConfigEntry = String | Int32 | Bool | Array(String) | Accounts
 
   def initialize
     singleton_pre_init
-
+    @entries = Hash(String, ConfigEntry).new
     singleton_post_init
   end
 
@@ -25,30 +22,28 @@ class Config
     s = `getent passwd #{user}`
     return s.split(":")[4].split(",")[0]
   end
+  singleton_method(Config, get_getcos)
 
-  def test_setup
-    @entries["editor"] = ENV["EDITOR"]
-    account = Account.new
-    account["name"] = "Hunter Biden"
-    account["email"] = "hbiden@rosemontseneca.com"
-    accounts = Accounts.new
-    accounts["default"] = account
-    @entries["accounts"] = accounts
+  # Methods for retrieving entries as specific types.
+  macro get(name, type)
+    def {{name}}(s : Symbol | String) : {{type}}
+      @entries[s.to_s].as({{type}})
+    end
+    singleton_method(Config, {{name}}, s)
   end
+    
+  get(str, String)
+  get(int, Int32)
+  get(bool, Bool)
+  get(strarray, Array(String))
 
-  def [](s : Symbol) : ConfigEntry
-    @entries[s.to_s]
+  # Retrieve the specified account.
+  def account(s : Symbol | String) : Account
+    accounts = @entries["accounts"].as(Accounts)
+    accounts[s.to_s].as(Account)
   end
+  singleton_method(Config, account, name)
 
-end
+end	# Config
 
-@@config = Config.new
-puts @@config.get_gecos
-@@config.test_setup
-
-editor = @@config[:editor]
-puts "editor = #{editor}"
-accounts = @@config[:accounts].as(Config::Accounts)
-hunter = accounts["default"]
-puts "hunter = #{hunter.inspect}"
-end
+end	# Redwood
