@@ -1,18 +1,13 @@
 require "ncurses"
 require "./config.cr"
 
-LibNCurses.setlocale(0, "")
+#LibNCurses.setlocale(0, "")
 
 # TODO: Write documentation for `Csup`
 module Csup
   VERSION = "0.1.0"
 
   # TODO: Put your code here
-end
-
-# Add some ncursesw functions not provided by the shard.
-lib LibNCurses
-  fun get_wch(LibC::Int*) : LibC::Int
 end
 
 # initialize
