@@ -56,6 +56,12 @@ class Config
   end
   singleton_method account, name
 
+  # Retrieve an array of all accounts
+  def accounts : Accounts
+    @entries["accounts"].as(Accounts)
+  end
+  singleton_method accounts
+
   def init_config
     # d = default config table
     d = ConfigTable.new

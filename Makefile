@@ -17,6 +17,7 @@ tagger_test : test/tagger_test.cr src/tagger.cr
 hook_test : test/hook_test.cr src/hook.cr
 config_test : test/config_test.cr src/config.cr
 contact_test : test/contact_test.cr src/contact.cr
+account_test : test/account_test.cr src/account.cr
 
 test : src/test.cr src/index.cr
 	crystal build src/test.cr

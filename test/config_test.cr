@@ -18,26 +18,37 @@ class Config
   end
 end
 
+def self.print_config
+  puts "Full name = #{@@config.get_gecos}"
+  editor = Config.str(:editor)
+  puts "editor = #{editor}"
+
+  default = Config.account(:default)
+  puts "default account #{default.inspect}"
+  name = default["name"]
+  email = default["email"]
+  puts "default name: #{name}, email #{email}"
+
+  Config.accounts.each do |a|
+    puts "Account: #{a.inspect}"
+  end
+
+  poll_interval = Config.int(:poll_interval)
+  puts "poll_interval = #{poll_interval}"
+
+  patchwork = Config.bool(:patchwork)
+  puts "patchwork = #{patchwork}"
+
+  hidden_labels = Config.strarray(:hidden_labels)
+  hidden_labels.each {|label| puts "hidden label: #{label}"}
+end
+
+puts "---- Testing config from ~/.csup/config.yaml ----"
 @@config = Config.new
-puts "Full name = #{@@config.get_gecos}"
+print_config
+
+puts "---- Testing Hunter Biden test config ----"
 @@config.test_setup
-
-editor = Config.str(:editor)
-puts "editor = #{editor}"
-
-hunter = Config.account(:default)
-puts "hunter (#{hunter.class.name}) = #{hunter.inspect}"
-name = hunter["name"]
-email = hunter["email"]
-puts "hunter name: #{name}, email #{email}"
-
-poll_interval = Config.int(:poll_interval)
-puts "poll_interval = #{poll_interval}"
-
-patchwork = Config.bool(:patchwork)
-puts "patchwork = #{patchwork}"
-
-hidden_labels = Config.strarray(:hidden_labels)
-hidden_labels.each {|label| puts "hidden label: #{label}"}
+print_config
 
 end	# Redwood
