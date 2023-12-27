@@ -3,7 +3,8 @@
 
 .PHONY: tests
 tests : colormap_test keymap_test ncurses_test email_test logger_test \
-        undo_test update_test tagger_test hook_test config_test
+        undo_test update_test tagger_test hook_test config_test \
+	contact_test
 
 colormap_test : test/colormap_test.cr src/colormap.cr src/supcurses.cr
 keymap_test : test/keymap_test.cr src/keymap.cr src/buffer.cr src/mode.cr
@@ -15,6 +16,7 @@ update_test : test/update_test.cr src/update.cr
 tagger_test : test/tagger_test.cr src/tagger.cr
 hook_test : test/hook_test.cr src/hook.cr
 config_test : test/config_test.cr src/config.cr
+contact_test : test/contact_test.cr src/contact.cr
 
 test : src/test.cr src/index.cr
 	crystal build src/test.cr
