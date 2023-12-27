@@ -10,7 +10,7 @@ module Redwood
 ## undo the archival action
 
 class UndoManager
-  singleton_class(UndoManager)
+  singleton_class UndoManager
 
   alias UndoEntry = NamedTuple(desc: String, action: Proc(Nil))
 
@@ -25,7 +25,7 @@ class UndoManager
   def register(desc : String, action : Proc(Nil))
     @@actionlist.push({desc: desc, action: action})
   end
-  singleton_method(UndoManager, register, desc, action)
+  singleton_method register, desc, action
 
   def undo
     unless @@actionlist.empty?
@@ -38,12 +38,12 @@ class UndoManager
       # BufferManager.flash "nothing more to undo!"
     end
   end
-  singleton_method(UndoManager, undo)
+  singleton_method undo
 
   def clear
     @@actionlist = [] of UndoEntry
   end
-  singleton_method(UndoManager, clear)
+  singleton_method clear
 end	# UndoManager
 
 end	# Redwood

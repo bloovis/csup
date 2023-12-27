@@ -131,7 +131,7 @@ class Buffer
 end
 
 class BufferManager
-  singleton_class(BufferManager)
+  singleton_class BufferManager
 
   # Eventually replace this with focus_buf.
   @focus_buf : Buffer | Nil
@@ -164,7 +164,7 @@ class BufferManager
     print "Enter #{help}: "
     gets || ""
   end
-  singleton_method(BufferManager, ask_getch, help)
+  singleton_method ask_getch, help
 
   def resolve_input_with_keymap(c : String, keymap : Keymap) : Proc(Nil) | Nil
     action, text = keymap.action_for c
@@ -179,7 +179,7 @@ class BufferManager
     end
     action
   end
-  singleton_method(BufferManager, resolve_input_with_keymap, c, keymap)
+  singleton_method resolve_input_with_keymap, c, keymap
 
 end
 

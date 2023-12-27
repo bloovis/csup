@@ -14,7 +14,7 @@ module Redwood
 ## single "view". Luckily, that's true.)
 
 class UpdateManager
-  singleton_class(UpdateManager)
+  singleton_class UpdateManager
 
   alias Handler = Proc(Symbol, Message, Nil)
 
@@ -28,12 +28,12 @@ class UpdateManager
   def register(classname : String, handler : Handler)
     @@targets[classname] = handler
   end
-  singleton_method(UpdateManager, register, classname, handler)
+  singleton_method register, classname, handler
 
   def unregister(classname : String)
     @@targets.delete(classname)
   end
-  singleton_method(UpdateManager, unregister, classname)
+  singleton_method unregister, classname
 
   def relay_message(type : Symbol, msg : Message)
     #meth = "handle_#{type}_update".intern
@@ -41,7 +41,7 @@ class UpdateManager
       handler.call(type, msg)
     end
   end
-  singleton_method(UpdateManager, relay_message, type, msg)
+  singleton_method relay_message, type, msg
 
 end	# UpdateManager
 

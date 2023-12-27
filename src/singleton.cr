@@ -2,6 +2,7 @@
 
 # Use this macro at the start of the class, passing it the class name.
 macro singleton_class(klass)
+  CLASSNAME = "{{klass}}"
   @@instance : {{klass}}?
 
   def self.instance
@@ -30,8 +31,8 @@ macro singleton_post_init
 end
 
 # Use this macro to define a class method that invokes the corresponding instance method.
-macro singleton_method(klass, name, *args)
-  def {{klass}}.{{name}}(*args)
+macro singleton_method(name, *args)
+  def {{ parse_type("CLASSNAME").resolve.id }}.{{name}}(*args)
     self.instance.{{name}}(*args)
   end
 end

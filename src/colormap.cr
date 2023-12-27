@@ -5,7 +5,7 @@ module Redwood
 
 class Colormap
 
-  singleton_class(Colormap)
+  singleton_class Colormap
 
   class ColorEntry
     property fg : Int32
@@ -300,10 +300,10 @@ class Colormap
   # or its instance for some functions.  We can't use the Ruby method_missing
   # trick seen below, so we have to do the stubs manually.
 
-  singleton_method Colormap, color_for, sym
-  singleton_method Colormap, sym_is_defined, sym
-  singleton_method Colormap, reset
-  singleton_method Colormap, populate_colormap
+  singleton_method color_for, sym
+  singleton_method sym_is_defined, sym
+  singleton_method reset
+  singleton_method populate_colormap
 
 #  def self.instance; @@instance; end
 #  def self.method_missing meth, *a

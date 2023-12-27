@@ -32,7 +32,7 @@ class Logger
     @level = LEVELS.index(level) ||
       raise "ArgumentError: invalid log level #{level.inspect}: should be one of #{LEVELS.join(", ")}"
   end
-  singleton_method(Logger, set_level, level)
+  singleton_method set_level, level
 
   def add_sink(s : IO, copy_current=true)
     #@mutex.synchronize do
@@ -40,7 +40,7 @@ class Logger
       s << @buf.to_s if copy_current
     #end
   end
-  singleton_method(Logger, add_sink, s)
+  singleton_method add_sink, s
 
   def remove_sink(s)
     #@mutex.synchronize do
@@ -53,14 +53,14 @@ class Logger
       @sinks.clear
     #end
   end
-  singleton_method(Logger, remove_all_sinks!)
+  singleton_method remove_all_sinks!
 
   def clear!
     #@mutex.synchronize do
       @buf = IO::Memory.new
     #end
   end
-  singleton_method(Logger, clear!)
+  singleton_method clear!
 
   {% for level,index in LEVELS %}
     def {{level.id}}(s : String)
@@ -68,7 +68,7 @@ class Logger
 	send_message(format_message({{level}}, Time.local, s))
       end
     end
-    singleton_method(Logger, {{level.id}}, s)
+    singleton_method {{level.id}}, s
   {% end %}
 
 #  LEVELS.each_with_index do |l, method_level|

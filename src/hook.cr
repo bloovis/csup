@@ -24,7 +24,7 @@ class HookManager
     end
   end
       
-  singleton_class(HookManager)
+  singleton_class HookManager
 
   def initialize(@dir : String)
     singleton_pre_init

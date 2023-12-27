@@ -4,7 +4,7 @@ require "yaml"
 module Redwood
 
 class Config
-  singleton_class(Config)
+  singleton_class Config
 
   alias Account = Hash(String, String)
   alias Accounts = Hash(String, Account)
@@ -36,14 +36,12 @@ class Config
     end
   end
 
-  singleton_method(Config, get_getcos)
-
   # Methods for retrieving entries as specific types.
   macro get(name, type)
     def {{name}}(s : Symbol | String) : {{type}}
       @entries[s.to_s].as({{type}})
     end
-    singleton_method(Config, {{name}}, s)
+    singleton_method {{name}}, s
   end
     
   get(str, String)
@@ -56,7 +54,7 @@ class Config
     accounts = @entries["accounts"].as(Accounts)
     accounts[s.to_s].as(Account)
   end
-  singleton_method(Config, account, name)
+  singleton_method account, name
 
   def init_config
     # d = default config table
