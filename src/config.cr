@@ -120,17 +120,6 @@ class Config
   end
 
   def load_user_config : ConfigTable
-    bool_keys = ["thread_by_subject", "edit_signature", "ask_for_from", "ask_for_to",
-                 "ask_for_cc", "ask_for_bcc", "ask_for_subject", "account_selector",
-		 "confirm_no_attachments", "confirm_top_posting", "jump_to_open_message",
-		 "discard_snippets_from_encrypted_messages", "load_more_threads_when_scrolling",
-		 "archive_sent", "sync_back_to_maildir", "continuous_scroll", "always_edit_async",
-		 "patchwork", "crypto", "show_startup_progress", "split_view", "mouse"]
-    int_keys = ["poll_interval", "wrap_width", "slip_rows", "indent_spaces", "col_jump"]
-    str_keys = ["editor", "default_attachment_save_dir", "sent_folder", "draft_folder",
-		"stem_language"]
-    strarray_keys = ["hidden_labels"]
-
     puts "load_user_config: filename = #{@filename}"
     yaml = File.open(@filename) { |f| YAML.parse(f) }
     config = ConfigTable.new
@@ -139,16 +128,15 @@ class Config
     h.each do |k, v|
       key = k.as_s.lstrip(':')
       #debug "Key: #{key}"
-      if bool_keys.includes?(key)
-	config[key] = v.as_bool
-      elsif int_keys.includes?(key)
-        config[key] = v.as_i
-      elsif str_keys.includes?(key)
-        config[key] = v.as_s
-      elsif strarray_keys.includes?(key)
-        va = v.as_a
+      if val = v.as_bool?
+	config[key] = val
+      elsif val = v.as_i?
+        config[key] = val
+      elsif val = v.as_s?
+        config[key] = val
+      elsif val = v.as_a?
 	a = [] of String
-	va.each {|s| a << s.as_s }
+	val.each {|s| a << s.as_s }
 	config[key] = a
       elsif key == "accounts"
         h = v.as_h
