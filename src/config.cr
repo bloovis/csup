@@ -14,6 +14,12 @@ class Config
   def initialize
     singleton_pre_init
     @entries = ConfigTable.new
+
+    # Eventually, the code for obtaining config filename should be
+    # moved to lib/csup.rb.
+    base_dir   = File.join(ENV["HOME"], ".csup")
+    @filename = File.join(base_dir, "config.yaml")
+
     init_config
     debug "config after init_config:\n#{@entries.inspect}"
     singleton_post_init
@@ -91,12 +97,8 @@ class Config
     d["mouse"] = true
     debug "Default config:\n#{d.inspect}"
 
-    # Eventually, the code for obtaining config filename should be
-    # moved to lib/csup.rb.
-    base_dir   = File.join(ENV["HOME"], ".csup")
-    filename = File.join(base_dir, "config.yaml")
-    if File.exists? filename
-      user_config = load_user_config filename
+    if File.exists? @filename
+      user_config = load_user_config
       @entries = d.merge(user_config)
     else
       name = get_gecos || ENV["USER"]
@@ -113,15 +115,11 @@ class Config
       accounts["default"] = account
       config["accounts"] = accounts
       @entries = d.merge(config)
-#      begin
-#        Redwood::save_yaml_obj config, filename, false, true
-#      rescue StandardError => e
-#        $stderr.puts "warning: #{e.message}"
-#      end
+      save_config
     end
   end
 
-  def load_user_config(filename : String) : ConfigTable
+  def load_user_config : ConfigTable
     bool_keys = ["thread_by_subject", "edit_signature", "ask_for_from", "ask_for_to",
                  "ask_for_cc", "ask_for_bcc", "ask_for_subject", "account_selector",
 		 "confirm_no_attachments", "confirm_top_posting", "jump_to_open_message",
@@ -133,8 +131,8 @@ class Config
 		"stem_language"]
     strarray_keys = ["hidden_labels"]
 
-    puts "load_user_config: filename = #{filename}"
-    yaml = File.open(filename) { |f| YAML.parse(f) }
+    puts "load_user_config: filename = #{@filename}"
+    yaml = File.open(@filename) { |f| YAML.parse(f) }
     config = ConfigTable.new
 
     h = yaml.as_h
@@ -172,6 +170,14 @@ class Config
 
     debug "load_user_config: config = \n#{config.inspect}"
     return config
+  end
+
+  def save_config
+    begin
+      File.open(@filename, "w") { |f| @entries.to_yaml(f) }
+    rescue
+      puts "Unable to save config to #{@filename}!"
+    end
   end
 
 end	# Config

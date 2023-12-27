@@ -27,6 +27,9 @@ puts "editor = #{editor}"
 
 hunter = Config.account(:default)
 puts "hunter (#{hunter.class.name}) = #{hunter.inspect}"
+name = hunter["name"]
+email = hunter["email"]
+puts "hunter name: #{name}, email #{email}"
 
 poll_interval = Config.int(:poll_interval)
 puts "poll_interval = #{poll_interval}"
