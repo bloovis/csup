@@ -3,7 +3,7 @@
 require "../lib/ncurses/src/ncurses"
 require "../lib/uniwidth/src/uniwidth"
 
-# These definitions should be in another source file used by every Csup moduls.
+# These definitions should be in another source file used by every Csup module.
 class NameError < Exception
 end
 
@@ -22,7 +22,7 @@ class String
   end
 end
 
-# Extend tht LibNcurses library.
+# Extend the LibNcurses library.
 lib LibNCurses
   alias Wint_t = Int32
 
@@ -173,18 +173,16 @@ module NCurses
     KEY_F20 => "F20"
   }
 
-  @@consts = {
-    "A_BOLD" => A_BOLD,
-    "COLOR_DEFAULT" => COLOR_DEFAULT,
-    "COLOR_BLACK" => COLOR_BLACK,
-    "COLOR_RED" => COLOR_RED,
-    "COLOR_GREEN" => COLOR_GREEN,
-    "COLOR_YELLOW" => COLOR_YELLOW,
-    "COLOR_BLUE" => COLOR_BLUE,
-    "COLOR_MAGENTA" => COLOR_MAGENTA,
-    "COLOR_CYAN" => COLOR_CYAN,
-    "COLOR_WHITE" => COLOR_WHITE
-  }
+  macro consts(*names)
+    @@consts = {
+    {% for name in names %}
+      {{name.stringify}} => {{name.id}},
+    {% end %}
+    }
+  end
+  consts A_BOLD, COLOR_DEFAULT, COLOR_BLACK, COLOR_RED, COLOR_GREEN,
+         COLOR_YELLOW, COLOR_BLUE, COLOR_MAGENTA, COLOR_CYAN,
+	 COLOR_WHITE
 
   # Ugly hack to make sup's colormap code happy.
   def const_get(name : String) : Int32
