@@ -1,6 +1,17 @@
 module Redwood
 
 class Mode
+  # In each derived class, call the mode_class macro with the name of the class.
+  # This creates an ancestors method for the class, and a CLASSNAME
+  # constant that can be used as the argument to register_keymap.
+  macro mode_class(name)
+    CLASSNAME = {{name.stringify}}
+
+    def ancestors
+      [CLASSNAME] + super
+    end
+  end
+
   def register_keymap(classname)
     puts "register_keymap for class #{classname}, keymaps #{@keymaps.object_id}"
     if  @keymaps.has_key?(classname)
@@ -27,40 +38,6 @@ class Mode
 
   def keymap
     @keymaps[self.class.name]
-  end
-
-  def process_input(level = 1)
-    print ">" * level
-    s = gets
-    return unless s
-
-    classname = self.class.name
-    ancestors.each do |classname|
-      puts "Trying keymap for #{classname}"
-      next unless @keymaps.has_key?(classname)
-      k = @keymaps[classname]
-      looking = true
-      while looking
-	k.dump
-	if k.has_key?(s)
-	  p = k[s]
-	  if p.is_a?(Keymap)
-	    puts "multi-map!"
-	    k = p
-	    level += 1
-	    print ">" * level
-	    s = gets
-	    return unless s
-	  else
-	    p.call
-	    return
-	  end
-	else
-	  looking = false
-	end
-      end
-    end
-    puts "unknown command '#{s}'"
   end
 
   def resolve_input (c : String) : Proc(Nil) | Nil

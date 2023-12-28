@@ -6,18 +6,15 @@ require "../src/supcurses"
 module Redwood
 
 class ParentMode < Mode
+  mode_class(ParentMode)
+
   def initialize
     super
     puts "Initializing ParentMode object #{object_id}"
-    register_keymap("ParentMode") do |k|
+    register_keymap(CLASSNAME) do |k|
       k.add(-> kcommand, "ParentMode k command", "k")
       k.add(-> lcommand, "ParentMode l command", "l")
     end
-  end
-
-  def ancestors
-    #puts "ParentMode.ancestors"
-    ["ParentMode"] + super
   end
 
   def kcommand
@@ -30,10 +27,7 @@ class ParentMode < Mode
 end
 
 class ChildMode < ParentMode
-  def ancestors
-    #puts "ChildMode.ancestors"
-    ["ChildMode"] + super
-  end
+  mode_class(ChildMode)
 
   def kcommand
     puts "ChildMode.kcommand in object #{object_id}"
@@ -46,7 +40,7 @@ class ChildMode < ParentMode
   def initialize
     super
     puts "Initializing ChildMode object #{object_id}"
-    register_keymap("ChildMode") do |k|
+    register_keymap(CLASSNAME) do |k|
       k.add(-> kcommand, "ChildMode k command", "k")
       k.add_multi("ChildMode m commands", "m") do |kk|
         kk.add(-> multicmd, "ChildMode n command", "n")
