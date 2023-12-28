@@ -64,6 +64,16 @@ module NCurses
     LibNCurses.doupdate
   end
 
+  # Wrapper for `getmaxx`
+  def cols
+    LibNCurses.getmaxx(stdscr)
+  end
+
+  # Wrapper for `getmaxy`
+  def rows
+    LibNCurses.getmaxy(stdscr)
+  end
+
   A_BOLD = 0x200000
   BUTTON1_CLICKED = 0x4
   BUTTON1_DOUBLE_CLICKED = 0x8

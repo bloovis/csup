@@ -25,6 +25,7 @@ rescue NameError
   Ncurses.print "No such constant COLOR_NONE\n"
 end
 Ncurses.print "KEY_ENTER = #{sprintf("%0x", Ncurses::KEY_ENTER)}\n"
+Ncurses.print "rows = #{Ncurses.rows}, cols = #{Ncurses.cols}\n"
 err = Ncurses.doupdate
 Ncurses.print "doupdate returned #{err}"
 w = Ncurses.stdscr
