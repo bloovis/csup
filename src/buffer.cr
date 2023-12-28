@@ -6,9 +6,6 @@ module Redwood
 # class InputSequenceAborted < StandardError; end
 
 class Buffer
-  alias BufferOpts = Hash(Symbol, Bool | String)
-  alias ColorOpts = Hash(Symbol, Symbol)
-
   getter x : Int32
   getter y : Int32
   getter width : Int32
@@ -48,17 +45,20 @@ class Buffer
   end
 
   def initialize(window, mode, width, height,
-		 opts : BufferOpts)
+		 title = "",
+		 force_to_top = false,
+		 hidden = false,
+		 system = false)
     @w = window
     @mode = mode
     @dirty = true
     @focus = false
-    @title = string_opt(opts, :title)
-    @force_to_top = bool_opt(opts, :force_to_top)
-    @hidden = bool_opt(opts, :hidden)
+    @title = title
+    @force_to_top = force_to_top
+    @hidden = hidden
     @x, @y, @width, @height = 0, 0, width, height
     @atime = Time.unix 0
-    @system = bool_opt(opts, :system)
+    @system = system
   end
 
   def content_height; @height - 1; end

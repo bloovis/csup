@@ -76,7 +76,7 @@ Ncurses.start_color
 Ncurses.use_default_colors
 
 w = Ncurses.stdscr
-buf = Buffer.new(w, cm, 80, 25, {:title => "Phony buffer"})
+buf = Buffer.new(w, cm, 80, 25, title: "Phony buffer")
 buf.write(0, 0, "This is a yellow string", color: :label_color)
 Ncurses.print "\nPress any key to continue: "
 ch = Ncurses.getkey
