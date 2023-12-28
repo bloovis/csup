@@ -211,7 +211,13 @@ module NCurses
     end
   end
 
-  def getkey(prefix = "")
+  # Get a keystroke and return a string representation:
+  #  printable key: one-character string containg the key
+  #  ctrl-key:  C-<lowercase-key>
+  #  alt-key;   M-<lowercase-key>
+  #  ctrl-alt-key: C-M-<lowercase-key>
+  #  function key: name of key ("F1", "End", "Insert", "PgDn", etc.)
+  def getkey(prefix = "") : String
     result = LibNCurses.get_wch(out ch)
     if result == Ncurses::KEY_CODE_YES
       return prefix + keyname(ch, true)
