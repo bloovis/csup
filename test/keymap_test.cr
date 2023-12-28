@@ -60,14 +60,28 @@ def self.help
 end
 
 bm = BufferManager.new
+colormap = Colormap.new
+Colormap.reset
+Colormap.populate_colormap
 #pm = ParentMode.new	# This would create a Mode object with a different @@keymaps than cm's
 cm = ChildMode.new
 
 Ncurses.start
+Ncurses.cbreak
+Ncurses.no_echo
+Ncurses.keypad(true)	# Handle function keys and arrows
+Ncurses.raw
+Ncurses.nonl	# don't translate Enter to C-J on input
+Ncurses.start_color
+Ncurses.use_default_colors
+
 w = Ncurses.stdscr
+buf = Buffer.new(w, cm, 80, 25, {:title => "Phony buffer"})
+buf.write(0, 0, "This is a yellow string", color: :label_color)
+Ncurses.print "\nPress any key to continue: "
+ch = Ncurses.getkey
 Ncurses.end
 
-buf = Buffer.new(w, cm, 80, 25, {:title => "Phony buffer"})
 
 bm.focus_on(buf)
 puts "Ancestors of ChildMode:"

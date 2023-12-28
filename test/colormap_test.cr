@@ -8,6 +8,8 @@ module Redwood
 cm = Colormap.new
 Colormap.reset
 Colormap.populate_colormap
+x = Colormap.color_for(:label_color)
+puts "label_color = #{x}"
 x = Colormap.color_for("text_color")
 puts "text_color = #{x}"
 x = Colormap.color_for(:tagged_color)

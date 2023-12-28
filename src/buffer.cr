@@ -1,4 +1,5 @@
 require "./singleton"
+require "./colormap"
 
 module Redwood
 
@@ -96,15 +97,15 @@ class Buffer
   end
 
   ## s nil means a blank line!
-  def write(y, x, s, opts : ColorOpts)
+  def write(y, x, s, color = :none, highlight = false, no_fill = false)
     return if x >= @width || y >= @height
 
-    @w.attrset Colormap.color_for(opts[:color] || :none, opts[:highlight])
+    @w.attrset Colormap.color_for(color, highlight)
     s ||= ""
     maxl = @width - x # maximum display width width
 
     # fill up the line with blanks to overwrite old screen contents
-    @w.mvaddstr y, x, " " * maxl unless opts[:no_fill]
+    @w.mvaddstr(y, x, " " * maxl) unless no_fill
 
     @w.mvaddstr y, x, s.slice_by_display_length(maxl)
   end

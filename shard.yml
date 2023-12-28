@@ -16,6 +16,8 @@ dependencies:
     github: arcage/crystal-email
   ncurses:
     github: SamualLB/ncurses
+  uniwidth:
+    github: naqvis/uni_char_width
 
 crystal: 0.28.0
 

@@ -1,6 +1,7 @@
 # Ncurses functions used by sup that are missing in the NCurses shard.
 
 require "../lib/ncurses/src/ncurses"
+require "../lib/uniwidth/src/uniwidth"
 
 # These definitions should be in another source file used by every Csup moduls.
 class NameError < Exception
@@ -12,6 +13,13 @@ end
 
 def debug(s : String)
   puts "debug: #{s}"
+end
+
+class String
+  def slice_by_display_length(len)
+    width = UnicodeCharWidth.width(self)
+    return self[0, width]
+  end
 end
 
 # Extend tht LibNcurses library.
@@ -74,7 +82,9 @@ module NCurses
     LibNCurses.getmaxy(stdscr)
   end
 
+  A_NORMAL = 0
   A_BOLD = 0x200000
+  A_BLINK = 0x80000
   BUTTON1_CLICKED = 0x4
   BUTTON1_DOUBLE_CLICKED = 0x8
   COLOR_DEFAULT = -1
@@ -165,7 +175,7 @@ module NCurses
 
   @@consts = {
     "A_BOLD" => A_BOLD,
-    "COLOR_DEFAULT" => -1,
+    "COLOR_DEFAULT" => COLOR_DEFAULT,
     "COLOR_BLACK" => COLOR_BLACK,
     "COLOR_RED" => COLOR_RED,
     "COLOR_GREEN" => COLOR_GREEN,
@@ -225,14 +235,14 @@ module NCurses
     #
     # Wrapper for `wattrset()` (`attrset()`)
     def attrset(attr)
-      raise "wattrset error" if LibNCurses.wattrset(self, attr) == ERR
+      raise "wattrset error" if LibNCurses.wattrset(self, Attribute.from_value(attr)) == ERR
     end
 
     # Add string to window and move cursor
     #
     # Wrapper for `mvwaddstr()` (`mvaddstr()`)
     def mvaddstr(y, x, str)
-      raise "mvwaddstr error" if LibNCurses.mvwaddstr(self, y, x, str) == ERR
+      raise "mvwaddstr error" if LibNCurses.mvwaddstr(self, y, x, str.to_unsafe) == ERR
     end
 
     # Copy window to virtual screen

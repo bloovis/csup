@@ -10,9 +10,13 @@ Ncurses.raw
 Ncurses.nonl	# don't translate Enter to C-J on input
 
 Ncurses.start_color
+Ncurses.use_default_colors
 Ncurses.print "COLORS = #{LibNCurses.colors}\n"
 Ncurses.print "COLOR_PAIRS = #{LibNCurses.color_pairs}\n"
 Ncurses.print "COLOR_PAIR(0) = #{LibNCurses.COLOR_PAIR(0)}\n"
+Ncurses.init_pair(1, 3, -1)
+yellow = LibNCurses.COLOR_PAIR(1)
+Ncurses.print "COLOR_PAIR(1) = #{yellow}\n"
 Ncurses.init_pair(10, 4, 5)
 Ncurses.print "COLOR_PAIR(10) = #{LibNCurses.COLOR_PAIR(10)}\n"
 Ncurses.print "A_BOLD = #{sprintf("%0x", Ncurses::A_BOLD)}\n"
@@ -29,9 +33,11 @@ Ncurses.print "rows = #{Ncurses.rows}, cols = #{Ncurses.cols}\n"
 err = Ncurses.doupdate
 Ncurses.print "doupdate returned #{err}"
 w = Ncurses.stdscr
-w.attrset(NCurses::Attribute::Blink)
+w.attrset(yellow)
+w.mvaddstr(39, 0, "Test of attrset and mvaddstr.  This text should be yellow.")
+w.attrset(Ncurses::A_BLINK)
 w.mvaddstr(40, 0, "Test of attrset and mvaddstr.  This text should be blinking.")
-w.attrset(NCurses::Attribute::Normal)
+w.attrset(Ncurses::A_NORMAL)
 w.noutrefresh
 Ncurses.print "\nPress any key to continue: "
 Ncurses.getkey
