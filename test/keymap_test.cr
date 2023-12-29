@@ -84,6 +84,7 @@ Ncurses.end
 
 
 bm.focus_on(buf)
+bm.say("Testing BufferManager.say")
 puts "Ancestors of ChildMode:"
 puts cm.ancestors
 

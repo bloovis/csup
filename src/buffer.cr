@@ -134,12 +134,26 @@ end
 class BufferManager
   singleton_class BufferManager
 
-  # Eventually replace this with focus_buf.
-  @focus_buf : Buffer | Nil
+  @focus_buf : Buffer | Nil  # Eventually replace this with focus_buf.
+  @flash : String?
 
   def initialize
     singleton_pre_init
     puts "BufferManager.initialize"
+
+    @name_map = Hash(String, Buffer).new
+    @buffers = Array(Buffer).new
+    @focus_buf = nil
+    @dirty = true
+    @minibuf_stack = Hash(Int32, String).new
+    # @minibuf_mutex = Mutex.new
+    # @textfields = {}
+    @flash = nil
+    @shelled = @asking = false
+    @in_x = ENV["TERM"] =~ /(xterm|rxvt|screen)/
+    @sigwinch_happened = false
+    #@sigwinch_mutex = Mutex.new
+
     singleton_post_init
   end
     
@@ -182,6 +196,104 @@ class BufferManager
   end
   singleton_method resolve_input_with_keymap, c, keymap
 
+  # Return number of lines in minibuf.
+  def minibuf_lines : Int32
+#    @minibuf_mutex.synchronize do
+      [(@flash ? 1 : 0) +
+       (@asking ? 1 : 0) +
+       @minibuf_stack.size, 1].max
+#    end
+  end
+
+  # Return array of all minibuf lines, in order by id.
+  def minibuf_all : Array(String)
+    @minibuf_stack.keys.sort.map {|i| @minibuf_stack[i]}
+  end
+  
+  def draw_minibuf(refresh = false)
+    m = Array(String).new
+    #@minibuf_mutex.synchronize do
+      m = minibuf_all
+      f = @flash
+      if f
+	m << f
+      end
+      m << "" if m.empty? unless @asking # to clear it
+    #end
+
+    #Ncurses.mutex.lock unless opts[:sync] == false
+    Ncurses.attrset Colormap.color_for(:text_color)
+    adj = @asking ? 2 : 1
+    m.each_with_index do |s, i|
+      Ncurses.mvaddstr Ncurses.rows - i - adj, 0, s + (" " * [Ncurses.cols - s.size, 0].max)
+    end
+    Ncurses.refresh if refresh
+    #Ncurses.mutex.unlock unless opts[:sync] == false
+  end
+
+  def say(s : String, id = -1, block_given? = true, &b)
+    new_id = id == -1
+
+    #@minibuf_mutex.synchronize do
+      if new_id
+	if @minibuf_stack.size == 0
+	  id = 0
+	else
+	  id = @minibuf_stack.keys.max + 1
+	end
+      end
+      @minibuf_stack[id] = s
+      puts "Setting minibuf[#{id}] = #{s}"
+    #end
+
+    if new_id
+      draw_screen(refresh: true)
+    else
+      draw_minibuf(refresh: true)
+    end
+
+    if block_given?
+      begin
+        puts "Yielding minibuf id #{id}"
+        yield id
+      ensure
+        puts "Clearing minibuf[#{id}]"
+        clear id
+      end
+    end
+    id
+  end
+  singleton_method(say, id, block_given?, &b)
+
+  # Crystal doesn't have block_given? or allow blocks to be optional, so
+  # we provide an alternate version of say that doesn't require a block.
+  def say(s : String, id = -1)
+    say(s, id: id, block_given?: false) {}
+  end
+  singleton_method(say, id, block_given?)
+
+  def erase_flash; @flash = nil; end
+
+  def flash(s : String)
+    @flash = s
+    draw_screen(refresh: true)
+  end
+
+  # Deleting a minibuf entry isuch simpler in Crystal than in Ruby, because
+  # we use hash instead of a sparse array.
+  def clear(id : Int32)
+    #@minibuf_mutex.synchronize do
+      @minibuf_stack.delete(id)
+    #end
+
+    draw_screen(refresh: true)
+  end
+
+  # Dummy draw_screen for testing purposes.
+  def draw_screen(refresh = false)
+    puts "BufferManager.draw_screen, refresh = #{refresh}, minibuf:"
+    minibuf_all.each {|s| puts "  " + s}
+  end
 end
 
 end

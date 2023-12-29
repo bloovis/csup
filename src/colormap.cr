@@ -164,7 +164,7 @@ class Colormap
 
     ## if this color is cached, return it
     fg, bg, attrs, color = @entries[sym].tuple
-    debug "entries[#{sym}] = #{fg}, #{bg}, #{attrs}, #{color}"
+    #debug "entries[#{sym}] = #{fg}, #{bg}, #{attrs}, #{color}"
     return color if color
 
     if @color_pairs.has_key?([fg, bg])
@@ -174,12 +174,12 @@ class Colormap
       @next_id = (@next_id + 1) % Ncurses.max_pairs
       @next_id += 1 if @next_id == 0 # 0 is always white on black
       id = @next_id
-      debug "colormap: for color #{sym}, using id #{id} -> #{fg}, #{bg}"
+      #debug "colormap: for color #{sym}, using id #{id} -> #{fg}, #{bg}"
       Ncurses.init_pair(id.to_i16, fg.to_i16, bg.to_i16) ||
         raise "ArgumentError: couldn't initialize curses color pair #{fg}, #{bg} (key #{id})"
 
       cp = @color_pairs[[fg, bg]] = LibNCurses.COLOR_PAIR(id)
-      debug "colormap: color_pair for id #{id} = #{cp}"
+      #debug "colormap: color_pair for id #{id} = #{cp}"
       ## delete the old mapping, if it exists
       if @users.has_key?(cp)
         u = @users[cp]
@@ -207,7 +207,7 @@ class Colormap
 
   def sym_is_defined(sym_or_string : Symbol | String)
     sym = sym_or_string.to_s
-    debug "checking if @entries has key #{sym}"
+    #debug "checking if @entries has key #{sym}"
     return sym if @entries.has_key?(sym)
   end
 
@@ -232,19 +232,19 @@ class Colormap
 	  val1 = v1.as_a
 	  val1.each_with_index do |v2, i|
 	    val2 = v2.as_s
-	    debug "  attr[#{i}] = #{val2}"
+	    #debug "  attr[#{i}] = #{val2}"
 	    attrs << val2
 	  end
 	  colors[key]["attrs"] = attrs
 	else
 	  val1 = v1.as_s
 	  colors[key][key1] = val1
-	  debug "  #{key1}=#{val1}"
+	  #debug "  #{key1}=#{val1}"
 	end
       end
     end
 
-    debug "colors after load_user_colors:\n#{colors.inspect}"
+    #debug "colors after load_user_colors:\n#{colors.inspect}"
     return colors
   end
 
@@ -293,7 +293,7 @@ class Colormap
       symbol = k + "_color"
       add symbol, fg, bg, attrs, highlight_symbol
     end
-    debug "@entries after populate_color_map:\n#{@entries.inspect}"
+    #debug "@entries after populate_color_map:\n#{@entries.inspect}"
   end
 
   # The following hacks let the caller use either the Colormap class

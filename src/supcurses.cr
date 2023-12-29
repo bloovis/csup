@@ -82,6 +82,16 @@ module NCurses
     LibNCurses.getmaxy(stdscr)
   end
 
+  # Wrapper for `attrset`
+  def attrset(attr : LibC::Int) : LibC::Int
+    LibNCurses.wattrset(stdscr, Attribute.from_value(attr))
+  end
+
+  # Wrapper for `mvaddstr`
+  def mvaddstr(y : LibC::Int, x : LibC::Int, str : String) : LibC::Int
+    LibNCurses.mvwaddstr(stdscr, y, x, str.to_unsafe)
+  end
+
   A_NORMAL = 0
   A_BOLD = 0x200000
   A_BLINK = 0x80000
