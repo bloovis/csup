@@ -12,6 +12,8 @@ class Mode
     end
   end
 
+  property buffer : Buffer?
+
   def register_keymap(classname)
     puts "register_keymap for class #{classname}, keymaps #{@keymaps.object_id}"
     if  @keymaps.has_key?(classname)
@@ -39,6 +41,12 @@ class Mode
   def keymap
     @keymaps[self.class.name]
   end
+
+  def draw; end
+  def focus; end
+  def blur; end
+  def status; ""; end
+  def resize(rows, cols); end
 
   def resolve_input (c : String) : Proc(Nil) | Nil
     ancestors.each do |classname|

@@ -76,8 +76,9 @@ Ncurses.start_color
 Ncurses.use_default_colors
 
 w = Ncurses.stdscr
-buf = Buffer.new(w, cm, 80, 25, title: "Phony buffer")
-bm.focus_on(buf)
+buf = bm.spawn("Child Mode", cm, 80, 25)
+#buf = Buffer.new(w, cm, 80, 25, title: "Phony buffer")
+bm.raise_to_front(buf)
 bm.say("Testing BufferManager.say")
 say_id = 0
 bm.say("Testing BufferManager.say with a block") {|id| say_id = id}

@@ -91,7 +91,7 @@ class Buffer
     @mode.draw
     draw_status status
     commit
-    @atime = Time.now
+    @atime = Time.local
   end
 
   ## s nil means a blank line!
@@ -112,7 +112,7 @@ class Buffer
     @w.clear
   end
 
-  def draw_status(status)
+  def draw_status(status : String)
     write @height - 1, 0, status, color: :status_color
   end
 
@@ -156,7 +156,30 @@ class BufferManager
   end
     
   def focus_on(buf : Buffer)
+    return unless @buffers.index(buf)
+    return if buf == @focus_buf
+    f = @focus_buf
+    if f
+      f.blur
+    end
     @focus_buf = buf
+    if buf
+      buf.focus
+    end
+  end
+
+  def raise_to_front(buf : Buffer)
+    puts "raise_to_front before delete"
+    return unless @buffers.delete(buf)
+    puts "raise_to_front after delete"
+    if @buffers.size > 0 && @buffers.last.force_to_top
+      @buffers.insert(-2, buf)
+    else
+      puts "raise_to_front pushing buf"
+      @buffers.push buf
+    end
+    focus_on @buffers.last
+    @dirty = true
   end
 
   def handle_input(c : String)
@@ -208,7 +231,7 @@ class BufferManager
     @minibuf_stack.keys.sort.map {|i| @minibuf_stack[i]}
   end
 
-  def draw_minibuf(refresh = false)
+  def draw_minibuf(refresh = false, sync = false)
     m = Array(String).new
     #@minibuf_mutex.synchronize do
       m = minibuf_all
@@ -252,10 +275,10 @@ class BufferManager
 
     if block_given?
       begin
-        puts "Yielding minibuf id #{id}"
+        #puts "Yielding minibuf id #{id}"
         yield id
       ensure
-        puts "Clearing minibuf[#{id}]"
+        #puts "Clearing minibuf[#{id}]"
         clear id
       end
     end
@@ -288,9 +311,87 @@ class BufferManager
   end
 
   # Dummy draw_screen for testing purposes.
-  def draw_screen(refresh = false, caller_line = __LINE__)
+  def draw_screen(refresh = false, status = nil, title = "",
+		  skip_minibuf = false, caller_line = __LINE__)
     minibuf_all.each_with_index {|s, i| Ncurses.print "draw_screen: caller line #{caller_line}, minibuf[#{i}]='#{s}'\n" }
+    return if @shelled
+    if status.nil?
+      status, title = get_status_and_title(@focus_buf)
+    end
+
+    ## http://rtfm.etla.org/xterm/ctlseq.html (see Operating System Controls)
+    print "\033]0;#{title}\07" if title && @in_x
+
+    # Ncurses.mutex.lock unless opts[:sync] == false
+
+    buf = @buffers.last
+    buf.resize Ncurses.rows - minibuf_lines, Ncurses.cols
+    @dirty ? buf.draw(status) : buf.redraw(status)
+
+    draw_minibuf(sync: false) unless skip_minibuf
+
+    @dirty = false
+    Ncurses.doupdate
+    Ncurses.refresh if refresh
+    # Ncurses.mutex.unlock unless opts[:sync] == false
   end
+
+  def spawn(title : String, mode : Mode, width : Int32 = nil, height : Int32 = nil,
+	    force_to_top = false, system = false, hidden = false)
+    # raise ArgumentError, "title must be a string" unless title.is_a? String
+    realtitle = title
+    num = 2
+    while @name_map.index(realtitle)
+      realtitle = "#{title} <#{num}>"
+      num += 1
+    end
+
+    width ||= Ncurses.cols
+    height ||= Ncurses.rows - 1
+
+    ## since we are currently only doing multiple full-screen modes,
+    ## use stdscr for each window. once we become more sophisticated,
+    ## we may need to use a new Ncurses::WINDOW
+    ##
+    ## w = Ncurses::WINDOW.new(height, width, (opts[:top] || 0),
+    ## (opts[:left] || 0))
+    w = Ncurses.stdscr
+    b = Buffer.new(w, mode, width, height, title: realtitle,
+		   force_to_top: force_to_top, system: system)
+    mode.buffer = b
+    @name_map[realtitle] = b
+
+    @buffers.unshift b
+    if hidden
+      focus_on(b) unless @focus_buf
+    else
+      raise_to_front(b)
+    end
+    b
+  end
+
+  def get_status_and_title(buf)
+{% if false %}
+    opts = {
+      :num_inbox => lambda { Index.num_results_for :label => :inbox },
+      :num_inbox_unread => lambda { Index.num_results_for :labels => [:inbox, :unread] },
+      :num_total => lambda { Index.size },
+      :num_spam => lambda { Index.num_results_for :label => :spam },
+      :title => buf.title,
+      :mode => buf.mode.name,
+      :status => buf.mode.status
+    }
+
+    statusbar_text = HookManager.run("status-bar-text", opts) || default_status_bar(buf)
+    term_title_text = HookManager.run("terminal-title-text", opts) || default_terminal_title(buf)
+{% end %}
+    if buf
+      return { buf.title, buf.mode.status }
+    else
+      return { "", "" }
+    end
+  end
+
 end
 
 end
