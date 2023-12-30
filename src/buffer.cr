@@ -12,7 +12,7 @@ class Buffer
   getter height : Int32
   getter title : String
   getter atime : Time
-  getter mode : Mode | Nil
+  getter mode : Mode
   getter w : Ncurses::Window
   property force_to_top : Bool
   property hidden : Bool
@@ -44,19 +44,17 @@ class Buffer
     end
   end
 
-  def initialize(window, mode, width, height,
+  def initialize(@w, @mode, @width, @height,
 		 title = "",
 		 force_to_top = false,
 		 hidden = false,
 		 system = false)
-    @w = window
-    @mode = mode
     @dirty = true
     @focus = false
     @title = title
     @force_to_top = force_to_top
     @hidden = hidden
-    @x, @y, @width, @height = 0, 0, width, height
+    @x = @y = 0
     @atime = Time.unix 0
     @system = system
   end
@@ -115,7 +113,7 @@ class Buffer
   end
 
   def draw_status(status)
-    write @height - 1, 0, status, {:color => :status_color}
+    write @height - 1, 0, status, color: :status_color
   end
 
   def focus
@@ -209,7 +207,7 @@ class BufferManager
   def minibuf_all : Array(String)
     @minibuf_stack.keys.sort.map {|i| @minibuf_stack[i]}
   end
-  
+
   def draw_minibuf(refresh = false)
     m = Array(String).new
     #@minibuf_mutex.synchronize do
@@ -290,9 +288,8 @@ class BufferManager
   end
 
   # Dummy draw_screen for testing purposes.
-  def draw_screen(refresh = false)
-    puts "BufferManager.draw_screen, refresh = #{refresh}, minibuf:"
-    minibuf_all.each {|s| puts "  " + s}
+  def draw_screen(refresh = false, caller_line = __LINE__)
+    minibuf_all.each_with_index {|s, i| Ncurses.print "draw_screen: caller line #{caller_line}, minibuf[#{i}]='#{s}'\n" }
   end
 end
 

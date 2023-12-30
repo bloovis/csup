@@ -32,6 +32,7 @@ lib LibNCurses
   fun doupdate : LibC::Int
   fun wnoutrefresh(window : Window) : LibC::Int
   fun COLOR_PAIR(LibC::Int) : LibC::Int
+  fun attrset(LibC::Int) : LibC::Int
 end
 
 # Ruby ncurses class is called Ncurses (lower-case c)
@@ -84,7 +85,7 @@ module NCurses
 
   # Wrapper for `attrset`
   def attrset(attr : LibC::Int) : LibC::Int
-    LibNCurses.wattrset(stdscr, Attribute.from_value(attr))
+    LibNCurses.attrset(attr)
   end
 
   # Wrapper for `mvaddstr`
@@ -249,7 +250,7 @@ module NCurses
     #
     # Wrapper for `wattrset()` (`attrset()`)
     def attrset(attr)
-      raise "wattrset error" if LibNCurses.wattrset(self, Attribute.from_value(attr)) == ERR
+      LibNCurses.wattrset(self, Attribute.new(attr.to_u32))
     end
 
     # Add string to window and move cursor

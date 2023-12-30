@@ -77,14 +77,17 @@ Ncurses.use_default_colors
 
 w = Ncurses.stdscr
 buf = Buffer.new(w, cm, 80, 25, title: "Phony buffer")
-buf.write(0, 0, "This is a yellow string", color: :label_color)
-Ncurses.print "\nPress any key to continue: "
+bm.focus_on(buf)
+bm.say("Testing BufferManager.say")
+say_id = 0
+bm.say("Testing BufferManager.say with a block") {|id| say_id = id}
+bm.say("Testing BufferManager.say with reused id #{say_id}", id: say_id)
+buf.write(20, 0, "This is a yellow string", color: :label_color)
+buf.draw_status("status line")
+Ncurses.print "\nPress any key to continue:\n"
 ch = Ncurses.getkey
 Ncurses.end
 
-
-bm.focus_on(buf)
-bm.say("Testing BufferManager.say")
 puts "Ancestors of ChildMode:"
 puts cm.ancestors
 
