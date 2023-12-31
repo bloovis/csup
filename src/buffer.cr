@@ -241,7 +241,8 @@ class BufferManager
   end
   singleton_method ask_getch, help
 
-  def resolve_input_with_keymap(c : String, keymap : Keymap) : Proc(Nil) | Nil
+  def resolve_input_with_keymap(c : String, keymap : Keymap) : Symbol | Nil
+    #puts "resolve_input_with_keymap: c #{c}, keymap #{keymap.object_id}"
     action, text = keymap.action_for c
     return nil if action.nil? || text.nil?
     while action.is_a? Keymap # multi-key commands, prompt

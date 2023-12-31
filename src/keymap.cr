@@ -1,7 +1,7 @@
 module Redwood
 
 class Keymap
-  alias Action = Proc(Nil) | Keymap
+  alias Action = Symbol | Keymap
 
   property map : Hash(String, Action)
   @desc : Hash(String, String)
@@ -16,17 +16,12 @@ class Keymap
     return map.empty?
   end
 
-  def add(action : Proc(Nil), description : String, keyname : String | Array(String))
-    #puts "Adding key #{keyname}, description #{description}, action #{action}, map #{map.object_id}"
-    if keyname.is_a?(String)
+  def add(action : Symbol, description : String, *keynames)
+    keynames.each do |keyname|
       @map[keyname] = action
       @desc[keyname] = description
-    else
-      keyname.each do |key|
-        @map[key] = action
-	@desc[key] = description
-      end
     end
+    #puts "Added keys #{keynames}, description #{description}, action #{action}, keymap #{self.object_id}, action map #{@map}"
   end
 
   def has_key?(s : String)
@@ -38,10 +33,10 @@ class Keymap
   end
 
   def add_multi(description : String, keyname : String)
-    #puts "Add multi key #{keyname}, description #{description}, map #{map.object_id}"
     submap = Keymap.new {}
     @map[keyname] = submap
     @desc[keyname] = description
+    #puts "Added multi key #{keyname}, description #{description}, keymap #{map.object_id}, action map #{@map}"
     yield submap
   end
 
@@ -59,6 +54,7 @@ class Keymap
   end
 
   def action_for(c : String) : Tuple(Action | Nil, String | Nil)
+    #puts "action_for: c #{c}, keymap #{self.object_id}, action map #{@map}"
     if has_key?(c)
       action = @map[c]	# runtime error here
       help = @desc[c]
@@ -71,4 +67,3 @@ class Keymap
 end 	# class Keymap
 
 end	# module Redwood
-
