@@ -16,10 +16,17 @@ class Keymap
     return map.empty?
   end
 
-  def add(action : Proc(Nil), description : String, keyname : String)
+  def add(action : Proc(Nil), description : String, keyname : String | Array(String))
     #puts "Adding key #{keyname}, description #{description}, action #{action}, map #{map.object_id}"
-    @map[keyname] = action
-    @desc[keyname] = description
+    if keyname.is_a?(String)
+      @map[keyname] = action
+      @desc[keyname] = description
+    else
+      keyname.each do |key|
+        @map[key] = action
+	@desc[key] = description
+      end
+    end
   end
 
   def has_key?(s : String)

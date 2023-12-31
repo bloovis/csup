@@ -86,7 +86,7 @@ buf.draw_status("status line")
 bm.ask_getch("Press any key to continue:")
 
 global_keymap = Keymap.new do |k|
-  k.add(->quit, "Quit", "q")
+  k.add(->quit, "Quit", ["q", "C-q"])
   k.add(->help, "Help", "h")
 end
 
