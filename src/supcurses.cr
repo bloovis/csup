@@ -93,6 +93,13 @@ module NCurses
     LibNCurses.mvwaddstr(stdscr, y, x, str.to_unsafe)
   end
 
+  # Set the cursor state
+  # Use `Cursor` enum
+  # Wrapper for `curs_set()`
+  def curs_set(visibility : LibC::Int) : LibC::Int
+    LibNCurses.curs_set(Cursor.new(visibility))
+  end
+
   A_NORMAL = 0
   A_BOLD = 0x200000
   A_BLINK = 0x80000

@@ -34,7 +34,8 @@ err = Ncurses.doupdate
 Ncurses.print "doupdate returned #{err}"
 w = Ncurses.stdscr
 w.attrset(yellow)
-w.mvaddstr(39, 0, "Test of attrset and mvaddstr.  This text should be yellow.")
+#w.mvaddstr(39, 0, "Test of attrset and mvaddstr.  This text should be yellow.")
+Ncurses.mvaddstr(39, 0, "Test of attrset and mvaddstr.  This text should be yellow.")
 w.attrset(Ncurses::A_BLINK)
 w.mvaddstr(40, 0, "Test of attrset and mvaddstr.  This text should be blinking.")
 w.attrset(Ncurses::A_NORMAL)

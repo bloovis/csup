@@ -35,7 +35,8 @@ class Mode
 
   def initialize
     @keymaps = Hash(String, Keymap).new
-    puts "Mode.initialize"
+    @buffer = nil
+    #puts "Mode.initialize"
   end
 
   def keymap

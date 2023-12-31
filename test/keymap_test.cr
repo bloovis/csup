@@ -18,11 +18,11 @@ class ParentMode < Mode
   end
 
   def kcommand
-    puts "ParentMode.kcommand in object #{object_id}"
+    BufferManager.say "ParentMode.kcommand in object #{object_id}"
   end
 
   def lcommand
-    puts "ParentMode.lcommand in object #{object_id}"
+    BufferManager.say "ParentMode.lcommand in object #{object_id}"
   end
 end
 
@@ -30,11 +30,11 @@ class ChildMode < ParentMode
   mode_class(ChildMode)
 
   def kcommand
-    puts "ChildMode.kcommand in object #{object_id}"
+    BufferManager.say "ChildMode.kcommand in object #{object_id}"
   end
 
   def multicmd
-    puts "ChildMode.multicmd"
+    BufferManager.say "ChildMode.multicmd"
   end
 
   def initialize
@@ -51,12 +51,13 @@ class ChildMode < ParentMode
 end
     
 def self.quit
-  puts "This is the global quit command."
+  BufferManager.say "This is the global quit command."
+  Ncurses.end
   exit 0
 end
 
 def self.help
-  puts "This is the global help command."
+  BufferManager.say "This is the global help command."
 end
 
 bm = BufferManager.new
@@ -65,6 +66,8 @@ Colormap.reset
 Colormap.populate_colormap
 #pm = ParentMode.new	# This would create a Mode object with a different @@keymaps than cm's
 cm = ChildMode.new
+puts "Ancestors of ChildMode:"
+puts cm.ancestors
 
 Ncurses.start
 Ncurses.cbreak
@@ -85,12 +88,9 @@ bm.say("Testing BufferManager.say with a block") {|id| say_id = id}
 bm.say("Testing BufferManager.say with reused id #{say_id}", id: say_id)
 buf.write(20, 0, "This is a yellow string", color: :label_color)
 buf.draw_status("status line")
-Ncurses.print "\nPress any key to continue:\n"
-ch = Ncurses.getkey
-Ncurses.end
-
-puts "Ancestors of ChildMode:"
-puts cm.ancestors
+#Ncurses.print "\nPress any key to continue:\n"
+#ch = Ncurses.getkey
+bm.ask_getch("Press any key to continue:")
 
 global_keymap = Keymap.new do |k|
   k.add(->quit, "Quit", "q")
@@ -98,18 +98,18 @@ global_keymap = Keymap.new do |k|
 end
 
 while true
-  print "Command: "
-  s = gets || ""
-  unless bm.handle_input(s)
+  ch = bm.ask_getch("Command: ")
+  unless bm.handle_input(ch)
     # Either of the following two calls should work.
-    #action = BufferManager.resolve_input_with_keymap(s, global_keymap)
-    action = bm.resolve_input_with_keymap(s, global_keymap)
+    #action = BufferManager.resolve_input_with_keymap(ch, global_keymap)
+    action = bm.resolve_input_with_keymap(ch, global_keymap)
     if action
       action.call
     else
-      puts "No action for #{s}"
+      BufferManager.say "No action for #{ch}"
     end
   end
 end
+Ncurses.end
 
 end	# module Redwood

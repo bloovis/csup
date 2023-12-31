@@ -17,7 +17,7 @@ class Keymap
   end
 
   def add(action : Proc(Nil), description : String, keyname : String)
-    puts "Adding key #{keyname}, description #{description}, action #{action}, map #{map.object_id}"
+    #puts "Adding key #{keyname}, description #{description}, action #{action}, map #{map.object_id}"
     @map[keyname] = action
     @desc[keyname] = description
   end
@@ -31,7 +31,7 @@ class Keymap
   end
 
   def add_multi(description : String, keyname : String)
-    puts "Add multi key #{keyname}, description #{description}, map #{map.object_id}"
+    #puts "Add multi key #{keyname}, description #{description}, map #{map.object_id}"
     submap = Keymap.new {}
     @map[keyname] = submap
     @desc[keyname] = description

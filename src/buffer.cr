@@ -132,12 +132,17 @@ end
 class BufferManager
   singleton_class BufferManager
 
-  @focus_buf : Buffer | Nil  # Eventually replace this with focus_buf.
+  ## we have to define the key used to continue in-buffer search here, because
+  ## it has special semantics that BufferManager deals with---current searches
+  ## are canceled by any keypress except this one.
+  CONTINUE_IN_BUFFER_SEARCH_KEY = "n"
+
+  @focus_buf : Buffer | Nil
   @flash : String?
 
   def initialize
     singleton_pre_init
-    puts "BufferManager.initialize"
+    #puts "BufferManager.initialize"
 
     @name_map = Hash(String, Buffer).new
     @buffers = Array(Buffer).new
@@ -169,13 +174,13 @@ class BufferManager
   end
 
   def raise_to_front(buf : Buffer)
-    puts "raise_to_front before delete"
+    #puts "raise_to_front before delete"
     return unless @buffers.delete(buf)
-    puts "raise_to_front after delete"
+    #puts "raise_to_front after delete"
     if @buffers.size > 0 && @buffers.last.force_to_top
       @buffers.insert(-2, buf)
     else
-      puts "raise_to_front pushing buf"
+      #puts "raise_to_front pushing buf"
       @buffers.push buf
     end
     focus_on @buffers.last
@@ -196,9 +201,43 @@ class BufferManager
     end
   end
 
-  def ask_getch(help : String) : String
-    print "Enter #{help}: "
-    gets || ""
+  def ask_getch(question : String, accept = Array(String).new) : String
+#    Ncurses.print question
+#    Ncurses.getkey
+    raise "impossible!" if @asking
+
+#    accept = accept.split(//).map { |x| x.ord } if accept
+
+    status, title = get_status_and_title(@focus_buf)
+    #Ncurses.sync do
+      draw_screen(sync: false, status: status, title: title)
+      Ncurses.mvaddstr Ncurses.rows - 1, 0, question
+      Ncurses.move Ncurses.rows - 1, question.size + 1
+      Ncurses.curs_set 1
+      Ncurses.refresh
+    #end
+
+    @asking = true
+    ret = ""
+    done = false
+    until done
+      key = Ncurses.getkey
+      next if key == ""
+      if key == "C-g"
+        done = true
+      elsif accept.nil? || accept.empty? || accept.index(key)
+        ret = key
+        done = true
+      end
+    end
+
+    @asking = false
+    #Ncurses.sync do
+      Ncurses.curs_set 0
+      draw_screen(sync: false, status: status, title: title)
+    #end
+
+    ret
   end
   singleton_method ask_getch, help
 
@@ -264,7 +303,7 @@ class BufferManager
 	end
       end
       @minibuf_stack[id] = s
-      puts "Setting minibuf[#{id}] = #{s}"
+      #puts "Setting minibuf[#{id}] = #{s}"
     #end
 
     if new_id
@@ -310,10 +349,10 @@ class BufferManager
     draw_screen(refresh: true)
   end
 
-  # Dummy draw_screen for testing purposes.
   def draw_screen(refresh = false, status = nil, title = "",
-		  skip_minibuf = false, caller_line = __LINE__)
-    minibuf_all.each_with_index {|s, i| Ncurses.print "draw_screen: caller line #{caller_line}, minibuf[#{i}]='#{s}'\n" }
+		  skip_minibuf = false, caller_line = __LINE__,
+		  sync = false)	# Not used unless we start using mutexes
+    #minibuf_all.each_with_index {|s, i| Ncurses.print "draw_screen: caller line #{caller_line}, minibuf[#{i}]='#{s}'\n" }
     return if @shelled
     if status.nil?
       status, title = get_status_and_title(@focus_buf)
