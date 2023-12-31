@@ -29,8 +29,7 @@ class Mode
   end
 
   def ancestors
-    #puts "Mode.ancestors"
-    ["Mode"]
+    [] of String
   end
 
   def initialize
