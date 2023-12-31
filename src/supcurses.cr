@@ -274,6 +274,34 @@ module NCurses
       raise "wnoutrefresh error" if LibNCurses.wnoutrefresh(self) == ERR
     end
 
+  end	# Window
+
+end	# NCurses
+
+module Redwood
+
+  @@cursing = false
+
+  def self.start_cursing
+    Ncurses.start
+    Ncurses.cbreak
+    Ncurses.no_echo
+    #Ncurses.stdscr.keypad 1
+    Ncurses.keypad(true)	# Handle function keys and arrows
+    Ncurses.raw
+    Ncurses.nonl		# don't translate Enter to C-J on input
+    Ncurses.curs_set 0
+    Ncurses.start_color
+    Ncurses.use_default_colors
+    #Ncurses.prepare_form_driver
+    @@cursing = true
   end
 
-end
+  def self.stop_cursing
+    return unless @@cursing
+    Ncurses.curs_set 1
+    Ncurses.echo
+    Ncurses.end
+  end
+
+end	# Redwood

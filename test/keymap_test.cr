@@ -69,14 +69,7 @@ cm = ChildMode.new
 puts "Ancestors of ChildMode:"
 puts cm.ancestors
 
-Ncurses.start
-Ncurses.cbreak
-Ncurses.no_echo
-Ncurses.keypad(true)	# Handle function keys and arrows
-Ncurses.raw
-Ncurses.nonl	# don't translate Enter to C-J on input
-Ncurses.start_color
-Ncurses.use_default_colors
+start_cursing
 
 w = Ncurses.stdscr
 buf = bm.spawn("Child Mode", cm, 80, 25)
@@ -110,6 +103,7 @@ while true
     end
   end
 end
-Ncurses.end
+
+stop_cursing
 
 end	# module Redwood
