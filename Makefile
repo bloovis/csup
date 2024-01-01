@@ -22,7 +22,7 @@ contact_test : test/contact_test.cr src/contact.cr
 account_test : test/account_test.cr src/account.cr
 
 # Mode tests
-scroll_mode_test : test/scroll_mode_test.cr src/modes/scroll_mode.cr
+scroll_mode_test : test/scroll_mode_test.cr src/modes/scroll_mode.cr src/buffer.cr
 
 test : src/test.cr src/index.cr
 	crystal build src/test.cr

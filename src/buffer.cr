@@ -201,12 +201,61 @@ class BufferManager
     end
   end
 
-  def ask_getch(question : String, accept = Array(String).new) : String
+  ## for simplicitly, we always place the question at the very bottom of the
+  ## screen.
+  # Crystal note: we don't use TextField or Ncurses forms, so ignore
+  # then domain parameter, but allow it for compatiblity with existing code.
+  def ask(domain : Symbol, question : String, default=nil) : String
+    raise "impossible!" if @asking
+    raise "Question too long" if Ncurses.cols <= question.size
+    @asking = true
+
+    status, title = get_status_and_title(@focus_buf)
+    draw_screen(sync: false, status: status, title: title)
+    row = Ncurses.rows - 1
+    leftcol = question.size
+    fillcols = Ncurses.cols - leftcol
+    Ncurses.mvaddstr(row, 0, question)
+    Ncurses.move(row, leftcol)
+    Ncurses.curs_set 1
+    Ncurses.refresh
+
+    ret = ""
+    done = false
+    until done
+      c = Ncurses.getkey
+      next if c == ""
+      case c
+      when "C-h"
+	if ret.size > 0
+	  ret = ret[0..-2]
+	end
+      when "C-m"
+        done = true
+      else
+	if c.size == 1
+	  ret += c
+	end
+      end
+      Ncurses.mvaddstr(row, leftcol, ret + (" " * fillcols))
+      Ncurses.move(row, leftcol + ret.size)
+      Ncurses.refresh
+    end
+
+    @asking = false
+    Ncurses.curs_set 0
+    draw_screen(sync: false, status: status, title: title)
+
+    ret
+  end
+  singleton_method ask, domain, question, default
+
+  def ask_getch(question : String, accept_string = "") : String
 #    Ncurses.print question
 #    Ncurses.getkey
     raise "impossible!" if @asking
 
-#    accept = accept.split(//).map { |x| x.ord } if accept
+    accept = accept_string.split("")
 
     status, title = get_status_and_title(@focus_buf)
     #Ncurses.sync do
@@ -225,7 +274,7 @@ class BufferManager
       next if key == ""
       if key == "C-g"
         done = true
-      elsif accept.nil? || accept.empty? || accept.index(key)
+      elsif accept_string == "" || accept.index(key)
         ret = key
         done = true
       end
@@ -241,15 +290,28 @@ class BufferManager
   end
   singleton_method ask_getch, help
 
+  ## returns true (y), false (n), or nil (ctrl-g / cancel)
+  def ask_yes_or_no(question : String)
+    case(r = ask_getch question, "ynYN")
+    when "y", "Y"
+      true
+    when ""
+      nil
+    else
+      false
+    end
+  end
+  singleton_method ask_yes_or_no, question
+
   def resolve_input_with_keymap(c : String, keymap : Keymap) : Symbol | Nil
     #puts "resolve_input_with_keymap: c #{c}, keymap #{keymap.object_id}"
     action, text = keymap.action_for c
     return nil if action.nil? || text.nil?
     while action.is_a? Keymap # multi-key commands, prompt
       key = BufferManager.ask_getch(text || "")
-      unless key # user canceled, abort
-        #erase_flash
-        #raise InputSequenceAborted
+      if key == "" # user canceled, abort
+        erase_flash
+        raise "InputSequenceAborted"
       end
       action, text = action.action_for(key) if action.has_key?(key)
     end
@@ -339,6 +401,7 @@ class BufferManager
     @flash = s
     draw_screen(refresh: true)
   end
+  singleton_method flash, s
 
   # Deleting a minibuf entry isuch simpler in Crystal than in Ruby, because
   # we use hash instead of a sparse array.

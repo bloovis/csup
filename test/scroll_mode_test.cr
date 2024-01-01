@@ -26,7 +26,7 @@ class StupidMode < ScrollMode
   end
 
   def help
-    BufferManager.say "This is the help command."
+    BufferManager.flash "This is the help command."
     #puts "This is the help command."
   end
 
@@ -60,8 +60,14 @@ global_keymap = Keymap.new do |k|
   k.add(:help, "Help", "h")
 end
 
+bm.draw_screen
+
+# Interactive loop.
 while true
-  ch = bm.ask_getch("Command: ")
+  #ch = bm.ask_getch("Command: ")
+  ch = Ncurses.getkey
+  bm.erase_flash
+  bm.draw_screen
   #print "Command: "
   #ch = gets || ""
   unless bm.handle_input(ch)
@@ -71,7 +77,7 @@ while true
     if action
       send action
     else
-      BufferManager.say "No action for #{ch}"
+      BufferManager.flash "No action for #{ch}.  Maybe you should try again?"
       #puts "No action for #{ch}"
     end
   end

@@ -89,21 +89,22 @@ class ScrollMode < Mode
   def cancel_search!; @search_line = nil end
 
   def continue_search_in_buffer
-{% if false %}
+{% if true %}
     unless @search_query
       BufferManager.flash "No current search!"
       return
     end
 
     start = @search_line || search_start_line
-    line, col = find_text @search_query, start
-    if line.nil? && (start > 0)
-      line, col = find_text @search_query, 0
-      BufferManager.flash "Search wrapped to top!" if line
+    query = @search_query || ""
+    line, col = find_text(query || "", start)
+    if line == -1 && start > 0
+      line, col = find_text query, 0
+      BufferManager.flash "Search wrapped to top!" if line != -1
     end
-    if line
+    if line != -1
       @search_line = line + 1
-      search_goto_pos line, col, col + @search_query.display_length
+      search_goto_pos line, col, col + query.display_length
       buffer.mark_dirty
     else
       BufferManager.flash "Not found!"
@@ -112,10 +113,10 @@ class ScrollMode < Mode
   end
 
   def search_in_buffer
-{% if false %}
+{% if true %}
     query = BufferManager.ask :search, "search in buffer: "
     return if query.nil? || query.empty?
-    @search_query = Regexp.escape query
+    @search_query = Regex.escape query
     continue_search_in_buffer
 {% end %}
   end
@@ -203,17 +204,19 @@ class ScrollMode < Mode
         return [i, match] if match
       when Array
         offset = 0
-        s.each do |color, string|
+        s.each do |text|
+          color = text[0]
+	  string = text[1]
           match = string =~ regex
           if match
-            return [i, offset + match]
+            return {i, offset + match}
           else
             offset += string.display_length
           end
         end
       end
     end
-    nil
+    return {-1, -1}
   end
 
   protected def draw_line(ln, color = :none, highlight = false)
