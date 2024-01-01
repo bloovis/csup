@@ -4,8 +4,9 @@
 .PHONY: tests
 tests : colormap_test keymap_test ncurses_test email_test logger_test \
         undo_test update_test tagger_test hook_test config_test \
-	contact_test
+	contact_test scroll__mode_test
 
+# Manager tests
 colormap_test : test/colormap_test.cr src/colormap.cr src/supcurses.cr
 keymap_test : test/keymap_test.cr src/keymap.cr src/buffer.cr src/mode.cr \
 	      src/colormap.cr src/supcurses.cr
@@ -19,6 +20,9 @@ hook_test : test/hook_test.cr src/hook.cr
 config_test : test/config_test.cr src/config.cr
 contact_test : test/contact_test.cr src/contact.cr
 account_test : test/account_test.cr src/account.cr
+
+# Mode tests
+scroll_mode_test : test/scroll_mode_test.cr src/modes/scroll_mode.cr
 
 test : src/test.cr src/index.cr
 	crystal build src/test.cr
