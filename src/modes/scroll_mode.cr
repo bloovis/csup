@@ -14,7 +14,8 @@ class ScrollMode < Mode
 
   alias ColoredText = Tuple(Symbol, String)       # {color, text}
   alias ColoredLine = Array(ColoredText)
-  alias TextLines = Array(ColoredLine | String)
+  alias Text = ColoredLine | String
+  alias TextLines = Array(Text)
 
   ## we define topline and botline as the top and bottom lines of any
   ## content in the currentview.
@@ -57,12 +58,16 @@ class ScrollMode < Mode
     @search_query = nil
     @search_line = nil
     @status = ""
-    super
+    super()
   end
 
-  # Subclasses must provide this.
-  def [](i : Int32) : ColoredLine
-    TextLines.new
+  # Subclasses must provide these methods.
+  def [](i : Int32) : Text
+    ""
+  end
+
+  def lines
+    0
   end
 
   def rightcol; @leftcol + buffer.content_width; end
@@ -84,6 +89,7 @@ class ScrollMode < Mode
   def cancel_search!; @search_line = nil end
 
   def continue_search_in_buffer
+{% if false %}
     unless @search_query
       BufferManager.flash "No current search!"
       return
@@ -102,13 +108,16 @@ class ScrollMode < Mode
     else
       BufferManager.flash "Not found!"
     end
+{% end %}
   end
 
   def search_in_buffer
+{% if false %}
     query = BufferManager.ask :search, "search in buffer: "
     return if query.nil? || query.empty?
     @search_query = Regexp.escape query
     continue_search_in_buffer
+{% end %}
   end
 
   ## subclasses can override these three!
@@ -159,16 +168,25 @@ class ScrollMode < Mode
 
   def line_down; jump_to_line @topline + 1; end
   def line_up;  jump_to_line @topline - 1; end
-  def page_down; jump_to_line @topline + buffer.content_height - @slip_rows; end
-  def page_up; jump_to_line @topline - buffer.content_height + @slip_rows; end
-  def half_page_down; jump_to_line @topline + buffer.content_height / 2; end
-  def half_page_up; jump_to_line @topline - buffer.content_height / 2; end
+  def page_down
+    jump_to_line @topline + buffer.content_height - @slip_rows
+  end
+  def page_up
+    jump_to_line @topline - buffer.content_height + @slip_rows
+  end
+  def half_page_down
+    jump_to_line @topline + buffer.content_height // 2
+  end
+  def half_page_up
+    jump_to_line @topline - buffer.content_height // 2
+  end
   def jump_to_start; jump_to_line 0; end
   def jump_to_end; jump_to_line lines - buffer.content_height; end
 
   def ensure_mode_validity
     @topline = @topline.clamp 0, [lines - 1, 0].max
-    @botline = [@topline + buffer.content_height, lines].min
+    height = buffer.content_height
+    @botline = [@topline + height, lines].min
   end
 
   def resize(rows, cols)
@@ -198,14 +216,14 @@ class ScrollMode < Mode
     nil
   end
 
-  protected def draw_line(ln, highlight = false)
+  protected def draw_line(ln, color = :none, highlight = false)
     regex = /(#{@search_query})/i
     case(s = self[ln])
     when String
       if in_search?
-        draw_line_from_array ln, matching_text_array(s, regex), highlight
+        draw_line_from_array ln, matching_text_array(s, regex), highlight: highlight
       else
-        draw_line_from_string ln, s, highlight
+        draw_line_from_string ln, s, color: color, highlight: highlight
       end
     when Array
       if in_search?
@@ -215,7 +233,7 @@ class ScrollMode < Mode
           if text =~ regex
             array += matching_text_array text, regex, color
           else
-            array << [color, text]
+            array << {color, text}
           end
         end
         draw_line_from_array ln, array, highlight
@@ -232,15 +250,15 @@ class ScrollMode < Mode
       # return
   end
 
-  protected def matching_text_array(s, regex, oldcolor=:text_color)
+  protected def matching_text_array(s, regex, oldcolor=:text_color) : ColoredLine
     s.split(regex).map do |text|
       next if text.empty?
       if text =~ regex
-        [:search_highlight_color, text]
+        {:search_highlight_color, text}
       else
-        [oldcolor, text]
+        {oldcolor, text}
       end
-    end.compact + [[oldcolor, ""]]
+    end.compact + [{oldcolor, ""}]
   end
 
   protected def draw_line_from_array(ln : Int32, a : ColoredLine, highlight=false)

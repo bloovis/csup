@@ -16,6 +16,9 @@ def debug(s : String)
 end
 
 class String
+  def display_length
+    UnicodeCharWidth.width(self)
+  end
   def slice_by_display_length(len)
     width = UnicodeCharWidth.width(self)
     return self[0, width]

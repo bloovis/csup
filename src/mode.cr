@@ -48,7 +48,25 @@ class Mode
     #puts "Mode.send: should never get here!"
   end
 
-  property buffer : Buffer?
+  # Define a getter for @buffer that always returns a non-nil value,
+  # so that derived classes don't always have to check for nil.
+  @buffer : Buffer?
+
+  def buffer : Buffer
+    b = @buffer
+    if b
+      return b
+    else
+      # Return a dummy buffer.  This should never actually happen.
+      b = Buffer.new(Ncurses.stdscr, self, 0, 0, "dummy")
+      @buffer = b
+      return b
+    end
+  end
+
+  def buffer=(b : Buffer)
+    @buffer = b
+  end
 
   def self.register_keymap
     classname = self.name
