@@ -61,7 +61,6 @@ global_keymap = Keymap.new do |k|
 end
 
 bm.draw_screen
-
 # Interactive loop.
 while true
   #ch = bm.ask_getch("Command: ")
@@ -81,6 +80,7 @@ while true
       #puts "No action for #{ch}"
     end
   end
+  bm.draw_screen
 end
 
 stop_cursing
