@@ -23,6 +23,9 @@ class String
     width = UnicodeCharWidth.width(self)
     return self[0, width]
   end
+  def camel_to_hyphy
+    self.gsub(/([a-z])([A-Z0-9])/, "\\1-\\2").downcase
+  end
 end
 
 # Extend the LibNcurses library.
@@ -282,6 +285,8 @@ module NCurses
 end	# NCurses
 
 module Redwood
+
+  VERSION = "0.1"
 
   @@cursing = false
 

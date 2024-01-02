@@ -17,6 +17,7 @@ class Buffer
   property force_to_top : Bool
   property hidden : Bool
   getter system : Bool
+  getter dirty : Bool
 
   def string_opt(opts : BufferOpts, key : Symbol) : String
     if opts.has_key?(key)
@@ -473,6 +474,14 @@ class BufferManager
     b
   end
 
+  private def default_status_bar(buf)
+    " [#{buf.mode.name}] #{buf.title}   #{buf.mode.status}"
+  end
+
+  private def default_terminal_title(buf)
+    "Sup #{Redwood::VERSION} :: #{buf.title}"
+  end
+
   def get_status_and_title(buf)
 {% if false %}
     opts = {
@@ -489,7 +498,7 @@ class BufferManager
     term_title_text = HookManager.run("terminal-title-text", opts) || default_terminal_title(buf)
 {% end %}
     if buf
-      return { buf.title, buf.mode.status }
+      return { default_status_bar(buf), default_terminal_title(buf) }
     else
       return { "", "" }
     end

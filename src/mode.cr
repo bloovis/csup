@@ -87,6 +87,14 @@ class Mode
     [] of String
   end
 
+  def self.make_name(s)
+    s.gsub(/.*::/, "").camel_to_hyphy
+  end
+
+  def name
+    Mode.make_name(self.class.name)
+  end
+
   def initialize
     @buffer = nil
     #puts "Mode.initialize"

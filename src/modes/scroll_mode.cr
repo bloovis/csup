@@ -50,7 +50,7 @@ class ScrollMode < Mode
 	  BufferManager::CONTINUE_IN_BUFFER_SEARCH_KEY
   end
 
-  def initialize(slip_rows = 0, twiddles = true)
+  def initialize(slip_rows = 0, twiddles = true, debug = false)
     @topline, @botline, @leftcol = 0, 0, 0
     @slip_rows = slip_rows	# when we pgup/pgdown,
                                 # how many lines do we keep?
@@ -219,7 +219,8 @@ class ScrollMode < Mode
     return {-1, -1}
   end
 
-  protected def draw_line(ln, color = :none, highlight = false)
+  protected def draw_line(ln, color = :none, highlight = false, debug = false)
+    system("echo scroll_mode.draw_line: ln #{ln}, highlight #{highlight} >>/tmp/csup.log")
     regex = /(#{@search_query})/i
     case(s = self[ln])
     when String

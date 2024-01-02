@@ -21,7 +21,7 @@ class Config
     @filename = File.join(base_dir, "config.yaml")
 
     init_config
-    debug "config after init_config:\n#{@entries.inspect}"
+    #debug "config after init_config:\n#{@entries.inspect}"
     singleton_post_init
   end
 
@@ -99,7 +99,7 @@ class Config
     d["show_startup_progress"] = true
     d["split_view"] = false # :vertical or :horizonta
     d["mouse"] = true
-    debug "Default config:\n#{d.inspect}"
+    #debug "Default config:\n#{d.inspect}"
 
     if File.exists? @filename
       user_config = load_user_config
@@ -124,7 +124,7 @@ class Config
   end
 
   def load_user_config : ConfigTable
-    puts "load_user_config: filename = #{@filename}"
+    #puts "load_user_config: filename = #{@filename}"
     yaml = File.open(@filename) { |f| YAML.parse(f) }
     config = ConfigTable.new
 
@@ -160,7 +160,7 @@ class Config
       end
     end
 
-    debug "load_user_config: config = \n#{config.inspect}"
+    #debug "load_user_config: config = \n#{config.inspect}"
     return config
   end
 
