@@ -18,10 +18,24 @@ puts "color = #{opts.sym(:color)}"
 puts "filename = #{opts.str("filename")}"
 puts "hidden tags = #{opts.strarray(:hidden_tags)}"
 puts "skip_rows = #{opts.int(:skip_rows)}"
-junk = opts.str(:junk) || "junk not in opts!"
+if opts.member?(:junk)
+  puts ":junk is in opts, which should not be true!"
+else
+  puts ":junk is is not opts, but let's try to retrieve it anyway"
+  junk = opts.str(:junk) || "junk not in opts!"
+end
+
 puts "junk = #{junk}"
 
 opts.merge({"junk" => :none})
 puts "junk = #{opts.sym(:junk)}"
+
+junk = opts.delete_sym(:junk)
+puts "junk after deletion = #{junk}"
+if opts.member?(:junk)
+  puts "junk is still a member after deleting, which should not be true!"
+else
+  puts "junk is not a member after deletion, good!"
+end
 
 end

@@ -1,8 +1,9 @@
-require "../src/modes/scroll_mode.cr"
+require "../src/config"
+require "../src/modes/line_cursor_mode.cr"
 
 module Redwood
 
-class StupidMode < ScrollMode
+class StupidMode < LineCursorMode
   mode_class help
 
   register_keymap do |k|
@@ -20,8 +21,8 @@ class StupidMode < ScrollMode
     l
   end
 
-  def initialize(opts = Opts.new)
-    super(opts)
+  def initialize
+    super()
     puts "Initializing StupidMode object #{object_id}"
   end
 
@@ -42,12 +43,13 @@ def quit
   exit 0
 end
 
+cm = Config.new
 bm = BufferManager.new
 colormap = Colormap.new
 Colormap.reset
 Colormap.populate_colormap
 mode = StupidMode.new
-puts "Ancestors of ChildMode:"
+puts "Ancestors of StupidMode:"
 puts mode.ancestors
 
 start_cursing

@@ -26,13 +26,25 @@ class Opts
     def {{name}}(s : Symbol | String) : {{type}}?
       key = s.to_s
       if @entries.has_key?(key)
-	return @entries[s.to_s].as({{type}})
+	return @entries[key].as({{type}})
+      else
+	return nil
+      end
+    end
+    def delete_{{name}}(s : Symbol | String) : {{type}}?
+      key = s.to_s
+      if @entries.has_key?(key)
+	return @entries.delete(key).as({{type}})
       else
 	return nil
       end
     end
   end
-   
+
+  def member?(s : Symbol | String)
+    @entries.has_key?(s.to_s)
+  end
+
   get(str, String)
   get(int, Int32)
   get(bool, Bool)

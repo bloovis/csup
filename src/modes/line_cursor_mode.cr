@@ -22,8 +22,8 @@ class LineCursorMode < ScrollMode
 
   property curpos = 0
 
-  def initialize(slip_rows = 0, skip_top_rows = 0, twiddles = false)
-    @cursor_top = @curpos = skip_top_rows
+  def initialize(opts = Opts.new)
+    @cursor_top = @curpos = opts.delete_int(:skip_top_rows) || 0
 {% if false %}
     @load_more_callbacks = []
     @load_more_q = Queue.new
@@ -36,7 +36,7 @@ class LineCursorMode < ScrollMode
       end
     end
 {% end %}
-    super(slip_rows: slip_rows, twiddles: twiddles)
+    super(opts)
   end
 
   def cleanup
@@ -57,12 +57,14 @@ class LineCursorMode < ScrollMode
   end
 {% end %}
 
-  protected def draw_line(ln, debug = false)
+  protected def draw_line(ln, opts = Opts.new)
     system("echo line_cursor_mode.draw_line: ln #{ln}, curpos #{curpos} >>/tmp/csup.log")
     if ln == @curpos
-      super ln, highlight: true, debug: debug, color: :text_color
+      super ln, Opts.new({"highlight" => true,
+			  "debug" => opts.bool(:debug) || false,
+			  "color" => :text_color})
     else
-      super ln, color: :text_color
+      super ln, Opts.new({"color" => :text_color})
     end
   end
 

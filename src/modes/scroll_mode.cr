@@ -3,6 +3,7 @@ require "../buffer"
 require "../mode"
 require "../config"
 require "../supcurses"
+require "../opts"
 
 module Redwood
 
@@ -50,11 +51,11 @@ class ScrollMode < Mode
 	  BufferManager::CONTINUE_IN_BUFFER_SEARCH_KEY
   end
 
-  def initialize(slip_rows = 0, twiddles = true, debug = false)
+  def initialize(opts = Opts.new)
     @topline, @botline, @leftcol = 0, 0, 0
-    @slip_rows = slip_rows	# when we pgup/pgdown,
-                                # how many lines do we keep?
-    @twiddles = twiddles
+    @slip_rows = opts.int(:slip_rows) || 0 # when we pgup/pgdown,
+					   # how many lines do we keep?
+    @twiddles = opts.member?(:twiddles) ? opts.bool(:twiddles) : true
     @search_query = nil
     @search_line = nil
     @status = ""
@@ -74,7 +75,7 @@ class ScrollMode < Mode
 
   def draw
     ensure_mode_validity
-    (@topline ... @botline).each { |ln| draw_line ln, color: :text_color }
+    (@topline ... @botline).each { |ln| draw_line(ln, Opts.new({"color" => :text_color})) }
     ((@botline - @topline) ... buffer.content_height).each do |ln|
       if @twiddles
         buffer.write ln, 0, "~", color: :twiddle_color
@@ -219,15 +220,15 @@ class ScrollMode < Mode
     return {-1, -1}
   end
 
-  protected def draw_line(ln, color = :none, highlight = false, debug = false)
-    system("echo scroll_mode.draw_line: ln #{ln}, highlight #{highlight} >>/tmp/csup.log")
+  protected def draw_line(ln, opts = Opts.new)
+    system("echo scroll_mode.draw_line: ln #{ln} >>/tmp/csup.log")
     regex = /(#{@search_query})/i
     case(s = self[ln])
     when String
       if in_search?
-        draw_line_from_array ln, matching_text_array(s, regex), highlight: highlight
+        draw_line_from_array ln, matching_text_array(s, regex), opts
       else
-        draw_line_from_string ln, s, color: color, highlight: highlight
+        draw_line_from_string ln, s, opts
       end
     when Array
       if in_search?
@@ -240,9 +241,9 @@ class ScrollMode < Mode
             array << {color, text}
           end
         end
-        draw_line_from_array ln, array, highlight
+        draw_line_from_array ln, array, opts
       else
-        draw_line_from_array ln, s, highlight
+        draw_line_from_array ln, s, opts
       end
     else
       raise "unknown drawable object: #{s.inspect} in #{self} for line #{ln}" # good for debugging
@@ -265,7 +266,7 @@ class ScrollMode < Mode
     end.compact + [{oldcolor, ""}]
   end
 
-  protected def draw_line_from_array(ln : Int32, a : ColoredLine, highlight=false)
+  protected def draw_line_from_array(ln : Int32, a : ColoredLine, opts : Opts)
     xpos = 0
     a.each_with_index do |line, i|
       color = line[0]
@@ -276,23 +277,25 @@ class ScrollMode < Mode
 
       if xpos + l < @leftcol
         buffer.write ln - @topline, 0, "", color: color,
-                     highlight: highlight
+                     highlight: opts.bool(:highlight)
       elsif xpos < @leftcol
         ## partial
         buffer.write ln - @topline, 0, text[(@leftcol - xpos) .. -1],
                      color: color,
-                     highlight: highlight, no_fill: no_fill
+                     highlight: opts.bool(:highlight), no_fill: no_fill
       else
         buffer.write ln - @topline, xpos - @leftcol, text,
-                     color: color, highlight: highlight,
+                     color: color, highlight: opts.bool(:highlight),
                      no_fill: no_fill
       end
       xpos += l
     end
   end
 
-  protected def draw_line_from_string(ln, s, color = :none, highlight=false)
-    buffer.write ln - @topline, 0, s[@leftcol .. -1], highlight: highlight, color: color
+  protected def draw_line_from_string(ln : Int32, s : String, opts : Opts)
+    buffer.write ln - @topline, 0, s[@leftcol .. -1],
+                 highlight: opts.bool(:highlight),
+		 color: opts.sym(:color) || :none
   end
 end
 
