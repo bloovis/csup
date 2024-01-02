@@ -66,15 +66,15 @@ class Buffer
   end
 
   ## s nil means a blank line!
-  def write(y, x, s, color = :none, highlight = false, no_fill = false)
+  def write(y, x, s, opts = Opts.new)
     return if x >= @width || y >= @height
 
-    @w.attrset Colormap.color_for(color, highlight)
+    @w.attrset Colormap.color_for(opts.sym(:color) || :none, opts.bool(:highlight))
     s ||= ""
     maxl = @width - x # maximum display width width
 
     # fill up the line with blanks to overwrite old screen contents
-    @w.mvaddstr(y, x, " " * maxl) unless no_fill
+    @w.mvaddstr(y, x, " " * maxl) unless opts.bool(:no_fill)
 
     @w.mvaddstr y, x, s.slice_by_display_length(maxl)
   end
@@ -84,7 +84,7 @@ class Buffer
   end
 
   def draw_status(status : String)
-    write @height - 1, 0, status, color: :status_color
+    write @height - 1, 0, status, Opts.new({:color => :status_color})
   end
 
   def focus

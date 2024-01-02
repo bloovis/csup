@@ -1,3 +1,6 @@
+require "./buffer"
+require "./supcurses"
+
 class Object
   def send(action : Symbol)
     puts "Object can't send #{action}!"

@@ -78,9 +78,9 @@ class ScrollMode < Mode
     (@topline ... @botline).each { |ln| draw_line(ln, Opts.new({:color => :text_color})) }
     ((@botline - @topline) ... buffer.content_height).each do |ln|
       if @twiddles
-        buffer.write ln, 0, "~", color: :twiddle_color
+        buffer.write ln, 0, "~", Opts.new({:color => :twiddle_color})
       else
-        buffer.write ln, 0, "", color: :text_color
+        buffer.write ln, 0, "", Opts.new({:color => :text_color})
       end
     end
     @status = "lines #{@topline + 1}:#{@botline}/#{lines}"
@@ -272,17 +272,20 @@ class ScrollMode < Mode
       no_fill = i != a.size - 1
 
       if xpos + l < @leftcol
-        buffer.write ln - @topline, 0, "", color: color,
-                     highlight: opts.bool(:highlight)
+        buffer.write ln - @topline, 0, "",
+		     Opts.new({:color => color || :none,
+			       :highlight => opts.bool(:highlight) || false})
       elsif xpos < @leftcol
         ## partial
         buffer.write ln - @topline, 0, text[(@leftcol - xpos) .. -1],
-                     color: color,
-                     highlight: opts.bool(:highlight), no_fill: no_fill
+		     Opts.new({:color => color || :none,
+			       :highlight => opts.bool(:highlight) || false,
+			       :no_fill => no_fill})
       else
         buffer.write ln - @topline, xpos - @leftcol, text,
-                     color: color, highlight: opts.bool(:highlight),
-                     no_fill: no_fill
+		     Opts.new({:color => color || :none,
+			       :highlight => opts.bool(:highlight) || false,
+			       :no_fill => no_fill})
       end
       xpos += l
     end
@@ -290,8 +293,8 @@ class ScrollMode < Mode
 
   protected def draw_line_from_string(ln : Int32, s : String, opts : Opts)
     buffer.write ln - @topline, 0, s[@leftcol .. -1],
-                 highlight: opts.bool(:highlight),
-		 color: opts.sym(:color) || :none
+		 Opts.new({:highlight => opts.bool(:highlight) || false,
+			   :color => opts.sym(:color) || :none})
   end
 end
 
