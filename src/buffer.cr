@@ -1,5 +1,6 @@
 require "./singleton"
 require "./colormap"
+require "./opts"
 
 module Redwood
 
@@ -19,45 +20,15 @@ class Buffer
   getter system : Bool
   getter dirty : Bool
 
-  def string_opt(opts : BufferOpts, key : Symbol) : String
-    if opts.has_key?(key)
-      val = opts[key]
-      if val.is_a?(String)
-	return val
-      else
-	return ""
-      end
-    else
-      return ""
-    end
-  end
-    
-  def bool_opt(opts : BufferOpts, key : Symbol) : Bool
-    if opts.has_key?(key)
-      val = opts[key]
-      if val.is_a?(Bool)
-	return val
-      else
-	return false
-      end
-    else
-      return false
-    end
-  end
-
-  def initialize(@w, @mode, @width, @height,
-		 title = "",
-		 force_to_top = false,
-		 hidden = false,
-		 system = false)
+  def initialize(@w, @mode, @width, @height, opts = Opts.new)
     @dirty = true
     @focus = false
-    @title = title
-    @force_to_top = force_to_top
-    @hidden = hidden
+    @title = opts.str(:title) || ""
+    @force_to_top = opts.bool(:force_to_top) || false
+    @hidden = opts.bool(:hidden) || false
     @x = @y = 0
     @atime = Time.unix 0
-    @system = system
+    @system = opts.bool(:system) || false
   end
 
   def content_height; @height - 1; end
@@ -440,8 +411,7 @@ class BufferManager
     # Ncurses.mutex.unlock unless opts[:sync] == false
   end
 
-  def spawn(title : String, mode : Mode, width : Int32 = nil, height : Int32 = nil,
-	    force_to_top = false, system = false, hidden = false)
+  def spawn(title : String, mode : Mode, opts = Opts.new)
     # raise ArgumentError, "title must be a string" unless title.is_a? String
     realtitle = title
     num = 2
@@ -450,8 +420,8 @@ class BufferManager
       num += 1
     end
 
-    width ||= Ncurses.cols
-    height ||= Ncurses.rows - 1
+    width = opts.int(:width) || Ncurses.cols
+    height = opts.int(:height) || Ncurses.rows - 1
 
     ## since we are currently only doing multiple full-screen modes,
     ## use stdscr for each window. once we become more sophisticated,
@@ -460,13 +430,15 @@ class BufferManager
     ## w = Ncurses::WINDOW.new(height, width, (opts[:top] || 0),
     ## (opts[:left] || 0))
     w = Ncurses.stdscr
-    b = Buffer.new(w, mode, width, height, title: realtitle,
-		   force_to_top: force_to_top, system: system)
+    b = Buffer.new(w, mode, width, height,
+		   Opts.new({"title" => realtitle,
+			     "force_to_top" => opts.bool(:force_to_top) || false,
+			     "system" => opts.bool(:system) || false}))
     mode.buffer = b
     @name_map[realtitle] = b
 
     @buffers.unshift b
-    if hidden
+    if opts.bool(:hidden)
       focus_on(b) unless @focus_buf
     else
       raise_to_front(b)

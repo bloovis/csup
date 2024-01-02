@@ -52,7 +52,7 @@ puts mode.ancestors
 
 start_cursing
 #w = Ncurses.stdscr
-buf = bm.spawn("Stupid Mode", mode, 80, 25)
+buf = bm.spawn("Stupid Mode", mode, Opts.new({"width" => 80, "height" => 25}))
 bm.raise_to_front(buf)
 
 global_keymap = Keymap.new do |k|

@@ -87,7 +87,7 @@ puts cm.ancestors
 
 start_cursing
 w = Ncurses.stdscr
-buf = bm.spawn("Child Mode", cm, 80, 25)
+buf = bm.spawn("Child Mode", cm, Opts.new({"width" => 80, "height" => 25}))
 #buf = Buffer.new(w, cm, 80, 25, title: "Phony buffer")
 bm.raise_to_front(buf)
 say_id = 0
