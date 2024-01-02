@@ -20,6 +20,7 @@ hook_test : test/hook_test.cr src/hook.cr
 config_test : test/config_test.cr src/config.cr
 contact_test : test/contact_test.cr src/contact.cr
 account_test : test/account_test.cr src/account.cr
+opts_test : test/opts_test.cr src/opts.cr
 
 # Mode tests
 scroll_mode_test : test/scroll_mode_test.cr src/modes/scroll_mode.cr src/buffer.cr
