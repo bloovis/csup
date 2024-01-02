@@ -48,7 +48,6 @@ class Buffer
     else
       draw_status status
     end
-
     commit
   end
 
@@ -183,7 +182,7 @@ class BufferManager
     @asking = true
 
     status, title = get_status_and_title(@focus_buf)
-    draw_screen(sync: false, status: status, title: title)
+    draw_screen Opts.new({:sync => false, :status => status, :title => title})
     row = Ncurses.rows - 1
     leftcol = question.size
     fillcols = Ncurses.cols - leftcol
@@ -216,7 +215,7 @@ class BufferManager
 
     @asking = false
     Ncurses.curs_set 0
-    draw_screen(sync: false, status: status, title: title)
+    draw_screen Opts.new({:sync => false, :status => status, :title => title})
 
     ret
   end
@@ -231,7 +230,7 @@ class BufferManager
 
     status, title = get_status_and_title(@focus_buf)
     #Ncurses.sync do
-      draw_screen(sync: false, status: status, title: title)
+      draw_screen Opts.new({:sync => false, :status => status, :title => title})
       Ncurses.mvaddstr Ncurses.rows - 1, 0, question
       Ncurses.move Ncurses.rows - 1, question.size + 1
       Ncurses.curs_set 1
@@ -255,7 +254,7 @@ class BufferManager
     @asking = false
     #Ncurses.sync do
       Ncurses.curs_set 0
-      draw_screen(sync: false, status: status, title: title)
+      draw_screen Opts.new({:sync => false, :status => status, :title => title})
     #end
 
     ret
@@ -342,7 +341,7 @@ class BufferManager
     #end
 
     if new_id
-      draw_screen(refresh: true)
+      draw_screen Opts.new({:refresh => true})
     else
       draw_minibuf(refresh: true)
     end
@@ -371,7 +370,7 @@ class BufferManager
 
   def flash(s : String)
     @flash = s
-    draw_screen(refresh: true)
+    draw_screen Opts.new({:refresh => true})
   end
   singleton_method flash, s
 
@@ -382,16 +381,18 @@ class BufferManager
       @minibuf_stack.delete(id)
     #end
 
-    draw_screen(refresh: true)
+    draw_screen Opts.new({:refresh => true})
   end
 
-  def draw_screen(refresh = false, status = nil, title = "",
-		  skip_minibuf = false, caller_line = __LINE__,
-		  sync = false)	# Not used unless we start using mutexes
+  def draw_screen(opts = Opts.new)
     #minibuf_all.each_with_index {|s, i| Ncurses.print "draw_screen: caller line #{caller_line}, minibuf[#{i}]='#{s}'\n" }
     return if @shelled
-    if status.nil?
-      status, title = get_status_and_title(@focus_buf)
+    if opts.member? :status
+      status = opts.str(:status)
+      title = opts.str(:title)
+    else
+      #raise "status must be supplied if draw_screen is called within a sync" if opts[:sync] == false
+      status, title = get_status_and_title @focus_buf # must be called outside of the ncurses lock
     end
 
     ## http://rtfm.etla.org/xterm/ctlseq.html (see Operating System Controls)
@@ -401,13 +402,17 @@ class BufferManager
 
     buf = @buffers.last
     buf.resize Ncurses.rows - minibuf_lines, Ncurses.cols
-    @dirty ? buf.draw(status) : buf.redraw(status)
+    if @dirty
+      buf.draw(status || "")
+    else
+      buf.redraw(status || "")
+    end
 
-    draw_minibuf(sync: false) unless skip_minibuf
+    draw_minibuf(sync: false) unless opts.bool(:skip_minibuf)
 
     @dirty = false
     Ncurses.doupdate
-    Ncurses.refresh if refresh
+    Ncurses.refresh if opts.bool(:refresh)
     # Ncurses.mutex.unlock unless opts[:sync] == false
   end
 
@@ -431,9 +436,9 @@ class BufferManager
     ## (opts[:left] || 0))
     w = Ncurses.stdscr
     b = Buffer.new(w, mode, width, height,
-		   Opts.new({"title" => realtitle,
-			     "force_to_top" => opts.bool(:force_to_top) || false,
-			     "system" => opts.bool(:system) || false}))
+		   Opts.new({:title => realtitle,
+			     :force_to_top => opts.bool(:force_to_top) || false,
+			     :system => opts.bool(:system) || false}))
     mode.buffer = b
     @name_map[realtitle] = b
 

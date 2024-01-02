@@ -58,13 +58,13 @@ class LineCursorMode < ScrollMode
 {% end %}
 
   protected def draw_line(ln, opts = Opts.new)
-    system("echo line_cursor_mode.draw_line: ln #{ln}, curpos #{curpos} >>/tmp/csup.log")
+    #system("echo line_cursor_mode.draw_line: ln #{ln}, curpos #{curpos} >>/tmp/csup.log")
     if ln == @curpos
-      super ln, Opts.new({"highlight" => true,
-			  "debug" => opts.bool(:debug) || false,
-			  "color" => :text_color})
+      super ln, Opts.new({:highlight => true,
+			  :debug => opts.bool(:debug) || false,
+			  :color => :text_color})
     else
-      super ln, Opts.new({"color" => :text_color})
+      super ln, Opts.new({:color => :text_color})
     end
   end
 

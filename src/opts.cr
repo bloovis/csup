@@ -6,15 +6,15 @@ class Opts
   alias Value = String | Int32 | Bool | Symbol | Array(String)
 
   def initialize(h = nil)
-    @entries = Hash(String, Value).new
+    @entries = Hash(Symbol, Value).new
     if h
       #puts "Opts.initialize: h = " + h.inspect
       merge(h)
     end
   end
 
-  def []=(key : Symbol | String, value)
-    @entries[key.to_s] = value
+  def []=(key : Symbol, value)
+    @entries[key] = value
   end
 
   def merge(h)
@@ -23,16 +23,14 @@ class Opts
 
   # Methods for retrieving entries as specific types.
   macro get(name, type)
-    def {{name}}(s : Symbol | String) : {{type}}?
-      key = s.to_s
+    def {{name}}(key : Symbol) : {{type}}?
       if @entries.has_key?(key)
 	return @entries[key].as({{type}})
       else
 	return nil
       end
     end
-    def delete_{{name}}(s : Symbol | String) : {{type}}?
-      key = s.to_s
+    def delete_{{name}}(key : Symbol | String) : {{type}}?
       if @entries.has_key?(key)
 	return @entries.delete(key).as({{type}})
       else
@@ -41,8 +39,8 @@ class Opts
     end
   end
 
-  def member?(s : Symbol | String)
-    @entries.has_key?(s.to_s)
+  def member?(s : Symbol)
+    @entries.has_key?(s)
   end
 
   get(str, String)

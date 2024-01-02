@@ -75,7 +75,7 @@ class ScrollMode < Mode
 
   def draw
     ensure_mode_validity
-    (@topline ... @botline).each { |ln| draw_line(ln, Opts.new({"color" => :text_color})) }
+    (@topline ... @botline).each { |ln| draw_line(ln, Opts.new({:color => :text_color})) }
     ((@botline - @topline) ... buffer.content_height).each do |ln|
       if @twiddles
         buffer.write ln, 0, "~", color: :twiddle_color
@@ -90,7 +90,6 @@ class ScrollMode < Mode
   def cancel_search!; @search_line = nil end
 
   def continue_search_in_buffer
-{% if true %}
     unless @search_query
       BufferManager.flash "No current search!"
       return
@@ -110,16 +109,13 @@ class ScrollMode < Mode
     else
       BufferManager.flash "Not found!"
     end
-{% end %}
   end
 
   def search_in_buffer
-{% if true %}
     query = BufferManager.ask :search, "search in buffer: "
     return if query.nil? || query.empty?
     @search_query = Regex.escape query
     continue_search_in_buffer
-{% end %}
   end
 
   ## subclasses can override these three!
@@ -221,7 +217,7 @@ class ScrollMode < Mode
   end
 
   protected def draw_line(ln, opts = Opts.new)
-    system("echo scroll_mode.draw_line: ln #{ln} >>/tmp/csup.log")
+    #system("echo scroll_mode.draw_line: ln #{ln} >>/tmp/csup.log")
     regex = /(#{@search_query})/i
     case(s = self[ln])
     when String
