@@ -163,6 +163,10 @@ class BufferManager
     if b
       m = b.mode
       if m
+        if m.in_search? && c != CONTINUE_IN_BUFFER_SEARCH_KEY
+          m.cancel_search!
+          b.mark_dirty
+	end
 	m.handle_input(c)
       else
 	puts "Buffer has no mode!"
