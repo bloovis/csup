@@ -13,11 +13,10 @@ module Redwood
 ## (This assumes that no message will be a part of more than one thread within a
 ## single "view". Luckily, that's true.)
 
-# The Crystal implementation differs from Ruby in several ways.
-# - It only handles updates to Message objects.
-# - You must pass self.class.name instead of self to register and unregister.
-# - register requires a second parameter, which is a Proc pointing
-#   to a handler method that takes two parameters:
+# The Crystal implementation differs from Ruby in two significant ways:
+# - Updates are allowed only for Message objects.
+# - The registering class, instead of providing multiple handle_{type}_update methods,
+#   must provide a handle_update method that takes two parameters:
 #   - a symbol representing the update type
 #   - a Message object
 
@@ -33,17 +32,17 @@ class UpdateManager
     singleton_post_init
   end
 
-  def register(classname : String, handler : Handler)
-    puts "UpdateManager.register: classname #{classname}, handler #{handler}"
-    @@targets[classname] = handler
+  def register(o)
+    puts "UpdateManager.register: classname #{o.class.name}"
+    @@targets[o.class.name] = ->o.handle_update(Symbol, Message)
   end
-  singleton_method register, classname, handler
+  singleton_method register, o
 
-  def unregister(classname : String)
-    puts "UpdateManager.unregister: classname #{classname}"
-    @@targets.delete(classname)
+  def unregister(o)
+    puts "UpdateManager.unregister: classname #{o.class.name}"
+    @@targets.delete(o.class.name)
   end
-  singleton_method unregister, classname
+  singleton_method unregister, o
 
   def relay_message(type : Symbol, msg : Message)
     #meth = "handle_#{type}_update".intern

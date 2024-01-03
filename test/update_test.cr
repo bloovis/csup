@@ -15,11 +15,11 @@ class ListMode < Mode
   def initialize
     super
     puts "Initializing ListMode"
-    UpdateManager.register(self.class.name, ->handle_update(Symbol, Message))
+    UpdateManager.register(self)
   end
 
   def stop_update
-    UpdateManager.unregister(self.class.name)
+    UpdateManager.unregister(self)
   end
 
   def classname
@@ -33,7 +33,7 @@ class ViewMode < Mode
   def initialize
     super
     puts "Initializing ViewMode object"
-    UpdateManager.register(self.class.name, ->handle_update(Symbol, Message))
+    UpdateManager.register(self)
   end
 
   def handle_update(type : Symbol, msg : Message)
@@ -46,7 +46,7 @@ class ViewMode < Mode
   end
 
   def stop_update
-    UpdateManager.unregister(self.class.name)
+    UpdateManager.unregister(self)
   end
 end
     

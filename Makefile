@@ -4,7 +4,8 @@
 .PHONY: tests
 tests : colormap_test keymap_test ncurses_test email_test logger_test \
         undo_test update_test tagger_test hook_test config_test \
-	contact_test scroll_mode_test
+	contact_test scroll_mode_test \
+	line_cursor_mode_test
 
 # Manager tests
 colormap_test : test/colormap_test.cr src/colormap.cr src/supcurses.cr
