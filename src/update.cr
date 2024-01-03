@@ -13,6 +13,14 @@ module Redwood
 ## (This assumes that no message will be a part of more than one thread within a
 ## single "view". Luckily, that's true.)
 
+# The Crystal implementation differs from Ruby in several ways.
+# - It only handles updates to Message objects.
+# - You must pass self.class.name instead of self to register and unregister.
+# - register requires a second parameter, which is a Proc pointing
+#   to a handler method that takes two parameters:
+#   - a symbol representing the update type
+#   - a Message object
+
 class UpdateManager
   singleton_class UpdateManager
 
@@ -26,11 +34,13 @@ class UpdateManager
   end
 
   def register(classname : String, handler : Handler)
+    puts "UpdateManager.register: classname #{classname}, handler #{handler}"
     @@targets[classname] = handler
   end
   singleton_method register, classname, handler
 
   def unregister(classname : String)
+    puts "UpdateManager.unregister: classname #{classname}"
     @@targets.delete(classname)
   end
   singleton_method unregister, classname
