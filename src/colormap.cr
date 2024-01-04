@@ -1,5 +1,6 @@
 require "yaml"
 require "./singleton"
+require "./supcurses"
 
 module Redwood
 
@@ -98,9 +99,9 @@ class Colormap
   def add(sym : String, fg : Int32, bg : Int32, attr : Array(Int32), highlight : String | Nil)
     # Ruby raise accepts a second string parameter, not supported in Crystal.
     # How to handle this difference correctly?
-    raise "ArgumentError: color for #{sym} already defined" if @entries.has_key?(sym)
-    raise "ArgumentError: fg color '#{fg}' unknown" unless (-1...Ncurses.num_colors).includes? fg
-    raise "ArgumentError: bg color '#{bg}' unknown" unless (-1...Ncurses.num_colors).includes? bg
+    raise ArgumentError.new("color for #{sym} already defined") if @entries.has_key?(sym)
+    raise ArgumentError.new("fg color '#{fg}' unknown") unless (-1...Ncurses.num_colors).includes? fg
+    raise ArgumentError.new("bg color '#{bg}' unknown") unless (-1...Ncurses.num_colors).includes? bg
     attrs = [attr].flatten.compact
 
     @entries[sym] = ColorEntry.new(fg, bg, attrs, nil)
@@ -160,7 +161,7 @@ class Colormap
     sym = sym_or_string.to_s
     sym = @highlights[sym] if highlight
     return Ncurses::COLOR_BLACK if sym == "none"
-    raise "ArgumentError: undefined color #{sym}" unless @entries.has_key?(sym)
+    raise ArgumentError.new("undefined color #{sym}") unless @entries.has_key?(sym)
 
     ## if this color is cached, return it
     fg, bg, attrs, color = @entries[sym].tuple
@@ -176,7 +177,7 @@ class Colormap
       id = @next_id
       #debug "colormap: for color #{sym}, using id #{id} -> #{fg}, #{bg}"
       Ncurses.init_pair(id.to_i16, fg.to_i16, bg.to_i16) ||
-        raise "ArgumentError: couldn't initialize curses color pair #{fg}, #{bg} (key #{id})"
+        raise ArgumentError.new("couldn't initialize curses color pair #{fg}, #{bg} (key #{id})")
 
       cp = @color_pairs[[fg, bg]] = LibNCurses.COLOR_PAIR(id)
       #debug "colormap: color_pair for id #{id} = #{cp}"

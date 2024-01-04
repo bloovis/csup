@@ -7,6 +7,12 @@ require "../lib/uniwidth/src/uniwidth"
 class NameError < Exception
 end
 
+class ArgumentError < Exception
+end
+
+class InputSequenceAborted < Exception
+end
+
 def warn(s : String)
   puts "warning: #{s}"
 end
@@ -213,7 +219,7 @@ module NCurses
     if @@consts.has_key?(name)
       return @@consts[name]
     else
-      raise NameError.new
+      raise NameError.new("no such Ncurses constant #{name}")
       return 0
     end
   end

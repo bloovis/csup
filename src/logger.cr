@@ -30,7 +30,7 @@ class Logger
 
   def set_level(level)
     @level = LEVELS.index(level) ||
-      raise "ArgumentError: invalid log level #{level.inspect}: should be one of #{LEVELS.join(", ")}"
+      raise ArgumentError.new("invalid log level #{level.inspect}: should be one of #{LEVELS.join(", ")}")
   end
   singleton_method set_level, level
 

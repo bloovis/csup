@@ -1,6 +1,7 @@
 require "./singleton"
 require "./config"
 require "./person"
+require "./supcurses"
 
 module Redwood
 
@@ -10,8 +11,8 @@ class Account < Person
   property gpgkey : String
 
   def initialize(h : Config::Account)
-    raise "ArgumentError: no name for account" unless h["name"]
-    raise "ArgumentError: no email for account" unless h["email"]
+    raise ArgumentError.new("no name for account") unless h["name"]
+    raise ArgumentError.new("no email for account") unless h["email"]
     super h["name"], h["email"]
     @sendmail = h["sendmail"]
     @signature = h["signature"]
@@ -63,7 +64,7 @@ class AccountManager
   ## must be called first with the default account. fills in missing
   ## values from the default account.
   def add_account(hash : Config::Account, default=false)
-    raise "ArgumentError: no email specified for account" unless hash["email"]
+    raise ArgumentError.new("no email specified for account") unless hash["email"]
     unless default
       {% for k in ["name", "sendmail", "signature", "gpgkey"] %}
 	a = @default_account
@@ -87,7 +88,7 @@ class AccountManager
     @accounts[a] = true
 
     if default
-      raise("ArgumentError: multiple default accounts") if @default_account
+      raise ArgumentError.new("multiple default accounts") if @default_account
       @default_account = a
     end
 
