@@ -1,3 +1,5 @@
+module Redwood
+
 # This is a partial port of Ruby's shellwords.rb
 module Shellwords
   extend self
@@ -45,4 +47,6 @@ module Shellwords
     array.map { |arg| self.escape(arg) }.join(' ')
   end
 
-end
+end	# Shellwords
+
+end	# Redwood
