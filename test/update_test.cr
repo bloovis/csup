@@ -59,7 +59,8 @@ vm = ViewMode.new
 puts "ListMode instance class name: #{lm.class.name}"
 puts "ViewMode instance class name: #{vm.class.name}"
 
-msg = Message.new("12345")
+msg = Message.new
+msg.id = "12345"
 vm.mark_starred(msg)
 
 lm.stop_update

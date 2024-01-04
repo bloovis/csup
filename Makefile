@@ -4,7 +4,7 @@
 .PHONY: tests
 tests : colormap_test keymap_test ncurses_test email_test logger_test \
         undo_test update_test tagger_test hook_test config_test \
-	contact_test account_test opts_test notmuch_test \
+	contact_test account_test opts_test notmuch_test message_test \
 	scroll_mode_test line_cursor_mode_test
 
 # Manager tests
@@ -23,6 +23,7 @@ contact_test : test/contact_test.cr src/contact.cr
 account_test : test/account_test.cr src/account.cr
 opts_test : test/opts_test.cr src/opts.cr
 notmuch_test : test/notmuch_test.cr src/index.cr src/pipe.cr
+message_test : test/message_test.cr src/index.cr src/pipe.cr src/message.cr
 
 # Mode tests
 scroll_mode_test : test/scroll_mode_test.cr src/modes/scroll_mode.cr src/buffer.cr
