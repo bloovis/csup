@@ -241,6 +241,7 @@ class ThreadList
   property query = ""
 
   def initialize(query : String, offset : Int32, limit : Int32)
+    puts "ThreadList: query #{query}"
     if query
       run_notmuch_show(query, offset: offset, limit: limit)
     end
@@ -249,6 +250,7 @@ class ThreadList
   # Run 'notmuch search' and 'notmuch show' to obtain the threads for the
   # specified query string.
   def run_notmuch_show(query : String, offset : Int32? = nil, limit : Int32? = nil)
+    puts "run_notmuch_show: query #{query}"
     @query = query
 
     # First, get the list of threads matching the query.
@@ -257,6 +259,7 @@ class ThreadList
     # Construct a show query from the list of threads and obtain
     # the JSON output.
     show_query = lines.join(" or ")
+    puts "run_notmuch_show: query #{query}"
     json = Notmuch.show(show_query, body: true, html: true)
     parse_json(json)
   end
