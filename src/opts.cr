@@ -1,9 +1,11 @@
+require "json"
+
 # Class for passing options to methods in Mode and its subclasses.
 
 module Redwood
 
 class Opts
-  alias Value = String | Int32 | Bool | Symbol | Array(String)
+  alias Value = String | Int32 | Bool | Symbol | Array(String) | JSON::Any
 
   def initialize(h = nil)
     @entries = Hash(Symbol, Value).new

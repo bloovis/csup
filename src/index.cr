@@ -46,7 +46,7 @@ module Notmuch
 
   def show(query : String,
 	   body : Bool = false,
-	   html : Bool = false)
+	   html : Bool = false) : JSON::Any
     JSON.parse(Pipe.run("notmuch",
 			["show", "--format=json", "--include-html=#{html}",
                          "--body=#{body}", query]))

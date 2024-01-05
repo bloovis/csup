@@ -67,7 +67,7 @@ class Message
   end
 
   def add_tag(name)
-    @tags << name.as_s
+    @tags << name	#.as_s
   end
 
   def add_content(id : Int32, ctype : String, filename : String, s : String)
@@ -113,7 +113,7 @@ class Message
 
   # Functions for parsing messages.
 
-  def parse_part(p)
+  def parse_part(p : JSON::Any)
     part = p.as_h?
     if part
       # puts "part: #{part.inspect}"
@@ -143,16 +143,12 @@ class Message
     end
   end
 
-  def single_message(msg_info)
+  def single_message(msg_info : Hash(String, JSON::Any))
     @id = msg_info["id"].as_s
 
     tags = msg_info["tags"].as_a?
     if tags
-      tags.each do |tag|
-	if tag.as_s?
-	  add_tag(tag)
-	end
-      end
+      tags.each { |tag| add_tag(tag.as_s)}
     end
 
     if msg_info.has_key?("timestamp")
@@ -199,7 +195,7 @@ class Message
     end
   end
 
-  def parse_message(json)
+  def parse_message(json : JSON::Any)
     #puts "parse_message #{json}"
     msgarray = json.as_a
     msg_info = msgarray[0].as_h?
@@ -224,7 +220,7 @@ class MsgThread
   property next : MsgThread?
   property prev : MsgThread?
 
-  def initialize(json)
+  def initialize(json : JSON::Any)
     #puts "MsgThread  #{json}"
     msglist = json.as_a	# There always seems to be only one message in the array
     @msg = Message.new(msglist[0])
@@ -268,7 +264,7 @@ class ThreadList
     parse_json(json)
   end
 
-  def parse_json(json)
+  def parse_json(json : JSON::Any)
     #puts "parse_json #{json}"
     results = json.as_a?
     if results
