@@ -30,7 +30,7 @@ class String
     # Chop it down to the maximum allowable size before attempting to
     # get the Unicode width, because UnicodeCharWidth is VERY slow
     # on big strings.
-    s = self[0, len * 2]
+    s = self[0, len]
 
     # Chop off characters on the right until the display length fits.
     while UnicodeCharWidth.width(s) > len
