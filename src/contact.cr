@@ -4,7 +4,7 @@ require "./singleton"
 module Redwood
 
 class ContactManager
-  singleton_class ContactManager
+  singleton_class
 
   @fn = ""
   @p2a = {} of Person => String		# person to alias

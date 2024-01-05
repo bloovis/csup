@@ -21,7 +21,7 @@ module Redwood
 #   - a Message object
 
 class UpdateManager
-  singleton_class UpdateManager
+  singleton_class
 
   alias Handler = Proc(Symbol, Message, Nil)
 

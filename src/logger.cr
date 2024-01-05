@@ -6,7 +6,7 @@ module Redwood
 ## also keeps a record of all messages, so that adding a new sink will send all
 ## previous messages to it by default.
 class Logger
-  singleton_class Logger
+  singleton_class
 
   LEVELS = %w(debug info warn error) # in order!
 

@@ -32,7 +32,7 @@ class Account < Person
 end
 
 class AccountManager
-  singleton_class AccountManager
+  singleton_class
 
   property default_account : Account?
   @email_map = Hash(String, Account).new

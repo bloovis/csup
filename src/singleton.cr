@@ -1,16 +1,16 @@
 # Macros to simulate the Singleton class used in Sup.
 
-# Use this macro at the start of the class, passing it the class name.
-macro singleton_class(klass)
-  CLASSNAME = "{{klass}}"
-  @@instance : {{klass}}?
+# Use this macro at the start of the class.
+macro singleton_class
+  CLASSNAME = {{@type.stringify}}
+  @@instance : {{@type}}?
 
   def self.instance
     inst = @@instance
     if inst
       return inst
     else
-      raise "{{klass}} not instantiated!"
+      raise "#{CLASSNAME} not instantiated!"
     end
   end
 

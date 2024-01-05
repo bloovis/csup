@@ -101,7 +101,7 @@ class Buffer
 end
 
 class BufferManager
-  singleton_class BufferManager
+  singleton_class
 
   ## we have to define the key used to continue in-buffer search here, because
   ## it has special semantics that BufferManager deals with---current searches

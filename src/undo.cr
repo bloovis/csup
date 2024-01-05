@@ -10,7 +10,7 @@ module Redwood
 ## undo the archival action
 
 class UndoManager
-  singleton_class UndoManager
+  singleton_class
 
   alias UndoEntry = NamedTuple(desc: String, action: Proc(Nil))
 

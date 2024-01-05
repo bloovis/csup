@@ -5,8 +5,7 @@ require "./supcurses"
 module Redwood
 
 class Colormap
-
-  singleton_class Colormap
+  singleton_class
 
   class ColorEntry
     property fg : Int32

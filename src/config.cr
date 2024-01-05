@@ -4,7 +4,7 @@ require "yaml"
 module Redwood
 
 class Config
-  singleton_class Config
+  singleton_class
 
   alias Account = Hash(String, String)
   alias Accounts = Hash(String, Account)

@@ -39,7 +39,7 @@ class Message
 
   # If a JSON result from "notmuch show" is provided, parse it
   # to fill in the data.  Otherwise use some empty default values.
-  def initialize(json = nil)
+  def initialize(data = nil)
     @parent = nil
     @children = Array(Message).new
     @headers = Headers.new
@@ -48,8 +48,12 @@ class Message
     @timestamp = 0
     @filename = ""
     @date_relative = ""
-    if json
-      parse_message(json)
+    if data.nil?
+      @id = "<dummy>"
+    elsif data.is_a?(String)
+      @id = data
+    else
+      parse_message(data)
     end
   end
 

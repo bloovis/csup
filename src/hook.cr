@@ -9,6 +9,8 @@ require "./singleton"
 module Redwood
 
 class HookManager
+  singleton_class
+
   class HookPipe
     def initialize(@pipe : Process)
     end
@@ -24,8 +26,6 @@ class HookManager
     end
   end
       
-  singleton_class HookManager
-
   def initialize(@dir : String)
     singleton_pre_init
     @dir = dir
