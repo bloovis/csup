@@ -25,10 +25,20 @@ class String
   def display_length
     UnicodeCharWidth.width(self)
   end
+
   def slice_by_display_length(len)
-    width = UnicodeCharWidth.width(self)
-    return self[0, width]
+    # Chop it down to the maximum allowable size before attempting to
+    # get the Unicode width, because UnicodeCharWidth is VERY slow
+    # on big strings.
+    s = self[0, len * 2]
+
+    # Chop off characters on the right until the display length fits.
+    while UnicodeCharWidth.width(s) > len
+      s = s.rchop
+    end
+    return s
   end
+
   def camel_to_hyphy
     self.gsub(/([a-z])([A-Z0-9])/, "\\1-\\2").downcase
   end
@@ -276,7 +286,7 @@ module NCurses
     #
     # Wrapper for `mvwaddstr()` (`mvaddstr()`)
     def mvaddstr(y, x, str)
-      raise "mvwaddstr error" if LibNCurses.mvwaddstr(self, y, x, str.to_unsafe) == ERR
+      raise "mvwaddstr error y=#{y} x=#{x} str='#{str}'" if LibNCurses.mvwaddstr(self, y, x, str.to_unsafe) == ERR
     end
 
     # Copy window to virtual screen
