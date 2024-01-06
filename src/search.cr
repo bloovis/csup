@@ -18,7 +18,7 @@ class SearchManager
     @fn = fn
     @searches = Hash(String, String).new
     if File.exists? fn
-      File.read_lines(fn).each do |l|
+      File.each_line(fn) do |l|
         l =~ /^([^:]*): (.*)$/ || raise "can't parse #{fn} line #{l.inspect}"
         @searches[$1] = $2
       end
