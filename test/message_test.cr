@@ -104,7 +104,7 @@ def run_gui(threadlist : ThreadList, display_content = false)
   puts mode.ancestors
 
   start_cursing
-  buf = bm.spawn("Message Test Mode", mode, Opts.new({:width => 80, :height => 25}))
+  buf = BufferManager.spawn("Message Test Mode", mode, Opts.new({:width => 80, :height => 25}))
   bm.raise_to_front(buf)
 
   global_keymap = Keymap.new do |k|

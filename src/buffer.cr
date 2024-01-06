@@ -157,6 +157,7 @@ class BufferManager
     focus_on @buffers.last
     @dirty = true
   end
+  singleton_method raise_to_front, buf
 
   def handle_input(c : String)
     b = @focus_buf
@@ -175,6 +176,7 @@ class BufferManager
       puts "BufferManager.handle_input: no focus_buf!"
     end
   end
+  singleton_method handle_input, c
 
   ## for simplicitly, we always place the question at the very bottom of the
   ## screen.
@@ -329,7 +331,8 @@ class BufferManager
     #Ncurses.mutex.unlock unless opts[:sync] == false
   end
 
-  def say(s : String, id = -1, block_given? = true, &b)
+  def do_say(s : String, id = -1, block_given? = true, &b)
+    system("echo do_say: s #{s}, id #{id}, block_given #{block_given?} >>/tmp/csup.log")
     new_id = id == -1
 
     #@minibuf_mutex.synchronize do
@@ -361,16 +364,20 @@ class BufferManager
     end
     id
   end
-  singleton_method(say, id, block_given?, &b)
 
   # Crystal doesn't have block_given? or allow blocks to be optional, so
-  # we provide an alternate version of say that doesn't require a block.
-  def say(s : String, id = -1)
-    say(s, id: id, block_given?: false) {}
+  # we provide two versions of say, one that requires a block
+  # and one that doesn't.
+  def self.say(s : String, id = -1)
+    self.instance.do_say(s, id, true) {|id| yield id }
   end
-  singleton_method(say, id, block_given?)
+
+  def self.say(s : String, id = -1)
+    self.instance.do_say(s, id, false) {}
+  end
 
   def erase_flash; @flash = nil; end
+  singleton_method erase_flash
 
   def flash(s : String)
     @flash = s
@@ -387,6 +394,7 @@ class BufferManager
 
     draw_screen Opts.new({:refresh => true})
   end
+  singleton_method clear, id
 
   def draw_screen(opts = Opts.new)
     #minibuf_all.each_with_index {|s, i| Ncurses.print "draw_screen: caller line #{caller_line}, minibuf[#{i}]='#{s}'\n" }
@@ -454,6 +462,7 @@ class BufferManager
     end
     b
   end
+  singleton_method spawn, title, mode, opts
 
   private def default_status_bar(buf)
     " [#{buf.mode.name}] #{buf.title}   #{buf.mode.status}"

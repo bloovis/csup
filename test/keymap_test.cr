@@ -87,18 +87,18 @@ puts cm.ancestors
 
 start_cursing
 w = Ncurses.stdscr
-buf = bm.spawn("Child Mode", cm, Opts.new({:width => 80, :height => 25}))
+buf = BufferManager.spawn("Child Mode", cm, Opts.new({:width => 80, :height => 25}))
 #buf = Buffer.new(w, cm, 80, 25, title: "Phony buffer")
-bm.raise_to_front(buf)
+BufferManager.raise_to_front(buf)
 say_id = 0
-bm.say("Testing BufferManager.say with a block") {|id| say_id = id}
-bm.say("Testing BufferManager.say with reused id #{say_id}", id: say_id)
+BufferManager.say("Testing BufferManager.say with a block") {|id| say_id = id}
+BufferManager.say("Testing BufferManager.say with reused id #{say_id}", id: say_id)
 #buf.write(20, 0, "This is a yellow string", color: :label_color)
 buf.draw_status("status line")
 #Ncurses.print "\nPress any key to continue:\n"
 #ch = Ncurses.getkey
-bm.ask_getch("Press any key to continue:")
-bm.clear(say_id)
+BufferManager.ask_getch("Press any key to continue:")
+BufferManager.clear(say_id)
 
 global_keymap = Keymap.new do |k|
   k.add(:quit, "Quit", "q", "C-q")
@@ -106,18 +106,18 @@ global_keymap = Keymap.new do |k|
 end
 
 while true
-  ch = bm.ask_getch("Command: ")
+  ch = BufferManager.ask_getch("Command: ")
   #print "Command: "
   #ch = gets || ""
-  unless bm.handle_input(ch)
+  unless BufferManager.handle_input(ch)
     # Either of the following two calls should work.
     #action = BufferManager.resolve_input_with_keymap(ch, global_keymap)
-    action = bm.resolve_input_with_keymap(ch, global_keymap)
+    action = BufferManager.resolve_input_with_keymap(ch, global_keymap)
     if action
       send action
     else
       #BufferManager.say "No action for #{ch}"
-      Ncurses.mvaddstr(5, 0, "No action for #{ch}")
+      Ncurses.mvaddstr(5, 0, "No action for #{ch}        ")
       #puts "No action for #{ch}"
     end
   end
