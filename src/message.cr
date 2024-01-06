@@ -31,7 +31,7 @@ class Message
   property parent : Message | Nil
   property children : Array(Message)
   property headers : Headers
-  property tags : Array(String)
+  property tags : Set(String)
   property content : ContentParts	# content parts indexed by a numeric ID
   property timestamp : Int64
   property filename : String
@@ -43,7 +43,7 @@ class Message
     @parent = nil
     @children = Array(Message).new
     @headers = Headers.new
-    @tags = Array(String).new
+    @tags = Set(String).new
     @content = ContentParts.new
     @timestamp = 0
     @filename = ""
@@ -66,8 +66,8 @@ class Message
     @headers[name] = value
   end
 
-  def add_tag(name)
-    @tags << name	#.as_s
+  def add_tag(name : String)
+    @tags.add(name)
   end
 
   def add_content(id : Int32, ctype : String, filename : String, s : String)
@@ -85,7 +85,7 @@ class Message
     end
 
     puts "#{prefix}  timestamp: #{@timestamp} (#{Time.unix(@timestamp)})"
-    puts "#{prefix}  tags: #{@tags.join(",")}"
+    puts "#{prefix}  tags: #{@tags.to_a.join(",")}"
     puts "#{prefix}  date_relative: #{@date_relative}"
 
     puts "#{prefix}  headers:"
