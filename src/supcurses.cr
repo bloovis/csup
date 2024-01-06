@@ -13,6 +13,9 @@ end
 class InputSequenceAborted < Exception
 end
 
+class StandardError < Exception
+end
+
 def warn(s : String)
   puts "warning: #{s}"
 end
