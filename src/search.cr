@@ -60,7 +60,7 @@ class SearchManager
     search_string = @searches[old]
     delete(old) if add(new, search_string)
   end
-  singleton_method renanme, old, new
+  singleton_method rename, old, new
 
   def edit(name : String, search_string : String)
     return unless @searches.has_key? name
@@ -78,7 +78,7 @@ class SearchManager
 
   def expand(search_string : String)
     expanded = search_string
-    until (matches = expanded.scan(/\{([\w-]+)\}/)).map{|rd| rd[1]}.empty?
+    until (matches = expanded.scan(/\{([\w-]+)\}/).map{|rd| rd[1]}).empty?
       if !(unknown = matches - @searches.keys).empty?
         error_message = "Unknown \"#{unknown.join("\", \"")}\" when expanding \"#{search_string}\""
       elsif expanded.size >= 2048
@@ -86,7 +86,7 @@ class SearchManager
       end
       if error_message
         warn error_message
-        raise ExpansionError, error_message
+        raise ExpansionError.new(error_message)
       end
       matches.each do |n|
         if @searches.has_key?(n)
