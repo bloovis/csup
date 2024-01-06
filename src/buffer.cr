@@ -332,7 +332,7 @@ class BufferManager
   end
 
   def do_say(s : String, id = -1, block_given? = true, &b)
-    system("echo do_say: s #{s}, id #{id}, block_given #{block_given?} >>/tmp/csup.log")
+    #system("echo do_say: s #{s}, id #{id}, block_given #{block_given?} >>/tmp/csup.log")
     new_id = id == -1
 
     #@minibuf_mutex.synchronize do
