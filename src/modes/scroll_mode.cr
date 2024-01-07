@@ -292,7 +292,7 @@ class ScrollMode < Mode
   end
 
   protected def draw_line_from_string(ln : Int32, s : String, opts : Opts)
-    buffer.write ln - @topline, 0, s[@leftcol .. -1],
+    buffer.write ln - @topline, 0, s[@leftcol .. -1]? || "",
 		 Opts.new({:highlight => opts.bool(:highlight) || false,
 			   :color => opts.sym(:color) || :none})
   end
