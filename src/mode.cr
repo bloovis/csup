@@ -2,7 +2,7 @@ require "./buffer"
 require "./supcurses"
 
 class Object
-  def send(action : Symbol)
+  def send(action : String | Symbol)
     puts "Object can't send #{action}!"
   end
 end
@@ -21,10 +21,13 @@ end
 # method with the same name.  The arguments to the macro are
 # the names of the allowed methods.
 macro actions(*names)
-  def send(action : Symbol, *args)
+  def send(action : String | Symbol, *args)
+    if action.is_a?(Symbol)
+      action = action.to_s
+    end
     case action
     {% for name in names %}
-    when {{ name.symbolize }}
+    when {{ name.stringify }}
       {{ name.id }}(*args)
     {% end %}
     else
@@ -47,7 +50,7 @@ class Mode
     Redwood.actions({{*names}})
   end
 
-  def send(action : Symbol)
+  def send(action : String | Symbol)
     #puts "Mode.send: should never get here!"
   end
 
