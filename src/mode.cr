@@ -21,15 +21,15 @@ end
 # method with the same name.  The arguments to the macro are
 # the names of the allowed methods.
 macro actions(*names)
-  def send(action : Symbol)
+  def send(action : Symbol, *args)
     case action
     {% for name in names %}
     when {{ name.symbolize }}
-      {{ name.id }}
+      {{ name.id }}(*args)
     {% end %}
     else
       #puts "send: unknown method for #{self.class.name}.#{action}, calling superclass"
-      super(action)
+      super(action, *args)
     end
   end
 end
