@@ -5,7 +5,7 @@ module Redwood
 
 class Tagger(T)
 
-  def initialize(noun="object", plural_noun="objects")
+  def initialize(noun="object", plural_noun=nil)
     @tagged = Hash(T, Bool).new
     @noun = noun
     @plural_noun = plural_noun || (@noun + "s")
