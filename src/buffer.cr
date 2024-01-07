@@ -228,6 +228,15 @@ class BufferManager
   singleton_method ask, domain, question, default
 
   def ask_getch(question : String, accept_string = "") : String
+    # If we're not in Ncurses mode, prompt on the terminal and read
+    # a line containing the string representing the keystroke.
+    # This is useful for testing purposes only.
+    unless Redwood.cursing
+      print question
+      answer = gets || ""
+      return answer.strip
+    end
+
 #    Ncurses.print question
 #    Ncurses.getkey
     raise "impossible!" if @asking
@@ -380,12 +389,16 @@ class BufferManager
   singleton_method erase_flash
 
   def flash(s : String)
-    @flash = s
-    draw_screen Opts.new({:refresh => true})
+    if Redwood.cursing
+      @flash = s
+      draw_screen Opts.new({:refresh => true})
+    else
+      puts "Buffer flash: " + s
+    end
   end
   singleton_method flash, s
 
-  # Deleting a minibuf entry isuch simpler in Crystal than in Ruby, because
+  # Deleting a minibuf entry is much simpler in Crystal than in Ruby, because
   # we use hash instead of a sparse array.
   def clear(id : Int32)
     #@minibuf_mutex.synchronize do

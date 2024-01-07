@@ -329,6 +329,11 @@ module Redwood
     Ncurses.curs_set 1
     Ncurses.echo
     Ncurses.end
+    @@cursing = false
+  end
+
+  def self.cursing
+    @@cursing
   end
 
 end	# Redwood

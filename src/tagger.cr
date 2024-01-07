@@ -1,13 +1,12 @@
 #require 'sup/util/ncurses'
 require "./mode"
-require "./message"
 
 module Redwood
 
-class Tagger
+class Tagger(T)
 
-  def initialize(noun="thread", plural_noun="")
-    @tagged = Hash(Message, Bool).new
+  def initialize(noun="object", plural_noun="objects")
+    @tagged = Hash(T, Bool).new
     @noun = noun
     @plural_noun = plural_noun || (@noun + "s")
   end
@@ -16,7 +15,7 @@ class Tagger
     @mode = mode
   end
 
-  def tagged?(o : Message) : Bool
+  def tagged?(o : T) : Bool
     if @tagged.has_key?(o)
       @tagged[o]
     else
@@ -24,15 +23,15 @@ class Tagger
     end
   end
 
-  def toggle_tag_for(o : Message)
+  def toggle_tag_for(o : T)
     @tagged[o] = !tagged?(o)
   end
 
-  def tag(o : Message)
+  def tag(o : T)
     @tagged[o] = true
   end
 
-  def untag(o : Message)
+  def untag(o : T)
     @tagged[o] = false
   end
 
@@ -40,16 +39,28 @@ class Tagger
     @tagged.clear
   end
 
-  def drop_tag_for(o : Message)
+  def drop_tag_for(o : T)
     @tagged.delete(o)
   end
 
-{% if false %}
+
+  # Return number of tagged objects.
+  def num_tagged
+    count = 0
+    @tagged.each {|k,v| count += 1 if v == true}
+    return count
+  end
+
+  # Return an array of all tagged objects.
+  def all : Array(T)
+    @tagged.select {|k,v| v == true}.map {|x| x.first}
+  end
+
   # Can't implement this in Crystal even with a Proc, because
   # it constructs a method name at runtime.
-  def apply_to_tagged action=nil
-    targets = @tagged.select_by_value
-    num_tagged = targets.size
+  def apply_to_tagged(action=nil)
+    mode = @mode
+    return unless mode
     if num_tagged == 0
       BufferManager.flash "No tagged threads!"
       return
@@ -60,25 +71,19 @@ class Tagger
     unless action
       c = BufferManager.ask_getch "apply to #{num_tagged} tagged #{noun}:"
       return if c.empty? # user cancelled
-      action = @mode.resolve_input c
+      action = mode.resolve_input c
     end
 
     if action
-      tagged_sym = "multi_#{action}".intern
-      if @mode.respond_to? tagged_sym
-        @mode.send tagged_sym, targets
+      tagged_sym = "multi_" + action.to_s
+      if mode.respond_to? tagged_sym
+        mode.send tagged_sym	# method must fetch targets using Tagger.all
       else
-        BufferManager.flash "That command cannot be applied to multiple threads."
+        BufferManager.flash "That command cannot be applied to multiple #{@plural_noun}."
       end
     else
-      BufferManager.flash "Unknown command #{c.to_character}."
+      BufferManager.flash "Unknown command #{c}."
     end
-  end
-{% end %}
-
-  # Return an array of all tagged messages.
-  def all : Array(Message)
-    @tagged.select {|k,v| v == true}.map {|x| x.first}
   end
   
 end

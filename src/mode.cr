@@ -35,6 +35,13 @@ macro actions(*names)
       super(action, *args)
     end
   end
+    def respond_to?(action)
+      return [
+        {% for name in names %}
+          {{ name.stringify }},
+        {% end %}
+      ].index(action.to_s)
+    end
 end
 
 class Mode
@@ -50,8 +57,14 @@ class Mode
     Redwood.actions({{*names}})
   end
 
+  # Need these dummies to allow the subclassed versions defined
+  # by mode_class to be recognized.
   def send(action : String | Symbol)
     #puts "Mode.send: should never get here!"
+  end
+
+  def respond_to?(action)
+    return false
   end
 
   # Define a getter for @buffer that always returns a non-nil value,
