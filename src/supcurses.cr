@@ -1,51 +1,6 @@
 # Ncurses functions used by sup that are missing in the NCurses shard.
 
-require "../lib/ncurses/src/ncurses"
-require "../lib/uniwidth/src/uniwidth"
-
-# These definitions should be in another source file used by every Csup module.
-class NameError < Exception
-end
-
-class ArgumentError < Exception
-end
-
-class InputSequenceAborted < Exception
-end
-
-class StandardError < Exception
-end
-
-def warn(s : String)
-  puts "warning: #{s}"
-end
-
-def debug(s : String)
-  puts "debug: #{s}"
-end
-
-class String
-  def display_length
-    UnicodeCharWidth.width(self)
-  end
-
-  def slice_by_display_length(len)
-    # Chop it down to the maximum allowable size before attempting to
-    # get the Unicode width, because UnicodeCharWidth is VERY slow
-    # on big strings.
-    s = self[0, len]
-
-    # Chop off characters on the right until the display length fits.
-    while UnicodeCharWidth.width(s) > len
-      s = s.rchop
-    end
-    return s
-  end
-
-  def camel_to_hyphy
-    self.gsub(/([a-z])([A-Z0-9])/, "\\1-\\2").downcase
-  end
-end
+require "./util"
 
 # Extend the LibNcurses library.
 lib LibNCurses

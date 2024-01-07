@@ -49,6 +49,12 @@ class Config
   get(bool, Bool)
   get(strarray, Array(String))
 
+  # Does config have the specified entry?
+  def has_key?(s : Symbol | String) : Bool
+    @entries.has_key?(s.to_s)
+  end
+  singleton_method has_key?, s
+
   # Retrieve the specified account.
   def account(s : Symbol | String) : Account
     accounts = @entries["accounts"].as(Accounts)
