@@ -29,7 +29,7 @@ end
 
 
 def self.test
-t = Time.local
+t = Time.now
   test_span(t, Time::Span.new(minutes: 23))
   test_span(t, Time::Span.new(minutes: 980))
   test_span(t, Time::Span.new(days: 22))

@@ -2,6 +2,10 @@ require "./util"
 require "./config"
 
 struct Time
+  def self.now
+    local
+  end
+
   def strftime(format)
     to_s(format)
   end
