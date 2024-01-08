@@ -1,4 +1,4 @@
-require "ncurses"
+#require "ncurses"
 
 lib LibC
   alias WChar = UInt32
@@ -10,8 +10,7 @@ end
 module Unicode
   extend self
 
-  # cjk is ignored, but present for Ruby compatibility
-  def width(s : String, cjk : Bool = false) : Int32
+  def width(s : String) : Int32
     width = 0
     chreader = Char::Reader.new(s)
     chreader.each do |ch|

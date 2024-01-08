@@ -3,6 +3,7 @@
 
 require "../lib/ncurses/src/ncurses"
 require "../lib/uniwidth/src/uniwidth"
+require "./unicode"
 
 # Exceptions
 
@@ -32,7 +33,7 @@ end
 
 class String
   def display_length
-    UnicodeCharWidth.width(self)
+    Unicode.width(self)
   end
 
   def slice_by_display_length(len)
@@ -42,7 +43,7 @@ class String
     s = self[0, len]
 
     # Chop off characters on the right until the display length fits.
-    while UnicodeCharWidth.width(s) > len
+    while Unicode.width(s) > len
       s = s.rchop
     end
     return s
