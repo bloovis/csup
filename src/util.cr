@@ -52,6 +52,24 @@ class String
   def camel_to_hyphy
     self.gsub(/([a-z])([A-Z0-9])/, "\\1-\\2").downcase
   end
+
+  def wrap(len) : Array(String)
+    ret = [] of String
+    s = self
+    while s.display_length > len
+      slice = s.slice_by_display_length(len)
+      cut = slice.rindex(/\s/)
+      if cut
+        ret << s[0 ... cut]
+        s = s[(cut + 1) .. -1]
+      else
+        ret << slice
+        s = s[slice.size .. -1]
+      end
+    end
+    ret << s
+  end
+
 end
 
 # Enumerable extensions
