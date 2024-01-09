@@ -1,4 +1,7 @@
+# FIXME: make UpdateManager into a generic class.
+
 require "./singleton"
+require "./message"
 
 module Redwood
 
@@ -19,6 +22,7 @@ module Redwood
 #   must provide a handle_update method that takes two parameters:
 #   - a symbol representing the update type
 #   - a Message object
+
 
 class UpdateManager
   singleton_class

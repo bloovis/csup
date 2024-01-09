@@ -1,9 +1,9 @@
-require "../src/config"
+require "../src/csup"
 require "../src/time"
 
 module Redwood
 
-c = Config.new
+c = Config.new(File.join(BASE_DIR, "config.yaml"))
 
 def self.test_span(t : Time, span : Time::Span)
   puts "---\nnice t = " + t.to_nice_s

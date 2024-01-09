@@ -1,3 +1,4 @@
+require "../src/csup"
 require "../src/modes/scroll_mode.cr"
 
 module Redwood
@@ -43,7 +44,7 @@ def quit
 end
 
 bm = BufferManager.new
-colormap = Colormap.new
+colormap = Colormap.new(File.join(BASE_DIR, "colors.yaml"))
 Colormap.reset
 Colormap.populate_colormap
 mode = StupidMode.new

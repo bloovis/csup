@@ -1,6 +1,7 @@
 require "./singleton"
 require "./colormap"
 require "./opts"
+require "./mode"
 require "./util"
 
 module Redwood

@@ -1,7 +1,6 @@
-require "../src/keymap"
-require "../src/buffer"
-require "../src/mode"
 require "../src/supcurses"
+require "../src/csup"
+require "../src/mode"
 
 module Redwood
 
@@ -65,7 +64,7 @@ actions(quit, help)
 
 def quit
   #BufferManager.say "This is the global quit command."
-  Ncurses.end
+  stop_cursing
   puts "This is the global quit command."
   exit 0
 end
@@ -76,19 +75,19 @@ def help
   Ncurses.mvaddstr(4, 0, "This is the global help command.")
 end
 
-bm = BufferManager.new
-colormap = Colormap.new
-Colormap.reset
-Colormap.populate_colormap
+init_managers
+
 #pm = ParentMode.new	# This would create a Mode object with a different @@keymaps than cm's
 cm = ChildMode.new
 puts "Ancestors of ChildMode:"
 puts cm.ancestors
 
 start_cursing
-w = Ncurses.stdscr
-buf = BufferManager.spawn("Child Mode", cm, Opts.new({:width => 80, :height => 25}))
+
+#w = Ncurses.stdscr
 #buf = Buffer.new(w, cm, 80, 25, title: "Phony buffer")
+
+buf = BufferManager.spawn("Child Mode", cm, Opts.new({:width => 80, :height => 25}))
 BufferManager.raise_to_front(buf)
 say_id = 0
 BufferManager.say("Testing BufferManager.say with a block") {|id| say_id = id}
@@ -105,24 +104,6 @@ global_keymap = Keymap.new do |k|
   k.add(:help, "Help", "h")
 end
 
-while true
-  ch = BufferManager.ask_getch("Command: ")
-  #print "Command: "
-  #ch = gets || ""
-  unless BufferManager.handle_input(ch)
-    # Either of the following two calls should work.
-    #action = BufferManager.resolve_input_with_keymap(ch, global_keymap)
-    action = BufferManager.resolve_input_with_keymap(ch, global_keymap)
-    if action
-      send action
-    else
-      #BufferManager.say "No action for #{ch}"
-      Ncurses.mvaddstr(5, 0, "No action for #{ch}        ")
-      #puts "No action for #{ch}"
-    end
-  end
-end
-
-stop_cursing
+event_loop(global_keymap) {|ch| Ncurses.mvaddstr(5, 0, "No action for #{ch}        ")}
 
 end	# module Redwood

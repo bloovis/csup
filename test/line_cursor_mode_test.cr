@@ -1,4 +1,4 @@
-require "../src/config"
+require "../src/csup"
 require "../src/modes/line_cursor_mode.cr"
 
 module Redwood
@@ -43,9 +43,9 @@ def quit
   exit 0
 end
 
-cm = Config.new
+cm = Config.new(File.join(BASE_DIR, "config.yaml"))
 bm = BufferManager.new
-colormap = Colormap.new
+colormap = Colormap.new(File.join(BASE_DIR, "colors.yaml"))
 Colormap.reset
 Colormap.populate_colormap
 mode = StupidMode.new

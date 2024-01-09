@@ -1,11 +1,9 @@
-require "../src/colormap"
-require "../lib/ncurses/src/ncurses"
-require "../src/supcurses"
+require "../src/csup"
 
 module Redwood
 
 #Colormap.reset # this causes a "Colormap not instantiated!" exception
-cm = Colormap.new
+cm = Colormap.new(File.join(BASE_DIR, "colors.yaml"))
 Colormap.reset
 Colormap.populate_colormap
 x = Colormap.color_for(:label_color)

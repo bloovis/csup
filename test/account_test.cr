@@ -1,10 +1,10 @@
-require "../src/account"
+require "../src/csup"
 require "../src/supcurses"
 require "../src/person"
 
 module Redwood
 
-cm = Config.new
+cm = Config.new(File.join(BASE_DIR, "config.yaml"))
 am = AccountManager.new(Config.accounts)
 
 puts "Account emails:"

@@ -1,5 +1,5 @@
+require "../src/csup"
 require "../src/message"
-require "../src/config"
 require "../src/modes/line_cursor_mode"
 
 module Redwood
@@ -94,9 +94,9 @@ end
 
 
 def run_gui(threadlist : ThreadList, display_content = false)
-  cm = Config.new
+  cm = Config.new(File.join(BASE_DIR, "config.yaml"))
   bm = BufferManager.new
-  colormap = Colormap.new
+  colormap = Colormap.new(File.join(BASE_DIR, "colors.yaml"))
   Colormap.reset
   Colormap.populate_colormap
   mode = MessageMode.new(threadlist, display_content: display_content)

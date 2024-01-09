@@ -6,7 +6,7 @@ require "../src/message"
 module Redwood
 
 class ListMode < Mode
-  mode_class
+  mode_class dummy_action
 
   def handle_update(type : Symbol, msg : Message)
     puts "ListMode: handling update #{type} for message #{msg.id}"
@@ -25,10 +25,13 @@ class ListMode < Mode
   def classname
     self.class.name
   end
+
+  def dummy_action
+  end
 end
 
 class ViewMode < Mode
-  mode_class
+  mode_class dummy_action
 
   def initialize
     super
@@ -47,6 +50,9 @@ class ViewMode < Mode
 
   def stop_update
     UpdateManager.unregister(self)
+  end
+
+  def dummy_action
   end
 end
     

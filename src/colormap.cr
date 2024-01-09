@@ -72,8 +72,9 @@ class Colormap
   # Instance variables
   @highlights = {} of String => String
   @entries = {} of String => ColorEntry
+  @filename : String
 
-  def initialize
+  def initialize(@filename)
     singleton_pre_init
 
     @color_pairs = {[Ncurses::COLOR_WHITE, Ncurses::COLOR_BLACK] => 0}

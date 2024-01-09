@@ -1,44 +1,45 @@
-require "ncurses"
-require "./config.cr"
+require "./keymap"
+require "./config"
+require "./buffer"
+require "./colormap"
+require "./search"
+require "./undo"
+require "./update"
+require "./hook"
+require "./account"
 
-#LibNCurses.setlocale(0, "")
+module Redwood
+  BASE_DIR = File.join(ENV["HOME"], ".csup")
 
-# TODO: Write documentation for `Csup`
-module Csup
-  VERSION = "0.1.0"
+  extend self
 
-  # TODO: Put your code here
-end
+  def init_managers
+    basedir = BASE_DIR
 
-# initialize
-NCurses.init
-NCurses.cbreak
-NCurses.noecho
-# NCurses.start_color
+    cm = Config.new(File.join(basedir, "config.yaml"))
+    bm = BufferManager.new
+    colormap = Colormap.new(File.join(basedir, "colors.yaml"))
+    Colormap.reset
+    Colormap.populate_colormap
+    sm = SearchManager.new(File.join(basedir, "searches.txt"))
+    unm = UndoManager.new
+    upm = UpdateManager.new
+    hm = HookManager.new(File.join(basedir, "hooks"))
+    am = AccountManager.new(Config.accounts)
+  end
 
-# define background color
-#pair = NCurses::ColorPair.new(1).init(NCurses::Color::RED, NCurses::Color::BLACK)
-#NCurses.bkgd(pair)
+  def event_loop(keymap, &b)
+    while true
+      ch = BufferManager.ask_getch("Command: ")
+      unless BufferManager.handle_input(ch)
+	action = BufferManager.resolve_input_with_keymap(ch, keymap)
+	if action
+	  send action
+	else
+	  yield ch
+	end
+      end
+    end
+  end
 
-NCurses.erase
-# move the cursor
-NCurses.move(x: 0, y: 1)
-# longname returns the verbose description of the current terminal
-NCurses.addstr(NCurses.longname)
-
-NCurses.move(x: 0, y: 2)
-NCurses.addstr(NCurses.curses_version)
-
-NCurses.move(y: 10, x: 20)
-s = "あいう"
-NCurses.addstr("Hello, " + s + "!")
-NCurses.refresh
-
-#  NCurses.notimeout(true)
-# NCurses.getch
-status = LibNCurses.get_wch(out ch)
-NCurses.addstr("status = #{status}, ch = #{ch}")
-NCurses.refresh
-status = LibNCurses.get_wch(pointerof(ch))
-#  sleep(5)
-NCurses.endwin
+end	# Redwood

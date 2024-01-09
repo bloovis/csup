@@ -1,4 +1,4 @@
-require "../src/config"
+require "../src/csup"
 require "../src/supcurses"
 
 module Redwood
@@ -44,7 +44,7 @@ def self.print_config
 end
 
 puts "---- Testing config from ~/.csup/config.yaml ----"
-@@config = Config.new
+@@config = Config.new(File.join(BASE_DIR, "config.yaml"))
 print_config
 
 puts "---- Testing Hunter Biden test config ----"

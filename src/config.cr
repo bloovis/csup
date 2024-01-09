@@ -11,14 +11,13 @@ class Config
   alias ConfigEntry = String | Int32 | Bool | Array(String) | Accounts
   alias ConfigTable = Hash(String, ConfigEntry)
 
-  def initialize
+  def initialize(fn : String)
     singleton_pre_init
     @entries = ConfigTable.new
 
     # Eventually, the code for obtaining config filename should be
     # moved to lib/csup.rb.
-    base_dir   = File.join(ENV["HOME"], ".csup")
-    @filename = File.join(base_dir, "config.yaml")
+    @filename = fn
 
     init_config
     #debug "config after init_config:\n#{@entries.inspect}"
