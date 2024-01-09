@@ -53,6 +53,18 @@ class String
     self.gsub(/([a-z])([A-Z0-9])/, "\\1-\\2").downcase
   end
 
+  def find_all_positions(x : String) : Array(Int32)
+    ret = [] of Int32
+    start = 0
+    while start < size
+      pos = index x, start
+      break if pos.nil?
+      ret << pos
+      start = pos + 1
+    end
+    ret
+  end
+
   def wrap(len) : Array(String)
     ret = [] of String
     s = self
