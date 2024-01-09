@@ -37,7 +37,8 @@ class ListMode < Mode
   def archive
     m = @cursor_message
     if m
-      puts "In archive action, message id #{m.id}"
+      puts "Tagging message #{m.id} as archived"
+      @tags.tag(m)
     else
       puts "In archive action, cursor_message is not set!"
     end
@@ -80,7 +81,7 @@ class ListMode < Mode
     @tags.toggle_tag_for(msg3)
     print("Expecting #2 and #4")
 
-    @cursor_message = msg2
+    @cursor_message = msg3
   end
 
 end
@@ -92,6 +93,11 @@ lm = ListMode.new
 puts "Ancestors: #{lm.ancestors}"
 puts "respond_to?(:archive) = #{lm.respond_to?(:archive)}"
 lm.test
+
+puts "Commands are:"
+puts "  q   quit"
+puts "  a   tag Message #3 as archived"
+puts "  =   apply next command to all tagged messages"
 
 while true
   ch = BufferManager.ask_getch("Command: ")
