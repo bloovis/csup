@@ -183,7 +183,7 @@ class BufferManager
   ## for simplicitly, we always place the question at the very bottom of the
   ## screen.
   # Crystal note: we don't use TextField or Ncurses forms, so ignore
-  # then domain parameter, but allow it for compatiblity with existing code.
+  # then domain parameter, but allow it for compatibility with existing code.
   def ask(domain : Symbol, question : String, default=nil) : String
     raise "impossible!" if @asking
     raise "Question too long" if Ncurses.cols <= question.size
@@ -343,7 +343,6 @@ class BufferManager
   end
 
   def do_say(s : String, id = -1, block_given? = true, &b)
-    #system("echo do_say: s #{s}, id #{id}, block_given #{block_given?} >>/tmp/csup.log")
     new_id = id == -1
 
     #@minibuf_mutex.synchronize do

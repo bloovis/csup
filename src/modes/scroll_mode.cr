@@ -83,7 +83,7 @@ class ScrollMode < Mode
         buffer.write ln, 0, "", Opts.new({:color => :text_color})
       end
     end
-    @status = "lines #{@topline + 1}:#{@botline}/#{lines}"
+    set_status
   end
 
   def in_search?; @search_line end
@@ -159,6 +159,7 @@ class ScrollMode < Mode
     @topline = l
     @botline = [l + buffer.content_height, lines].min
     buffer.mark_dirty
+    set_status
   end
 
   def at_top?; @topline == 0 end
@@ -217,7 +218,6 @@ class ScrollMode < Mode
   end
 
   protected def draw_line(ln, opts = Opts.new)
-    #system("echo scroll_mode.draw_line: ln #{ln} >>/tmp/csup.log")
     regex = /(#{@search_query})/i
     case(s = self[ln])
     when String
@@ -295,6 +295,11 @@ class ScrollMode < Mode
     buffer.write ln - @topline, 0, s[@leftcol .. -1]? || "",
 		 Opts.new({:highlight => opts.bool(:highlight) || false,
 			   :color => opts.sym(:color) || :none})
+  end
+
+  private def set_status
+    l = lines
+    @status = "lines #{@topline + 1}:#{@botline}/#{lines}"
   end
 end
 

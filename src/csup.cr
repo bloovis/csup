@@ -29,8 +29,12 @@ module Redwood
   end
 
   def event_loop(keymap, &b)
+    # The initial draw_screen won't draw the buffer status, because
+    # the status is set as a result of calling draw_screen.  Hence,
+    # we need to call it again at the beginning of the event loop.
     BufferManager.draw_screen
     while true
+      BufferManager.draw_screen
       ch = Ncurses.getkey
       unless BufferManager.handle_input(ch)
 	action = BufferManager.resolve_input_with_keymap(ch, keymap)
@@ -40,7 +44,6 @@ module Redwood
 	  yield ch
 	end
       end
-      BufferManager.draw_screen
     end
   end
 
