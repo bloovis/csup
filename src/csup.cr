@@ -29,8 +29,9 @@ module Redwood
   end
 
   def event_loop(keymap, &b)
+    BufferManager.draw_screen
     while true
-      ch = BufferManager.ask_getch("Command: ")
+      ch = Ncurses.getkey
       unless BufferManager.handle_input(ch)
 	action = BufferManager.resolve_input_with_keymap(ch, keymap)
 	if action
@@ -39,6 +40,7 @@ module Redwood
 	  yield ch
 	end
       end
+      BufferManager.draw_screen
     end
   end
 

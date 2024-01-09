@@ -442,6 +442,7 @@ class BufferManager
     Ncurses.refresh if opts.bool(:refresh)
     # Ncurses.mutex.unlock unless opts[:sync] == false
   end
+  singleton_method draw_screen, opts
 
   def spawn(title : String, mode : Mode, opts = Opts.new)
     # raise ArgumentError, "title must be a string" unless title.is_a? String
