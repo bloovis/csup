@@ -60,12 +60,12 @@ class ChildMode < ParentMode
 end
     
 extend self
-actions(quit, help)
 
 def quit
   #BufferManager.say "This is the global quit command."
   stop_cursing
   puts "This is the global quit command."
+  @@global_keymap.dump
   exit 0
 end
 
@@ -73,6 +73,20 @@ def help
   #BufferManager.say "This is the global help command."
   #puts "This is the global help command."
   Ncurses.mvaddstr(4, 0, "This is the global help command.")
+end
+
+def global_multicmd
+  Ncurses.mvaddstr(6, 0, "This is the global multi-command.")
+end
+
+actions(quit, help, global_multicmd)
+
+@@global_keymap = Keymap.new do |k|
+  k.add(:quit, "Quit", "q", "C-q")
+  k.add(:help, "Help", "h")
+  k.add_multi("Global g commands", "g") do |kk|
+    kk.add(:global_multicmd, "Global n command", "n")
+  end
 end
 
 init_managers
@@ -99,11 +113,6 @@ buf.draw_status("status line")
 BufferManager.ask_getch("Press any key to continue:")
 BufferManager.clear(say_id)
 
-global_keymap = Keymap.new do |k|
-  k.add(:quit, "Quit", "q", "C-q")
-  k.add(:help, "Help", "h")
-end
-
-event_loop(global_keymap) {|ch| Ncurses.mvaddstr(5, 0, "No action for #{ch}        ")}
+event_loop(@@global_keymap) {|ch| Ncurses.mvaddstr(5, 0, "No action for #{ch}        ")}
 
 end	# module Redwood
