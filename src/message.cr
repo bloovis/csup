@@ -278,6 +278,10 @@ class ThreadList
 
     # First, get the list of threads matching the query.
     lines = Notmuch.search(query, offset: offset, limit: limit)
+    if lines.size == 0
+      puts "run_notmuch_show: query '#{query}' produced no results"
+      return
+    end
 
     # Construct a show query from the list of threads and obtain
     # the JSON output.
