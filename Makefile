@@ -6,7 +6,7 @@ tests : colormap_test keymap_test ncurses_test email_test logger_test \
         undo_test update_test tagger_test hook_test config_test \
 	contact_test account_test opts_test notmuch_test message_test \
 	search_test time_test string_test \
-	scroll_mode_test line_cursor_mode_test
+	scroll_mode_test line_cursor_mode_test thread_index_mode_test
 
 # Manager tests
 colormap_test : test/colormap_test.cr src/colormap.cr src/supcurses.cr
@@ -32,6 +32,7 @@ string_test : test/string_test.cr src/unicode.cr src/util.cr
 # Mode tests
 scroll_mode_test : test/scroll_mode_test.cr src/modes/scroll_mode.cr src/buffer.cr
 line_cursor_mode_test : test/line_cursor_mode_test.cr src/modes/line_cursor_mode.cr src/buffer.cr
+thread_index_mode_test : test/thread_index_mode_test.cr src/modes/thread_index_mode.cr src/buffer.cr
 
 test : src/test.cr src/index.cr
 	crystal build src/test.cr

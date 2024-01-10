@@ -12,6 +12,7 @@ class MessageMode < LineCursorMode
 
   register_keymap do |k|
     k.add(:help, "help", "h")
+    k.add(:select_item, "Select this item", "C-m")
   end
 
   def lines
@@ -79,6 +80,10 @@ class MessageMode < LineCursorMode
   def help
     BufferManager.flash "This is the help command."
     #puts "This is the help command."
+  end
+
+  def select_item
+    BufferManager.flash "Select item at #{curpos}"
   end
 end
 
