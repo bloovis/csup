@@ -2,13 +2,11 @@ module Redwood
 
 class Keymap
   alias Action = Symbol | Keymap
+  alias Entry = Tuple(Action, String, Array(String)) # action, help, keynames
 
-  property map : Hash(String, Action)
-  @desc : Hash(String, String)
+  property map = Hash(String, Entry).new	# keyname => entry
 
   def initialize(&)
-    @map = Hash(String, Action).new
-    @desc = Hash(String, String).new
     yield self
   end
 
@@ -16,10 +14,13 @@ class Keymap
     return map.empty?
   end
 
-  def add(action : Symbol, description : String, *keynames)
-    keynames.each do |keyname|
-      @map[keyname] = action
-      @desc[keyname] = description
+  def add(action : Action, help : String, *keynames)
+    keys = [] of String
+    keynames.each {|k| keys << k}
+    entry = Entry.new(action, help, keys)
+    keys.each do |k|
+      raise ArgumentError.new("key '#{k}' already defined (as #{@map[k].first})") if @map.includes? k
+      @map[k] = entry
     end
     #puts "Added keys #{keynames}, description #{description}, action #{action}, keymap #{self.object_id}, action map #{@map}"
   end
@@ -32,23 +33,29 @@ class Keymap
     @map[s]
   end
 
-  def add_multi(description : String, keyname : String)
-    submap = Keymap.new {}
-    @map[keyname] = submap
-    @desc[keyname] = description
-    #puts "Added multi key #{keyname}, description #{description}, keymap #{map.object_id}, action map #{@map}"
-    yield submap
+  def add_multi(prompt : String, kc : String)
+    if @map.member? kc
+      action = @map[kc].first
+      raise "existing action is not a keymap" unless action.is_a?(Keymap)
+      yield action
+    else
+      submap = Keymap.new {}
+      add submap, prompt, kc
+      yield submap
+    end
   end
 
-  def dump(m = @map, int level = 1)
-    puts "dump level #{level}"
-    m.each do |k, v|
-      d = @desc.has_key?(k) ? @desc[k] : "<No description>"
-      if v.is_a?(Keymap)
-	puts "-" * level + "#{k} (#{d}):"
-	dump(v.map, level + 1)
+  def dump(int level = 1)
+    puts "Keymap dump level #{level}:"
+    @map.each do |k, entry|
+      action = entry[0]
+      help = entry[1]
+      keys = entry[2]
+      if action.is_a?(Keymap)
+	puts "-" * level + "#{k} (#{help}):"
+	action.dump(level + 1)
       else
-	puts "-" * level + "#{k} (#{d}): #{v}"
+	puts "-" * level + "#{k} (#{help}): #{action}"
       end
     end
   end
@@ -56,9 +63,8 @@ class Keymap
   def action_for(c : String) : Tuple(Action | Nil, String | Nil)
     #puts "action_for: c #{c}, keymap #{self.object_id}, action map #{@map}"
     if has_key?(c)
-      action = @map[c]	# runtime error here
-      help = @desc[c]
-      {action, help}
+      entry = @map[c]
+      {entry[0], entry[1]}	# action, help
     else
       {nil, nil}
     end
