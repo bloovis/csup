@@ -1,5 +1,8 @@
 require 'json'
 
+# Hook helper functions for reading and writing JSON.
+# Copy to to the directory ~/.csup/hooks .
+
 # Read a JSON string from stdin, return it as a hash.
 
 def read_json

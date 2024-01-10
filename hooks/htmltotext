@@ -1,2 +1,6 @@
 #!/bin/sh
+
+# Hook script to convert html to plain text.
+# Copy to the directory ~/.csup/hooks .
+
 cat - | w3m -T text/html -dump

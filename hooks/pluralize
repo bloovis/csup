@@ -2,6 +2,9 @@
 
 # Simple hook that reads a JSON request containing a noun,
 # and returns a JSON reply containing the plural of the noun.
+# Used only for hook test purposes now, but could be enhanced
+# to do something useful.
+# Copy to the directory ~/.csup/hooks .
 
 $:.unshift File.dirname(__FILE__)
 

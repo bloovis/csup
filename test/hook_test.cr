@@ -1,9 +1,9 @@
-require "../src/hook"
+require "../src/csup"
 require "json"
 
 module Redwood
 
-hm = HookManager.new("./hooks")
+init_managers
 
 # Run a test of a hook that takes plain text for input and outputs plain text.
 success = HookManager.run("htmltotext") do |pipe|
