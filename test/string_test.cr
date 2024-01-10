@@ -3,6 +3,7 @@ require "benchmark"
 require "../src/util"
 require "../src/unicode"
 require "../src/supcurses"
+require "../lib/uniwidth/src/uniwidth"
 
 s = "the quick brown\nfox jumps over\nthe lazy dog.\n"
 #                   15              30             44

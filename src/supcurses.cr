@@ -1,5 +1,6 @@
 # Ncurses functions used by sup that are missing in the NCurses shard.
 
+require "../lib/ncurses/src/ncurses"
 require "./util"
 
 # Extend the LibNcurses library.

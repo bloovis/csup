@@ -1,8 +1,6 @@
 # Utility functions that lie outside the Redwood namespace,
 # mostly extensions to standard classes.
 
-require "../lib/ncurses/src/ncurses"
-require "../lib/uniwidth/src/uniwidth"
 require "./unicode"
 
 # Exceptions
