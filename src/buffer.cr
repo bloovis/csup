@@ -180,6 +180,41 @@ class BufferManager
   end
   singleton_method handle_input, c
 
+  def kill_buffer_safely(buf)
+    if buf
+      return false unless buf.mode.killable?
+      kill_buffer buf
+      true
+    else
+      false
+    end
+  end
+  singleton_method kill_buffer_safely, buf
+
+  def kill_all_buffers
+    until @buffers.empty?
+      kill_buffer @buffers.first
+    end
+  end
+  singleton_method kill_all_buffers
+
+  def kill_buffer(buf)
+    raise ArgumentError.new("buffer not on stack: #{buf}: #{buf.title.inspect}") unless @buffers.member? buf
+
+    buf.mode.cleanup
+    @buffers.delete buf
+    @name_map.delete buf.title
+    @focus_buf = nil if @focus_buf == buf
+    if @buffers.empty?
+      ## TODO: something intelligent here
+      ## for now I will simply prohibit killing the inbox buffer.
+    else
+      raise_to_front @buffers.last
+    end
+  end
+  singleton_method kill_buffer, buf
+
+
   ## for simplicitly, we always place the question at the very bottom of the
   ## screen.
   # Crystal note: we don't use TextField or Ncurses forms, so ignore
@@ -508,6 +543,11 @@ class BufferManager
       return { "", "" }
     end
   end
+
+  def focus_buf
+    @focus_buf
+  end
+  singleton_method focus_buf
 
 end
 

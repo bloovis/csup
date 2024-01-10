@@ -15,6 +15,10 @@ class ThreadIndexMode < LineCursorMode
     k.add(:help, "help", "h")
   end
 
+  def killable?
+    false	# change this to true when we have some derived classes!
+  end
+
   def lines
     @text.size
   end

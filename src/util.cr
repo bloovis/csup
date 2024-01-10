@@ -94,4 +94,8 @@ module Enumerable
     find { |e| ret ||= yield(e) }
     ret || nil # force
   end
+
+  def member?(x)
+    !index(x).nil?
+  end
 end

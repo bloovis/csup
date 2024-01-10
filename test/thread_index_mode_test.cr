@@ -3,13 +3,17 @@ require "../src/modes/thread_index_mode.cr"
 module Redwood
 
 extend self
-actions(quit)
+actions(quit, kill_buffer)
 
 def quit
   BufferManager.say "This is the global quit command."
   #puts "This is the global quit command."
   Ncurses.end
   exit 0
+end
+
+def kill_buffer
+  BufferManager.kill_buffer_safely(BufferManager.focus_buf)
 end
 
 def run_gui(threadlist)
@@ -24,7 +28,7 @@ def run_gui(threadlist)
 
   global_keymap = Keymap.new do |k|
     k.add(:quit, "Quit", "q", "C-q")
-    k.add(:help, "Help", "h")
+    k.add(:kill_buffer, "Kill the current buffer", "x")
   end
 
   # Interactive loop.
