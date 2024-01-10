@@ -136,6 +136,12 @@ def main
     run_gui(threadlist, display_content: print_content)
   else
     threadlist.print(print_content: print_content)
+    threadlist.threads.each_with_index do |thread, i|
+      puts "Walking message tree for thread #{i}"
+      thread.walktree do |msg, depth|
+        puts "-" * depth + "Message #{msg.id}, depth #{depth}, from #{msg.headers["From"]}"
+      end
+    end
   end
 end
 

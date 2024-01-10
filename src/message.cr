@@ -24,6 +24,7 @@ class Content
   end
 end
 
+# A message is actually a tree of messages: it can have multiple children.
 class Message
   alias ContentParts = Hash(Int32, Content)
   alias Headers = Hash(String, String)
@@ -109,6 +110,19 @@ class Message
 	child.print(level + 2, print_content)
       end
     end
+  end
+
+  # Walk the the tree of messages, passing each message and its depth
+  # to the block.
+  private def do_walk(msg : Message, depth : Int32, &b : Message, Int32 -> _)
+    b.call msg, depth
+    msg.children.each do |child|
+      do_walk(child, depth + 1) {|msg, depth| b.call msg, depth}
+    end
+  end
+
+  def walktree(&b : Message, Int32 -> _)
+   do_walk(self, 0) {|msg, depth| b.call msg, depth}
   end
 
   # Functions for parsing messages.
@@ -234,6 +248,15 @@ class MsgThread
       puts "Thread is empty!"
     end
   end
+
+  def walktree(&b : Message, Int32 -> _)
+    if m = @msg
+      m.walktree do |msg, depth|
+        b.call msg, depth
+      end
+    end
+  end
+
 end	# MsgThread
 
 class ThreadList
