@@ -28,6 +28,7 @@ end
 class Message
   alias ContentParts = Hash(Int32, Content)
   alias Headers = Hash(String, String)
+
   property id : String = ""
   property parent : Message | Nil
   property children : Array(Message)
@@ -37,9 +38,11 @@ class Message
   property timestamp : Int64
   property filename : String
   property date_relative : String
+  property thread : MsgThread?		# containing thread
 
-  # If a JSON result from "notmuch show" is provided, parse it
-  # to fill in the data.  Otherwise use some empty default values.
+  # If a JSON result from "notmuch show" is provided in `data`, parse it
+  # to fill in the message fields.  Otherwise use some empty default values, and
+  # use `data` as the message ID.
   def initialize(data = nil)
     @parent = nil
     @children = Array(Message).new
@@ -117,7 +120,7 @@ class Message
   private def do_walk(msg : Message, depth : Int32, &b : Message, Int32 -> _)
     b.call msg, depth
     msg.children.each do |child|
-      do_walk(child, depth + 1) {|msg, depth| b.call msg, depth}
+      do_walk(child, depth + 1, &b)
     end
   end
 
@@ -130,7 +133,7 @@ class Message
   def parse_part(p : JSON::Any)
     part = p.as_h?
     if part
-      # puts "part: #{part.inspect}"
+      #puts "part: #{part.inspect}"
       id =      part["id"].as_i
       ctype =   part["content-type"].as_s
       if part.has_key?("filename")
@@ -142,6 +145,7 @@ class Message
       if part.has_key?("content")
 	content = part["content"].as_s?
 	if content
+	  #puts "Adding content for part #{id}, content:\n---\n#{content}\n---\n"
 	  add_content(id, ctype, filename, content)
 	else
 	  content = part["content"].as_a?
@@ -237,7 +241,9 @@ class MsgThread
   def initialize(json : JSON::Any)
     #puts "MsgThread  #{json}"
     msglist = json.as_a	# There always seems to be only one message in the array
-    @msg = Message.new(msglist[0])
+    m = Message.new(msglist[0])
+    @msg = m
+    m.walktree {|msg, i| msg.thread = self}
   end
 
   def print(print_content = false)

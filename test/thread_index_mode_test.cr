@@ -19,7 +19,7 @@ end
 def run_gui(threadlist)
   init_managers
 
-  mode = ThreadIndexMode.new(threadlist)
+  mode = ThreadIndexMode.new(threadlist, true)
 
   start_cursing
 

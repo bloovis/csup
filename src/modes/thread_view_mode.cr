@@ -6,7 +6,7 @@ class ThreadViewMode < LineCursorMode
   mode_class help
 
   @text = Array(String).new
-  property display_content = false
+  @display_content = false
 
   register_keymap do |k|
     k.add(:help, "help", "h")
@@ -21,7 +21,7 @@ class ThreadViewMode < LineCursorMode
     @text[n]
   end
 
-  def initialize(thread : MsgThread)
+  def initialize(thread : MsgThread, @display_content = false)
     super()
     display_thread(thread)
   end
@@ -38,6 +38,12 @@ class ThreadViewMode < LineCursorMode
     @text << "#{prefix}Message:"
     @text << "#{prefix}  id: #{msg.id}"
     @text << "#{prefix}  filename: #{msg.filename}"
+    t = msg.thread
+    if t
+      @text << "#{prefix}  thread object id: #{t.object_id}"
+    else
+      @text << "#{prefix}  No containing thread!"
+    end
     parent = msg.parent
     if parent
       @text << "#{prefix}  parent id: #{parent.id}"
@@ -58,7 +64,7 @@ class ThreadViewMode < LineCursorMode
       if c.content == ""
 	@text << "#{prefix}  Content missing!"
       elsif @display_content
-        c.content.lines.each {|l| @text << l}
+        c.content.lines.each {|l| @text << prefix + "    " + l}
       end
     end
 

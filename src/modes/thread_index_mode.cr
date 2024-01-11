@@ -10,6 +10,7 @@ class ThreadIndexMode < LineCursorMode
 
   @text = Array(String).new
   @threads = Array(MsgThread).new
+  @display_content = false
 
   register_keymap do |k|
     k.add(:help, "help", "h")
@@ -27,7 +28,7 @@ class ThreadIndexMode < LineCursorMode
     @text[n]
   end
 
-  def initialize(threadlist : ThreadList)
+  def initialize(threadlist : ThreadList, @display_content=false)
     super()
     threadlist.threads.each_with_index do |thread, i|
       @threads << thread
@@ -42,7 +43,7 @@ class ThreadIndexMode < LineCursorMode
 
   def select_item
     BufferManager.flash "Selecting thread at #{@curpos}"
-    mode = ThreadViewMode.new(@threads[@curpos])
+    mode = ThreadViewMode.new(@threads[@curpos], @display_content)
     viewbuf = BufferManager.spawn("Thread View Mode", mode, Opts.new({:width => 80, :height => 25}))
     BufferManager.raise_to_front(viewbuf)
   end
