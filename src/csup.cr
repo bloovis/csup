@@ -7,6 +7,7 @@ require "./undo"
 require "./update"
 require "./hook"
 require "./account"
+require "./label"
 
 module Redwood
   BASE_DIR = File.join(ENV["HOME"], ".csup")
@@ -26,6 +27,7 @@ module Redwood
     upm = UpdateManager.new
     hm = HookManager.new(File.join(basedir, "hooks"))
     am = AccountManager.new(Config.accounts)
+    lm = LabelManager.new(File.join(basedir, "labels.txt"))
   end
 
   def event_loop(keymap, &b)
