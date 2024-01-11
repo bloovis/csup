@@ -43,8 +43,9 @@ class ThreadIndexMode < LineCursorMode
 
   def select_item
     BufferManager.flash "Selecting thread at #{@curpos}"
-    mode = ThreadViewMode.new(@threads[@curpos], @display_content)
-    viewbuf = BufferManager.spawn("Thread View Mode", mode, Opts.new({:width => 80, :height => 25}))
+    thread = @threads[@curpos]
+    mode = ThreadViewMode.new(thread, @display_content)
+    viewbuf = BufferManager.spawn(thread.subj, mode, Opts.new({:width => 80, :height => 25}))
     BufferManager.raise_to_front(viewbuf)
   end
 

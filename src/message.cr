@@ -246,6 +246,15 @@ class MsgThread
     m.walktree {|msg, i| msg.thread = self}
   end
 
+  def subj
+    if m = @msg
+      if m.headers.has_key?("Subject")
+	return m.headers["Subject"]
+      end
+    end
+    return "<no subject>"
+  end
+
   def print(print_content = false)
     if m = @msg
       puts "Thread object id #{self.object_id}, prev #{@prev.object_id}, next #{@next.object_id}"
