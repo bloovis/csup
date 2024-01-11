@@ -14,6 +14,7 @@ lib LibNCurses
   fun wnoutrefresh(window : Window) : LibC::Int
   fun COLOR_PAIR(LibC::Int) : LibC::Int
   fun attrset(LibC::Int) : LibC::Int
+  fun clrtoeol : LibC::Int
 end
 
 # Ruby ncurses class is called Ncurses (lower-case c)
@@ -79,6 +80,11 @@ module NCurses
   # Wrapper for `curs_set()`
   def curs_set(visibility : LibC::Int) : LibC::Int
     LibNCurses.curs_set(Cursor.new(visibility))
+  end
+
+  # Wrapper for `clrtoeol`
+  def clrtoeol : LibC::Int
+    LibNCurses.clrtoeol
   end
 
   A_NORMAL = 0

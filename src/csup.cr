@@ -36,6 +36,7 @@ module Redwood
     while true
       BufferManager.draw_screen
       ch = Ncurses.getkey
+      BufferManager.erase_flash
       unless BufferManager.handle_input(ch)
 	action = BufferManager.resolve_input_with_keymap(ch, keymap)
 	if action

@@ -223,7 +223,6 @@ class BufferManager
     raise "impossible!" if @asking
     raise "Question too long" if Ncurses.cols <= question.size
     @asking = true
-
     status, title = get_status_and_title(@focus_buf)
     draw_screen Opts.new({:sync => false, :status => status, :title => title})
     row = Ncurses.rows - 1
@@ -231,6 +230,7 @@ class BufferManager
     fillcols = Ncurses.cols - leftcol
     Ncurses.mvaddstr(row, 0, question)
     Ncurses.move(row, leftcol)
+    Ncurses.clrtoeol
     Ncurses.curs_set 1
     Ncurses.refresh
 
