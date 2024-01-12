@@ -8,6 +8,7 @@ require "./update"
 require "./hook"
 require "./account"
 require "./label"
+require "./contact"
 
 module Redwood
   BASE_DIR = File.join(ENV["HOME"], ".csup")
@@ -17,7 +18,8 @@ module Redwood
   def init_managers
     basedir = BASE_DIR
 
-    cm = Config.new(File.join(basedir, "config.yaml"))
+    cf = Config.new(File.join(basedir, "config.yaml"))
+    cm = ContactManager.new(File.join(basedir, "contacts.txt"))
     bm = BufferManager.new
     colormap = Colormap.new(File.join(basedir, "colors.yaml"))
     Colormap.reset

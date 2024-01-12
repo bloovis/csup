@@ -1,15 +1,9 @@
-require "../src/contact"
+require "../src/csup"
 
 module Redwood
 
-contacts_file = File.join(ENV["HOME"], ".csup", "contacts.txt")
-unless File.exists?(contacts_file)
-  puts "Can't find #{contacts_file}.  Have you copied it from ~/.sup ?"
-  puts "Skipping contacts test."
-  exit 1
-end
+init_managers
 
-cm = ContactManager.new(contacts_file)
 ContactManager.contacts.each do |p|
   puts "Contact person = '#{p.to_s}'"
 end
@@ -42,6 +36,6 @@ else
   ContactManager.update_alias(p, "joeblow")
 end
 ContactManager.save
-puts "Saved #{contacts_file}"
+puts "Saved contacts_file"
 
 end	# Redwood
