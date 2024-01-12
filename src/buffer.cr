@@ -158,6 +158,7 @@ class BufferManager
     end
     focus_on @buffers.last
     @dirty = true
+    draw_screen
   end
   singleton_method raise_to_front, buf
 
