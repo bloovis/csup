@@ -490,6 +490,7 @@ class BufferManager
 
     width = opts.int(:width) || Ncurses.cols
     height = opts.int(:height) || Ncurses.rows - 1
+    #system("echo spawn: setting height to #{height}, Ncurses.rows = #{Ncurses.rows} >>/tmp/csup.log")
 
     ## since we are currently only doing multiple full-screen modes,
     ## use stdscr for each window. once we become more sophisticated,

@@ -279,7 +279,7 @@ class ThreadList
   property query = ""
 
   def initialize(@query, offset : Int32, limit : Int32)
-    puts "ThreadList: query #{@query}"
+    #system("echo ThreadList.new: query #{@query}, offset #{offset}, limit #{limit} >>/tmp/csup.log")
     if query
       run_notmuch_show(@query, offset: offset, limit: limit)
     end
@@ -288,20 +288,21 @@ class ThreadList
   # Run 'notmuch search' and 'notmuch show' to obtain the threads for the
   # specified query string.
   def run_notmuch_show(query : String, offset : Int32? = nil, limit : Int32? = nil)
-    puts "run_notmuch_show: query #{query}"
+    #puts "run_notmuch_show: query #{query}, caller #{caller[0]}"
+    #system("echo run_notmuch_show query #{query}, offset #{offset}, limit #{limit} >>/tmp/csup.log")
     @query = query
 
     # First, get the list of threads matching the query.
     lines = Notmuch.search(query, offset: offset, limit: limit)
     if lines.size == 0
-      puts "run_notmuch_show: query '#{query}' produced no results"
+      #puts "run_notmuch_show: query '#{query}' produced no results"
       return
     end
 
     # Construct a show query from the list of threads and obtain
     # the JSON output.
     show_query = lines.join(" or ")
-    puts "run_notmuch_show: query #{query}"
+    #puts "run_notmuch_show: query #{query}"
     json = Notmuch.show(show_query, body: true, html: true)
     parse_json(json)
   end
@@ -310,7 +311,7 @@ class ThreadList
     #puts "parse_json #{json}"
     results = json.as_a?
     if results
-      puts "results is an array"
+      #puts "results is an array"
       prev_thread = nil
       results.each do |result|
         thread = MsgThread.new(result)

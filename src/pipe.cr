@@ -31,10 +31,10 @@ module Pipe
       command = prog
       shell = false
     end
-    puts "Process.run: #{command}, #{args}, shell: #{shell}, input:\n---\n#{input}---\n"
+    #puts "Process.run: #{command}, #{args}, shell: #{shell}, input:\n---\n#{input}---\n"
     status = Process.run(command, args, input: io_input, output: io_output,
                          error: io_error, shell: shell)
-    puts "Process success: #{status.success?}"
+    #puts "Process success: #{status.success?}"
     if (check_status && !status.success?) || (check_stderr && !io_error.empty?)
       stderr_str = io_error.to_s
       raise PipeError.new("Failed to execute #{command}: exitcode=#{status.exit_status}, stderr=#{stderr_str}")

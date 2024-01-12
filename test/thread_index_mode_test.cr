@@ -16,13 +16,14 @@ def kill_buffer
   BufferManager.kill_buffer_safely(BufferManager.focus_buf)
 end
 
-def run_gui(threadlist)
-  init_managers
+def run_gui(query : String)
+  puts "About to call spawn ThreadIndexMode, query #{query}"
 
-  mode = ThreadIndexMode.new(threadlist, true)
+  init_managers
 
   start_cursing
 
+  mode = ThreadIndexMode.new(query, true)
   buf = BufferManager.spawn("Thread Index Mode", mode, Opts.new({:width => 80, :height => 25}))
   BufferManager.raise_to_front(buf)
 
@@ -41,10 +42,7 @@ def main
     exit 1
   end
   query = ARGV[0]
-  puts "About to call ThreadList.new, query #{query}"
-  threadlist = Redwood::ThreadList.new(query, offset: 0, limit: 10)
-  puts "About to call run_gui"
-  run_gui(threadlist)
+  run_gui(query)
 end
 
 main

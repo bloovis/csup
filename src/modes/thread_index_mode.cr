@@ -29,9 +29,10 @@ class ThreadIndexMode < LineCursorMode
     @text[n]
   end
 
-  def initialize(threadlist : ThreadList, @display_content=false)
+  def initialize(@query, @display_content=false)
     super()
-    @query = threadlist.query
+    system("echo ThreadIndexMode.new: query #{query}, content height #{buffer.content_height} >>/tmp/csup.log")
+    threadlist = Redwood::ThreadList.new(@query, offset: 0, limit: buffer.content_height)
     threadlist.threads.each_with_index do |thread, i|
       @threads << thread
       m = thread.msg

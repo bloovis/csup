@@ -41,6 +41,7 @@ module Notmuch
     args << "--limit=#{limit}" if limit
     args << "--exclude=false" unless exclude
     args << query
+    #system("echo notmuch #{Shellwords.escape(args.inspect)} >>/tmp/csup.log")
     Pipe.run("notmuch", args).lines
   end
 

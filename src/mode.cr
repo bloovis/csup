@@ -76,8 +76,9 @@ class Mode
     if b
       return b
     else
-      # Return a dummy buffer.  This should never actually happen.
-      b = Buffer.new(Ncurses.stdscr, self, 0, 0, Opts.new)
+      # Return a dummy buffer.  This should only happen if a mode's initialize method
+      # tries to access its buffer before it has been assigned a buffer in spawn.
+      b = Buffer.new(Ncurses.stdscr, self, Ncurses.cols, Ncurses.rows-1, Opts.new)
       @buffer = b
       return b
     end
