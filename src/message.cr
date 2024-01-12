@@ -237,13 +237,18 @@ class MsgThread
   property msg : Message?
   property next : MsgThread?
   property prev : MsgThread?
+  property size = 0
 
   def initialize(json : JSON::Any)
     #puts "MsgThread  #{json}"
     msglist = json.as_a	# There always seems to be only one message in the array
     m = Message.new(msglist[0])
     @msg = m
-    m.walktree {|msg, i| msg.thread = self}
+    @size = 0
+    m.walktree do |msg, i|
+      msg.thread = self
+      @size += 1
+    end
   end
 
   def subj
