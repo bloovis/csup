@@ -278,10 +278,10 @@ class ThreadList
   property threads = Array(MsgThread).new
   property query = ""
 
-  def initialize(query : String, offset : Int32, limit : Int32)
-    puts "ThreadList: query #{query}"
+  def initialize(@query, offset : Int32, limit : Int32)
+    puts "ThreadList: query #{@query}"
     if query
-      run_notmuch_show(query, offset: offset, limit: limit)
+      run_notmuch_show(@query, offset: offset, limit: limit)
     end
   end
 

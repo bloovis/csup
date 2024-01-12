@@ -11,6 +11,7 @@ class ThreadIndexMode < LineCursorMode
   @text = Array(String).new
   @threads = Array(MsgThread).new
   @display_content = false
+  @query = ""
 
   register_keymap do |k|
     k.add(:help, "help", "h")
@@ -30,6 +31,7 @@ class ThreadIndexMode < LineCursorMode
 
   def initialize(threadlist : ThreadList, @display_content=false)
     super()
+    @query = threadlist.query
     threadlist.threads.each_with_index do |thread, i|
       @threads << thread
       m = thread.msg
@@ -53,6 +55,12 @@ class ThreadIndexMode < LineCursorMode
     BufferManager.flash "This is the help command."
     #puts "This is the help command."
   end
+
+  def set_status
+    l = lines
+    @status = l > 0 ? "\"#{@query}\" line #{@curpos + 1} of #{l}" : ""
+  end
+
 end
 
 end	# Redwood
