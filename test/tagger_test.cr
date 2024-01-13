@@ -6,13 +6,16 @@ require "../src/message"
 module Redwood
 
 class ListMode < Mode
-  mode_class apply_to_tagged, archive, quit, multi_archive
+  mode_class quit, apply_to_tagged, archive, delete, toggle,
+	     multi_archive, multi_delete, multi_toggle
 
   @cursor_message : Message?
 
   register_keymap do |k|
     k.add(:quit, "Quit", "q")
     k.add(:archive, "Archive ", "a")
+    k.add(:delete, "Delete", "d")
+    k.add(:toggle, "Toggle", "t")
     k.add(:apply_to_tagged, "Apply next command to all tagged threads", "=")
   end
 
@@ -44,12 +47,44 @@ class ListMode < Mode
     end
   end
 
+  def delete
+    m = @cursor_message
+    if m
+      puts "Deleting message #{m.id} as archived"
+      @tags.untag(m)
+    else
+      puts "In delete action, cursor_message is not set!"
+    end
+  end
+
+  def toggle
+    m = @cursor_message
+    if m
+      puts "Toggling message #{m.id} as archived"
+      @tags.toggle_tag_for(m)
+    else
+      puts "In toggle action, cursor_message is not set!"
+    end
+  end
+
   # Unlike in Sup, a "multi_{action}" method cannot take a parameter
   # containing the array of tagged objects.  Instead, it must fetch the array
   # by calling @tags.all
   def multi_archive
     ms  = @tags.all
     puts "In multi_archive action, message IDs:"
+    ms.each {|m| puts "  #{m.id}"}
+  end
+
+  def multi_delete
+    ms  = @tags.all
+    puts "In multi_delete action, message IDs:"
+    ms.each {|m| puts "  #{m.id}"}
+  end
+
+  def multi_toggle
+    ms  = @tags.all
+    puts "In multi_toggle action, message IDs:"
     ms.each {|m| puts "  #{m.id}"}
   end
 
@@ -97,6 +132,8 @@ lm.test
 puts "Commands are:"
 puts "  q   quit"
 puts "  a   tag Message #3 as archived"
+puts "  d   untag Message #3 as archived"
+puts "  t   toggle Message #3 as archived"
 puts "  =   apply next command to all tagged messages"
 
 while true

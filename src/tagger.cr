@@ -6,7 +6,7 @@ module Redwood
 class Tagger(T)
 
   def initialize(noun="object", plural_noun=nil)
-    @tagged = Hash(T, Bool).new
+    @tagged = Set(T).new
     @noun = noun
     @plural_noun = plural_noun || (@noun + "s")
   end
@@ -16,23 +16,23 @@ class Tagger(T)
   end
 
   def tagged?(o : T) : Bool
-    if @tagged.has_key?(o)
-      @tagged[o]
-    else
-      false
-    end
+    @tagged.includes?(o)
   end
 
   def toggle_tag_for(o : T)
-    @tagged[o] = !tagged?(o)
+    if @tagged.includes?(o)
+      @tagged.delete(o)
+    else
+      @tagged.add(o)
+    end
   end
 
   def tag(o : T)
-    @tagged[o] = true
+    @tagged.add(o)
   end
 
   def untag(o : T)
-    @tagged[o] = false
+    @tagged.delete(o)
   end
 
   def drop_all_tags
@@ -43,21 +43,23 @@ class Tagger(T)
     @tagged.delete(o)
   end
 
-
   # Return number of tagged objects.
   def num_tagged
-    count = 0
-    @tagged.each {|k,v| count += 1 if v == true}
-    return count
+    @tagged.size
   end
 
   # Return an array of all tagged objects.
   def all : Array(T)
-    @tagged.select {|k,v| v == true}.map {|x| x.first}
+    @tagged.to_a
   end
 
-  # Can't implement this in Crystal even with a Proc, because
-  # it constructs a method name at runtime.
+  # Call mode.multi_{action} for each tagged object.   In Ruby
+  # this works by constructing a method name at runtime and passing it
+  # the list of tagged objects via `send`.  Crystal doesn't have `send`,
+  # so this depends on the use of the `mode_class` macro in the relevant
+  # Mode, which creates a fake `send` for a specified set of methods.
+  # Also, the invoked multi_{action} method must call Tagger(T).all
+  # to obtain the tagged objects.
   def apply_to_tagged(action=nil)
     mode = @mode
     return unless mode
