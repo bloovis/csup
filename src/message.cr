@@ -11,6 +11,7 @@
 
 require "json"
 require "./index"
+require "./person"
 
 module Redwood
 
@@ -39,6 +40,8 @@ class Message
   property filename : String
   property date_relative : String
   property thread : MsgThread?		# containing thread
+  property from : Person
+  property subj = "<no subject>"
 
   # If a JSON result from "notmuch show" is provided in `data`, parse it
   # to fill in the message fields.  Otherwise use some empty default values, and
@@ -58,6 +61,18 @@ class Message
       @id = data
     else
       parse_message(data)
+    end
+
+    # Fill in some properties for Sup compatibility.
+    if @headers.has_key?("From")
+      @from = Person.from_address(headers["From"])
+    else
+      @from = Person.new("nobody", "nobody@example.com")
+    end
+    if @headers.has_key?("Subject")
+      @subj = @headers["Subject"]
+    else
+      @subj = "<no subject>"
     end
   end
 
@@ -243,6 +258,7 @@ class MsgThread
   property prev : MsgThread?
   property size = 0
   property labels = Set(String).new	# named for compatibility with Sup
+  property subj = "<no subject>"
 
   def initialize(json : JSON::Any)
     #puts "MsgThread  #{json}"
@@ -255,6 +271,7 @@ class MsgThread
       @labels = @labels + msg.tags
       @size += 1
     end
+    @subj = m.subj
   end
 
   def has_label?(s : Symbol | String)
@@ -267,15 +284,6 @@ class MsgThread
     else
       Time.local
     end
-  end
-
-  def subj
-    if m = @msg
-      if m.headers.has_key?("Subject")
-	return m.headers["Subject"]
-      end
-    end
-    return "<no subject>"
   end
 
   def print(print_content = false)

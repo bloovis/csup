@@ -155,8 +155,11 @@ def main
 	else
 	  parent_id = "<no parent>"
 	end
-	puts "-" * depth + "msg #{msg.id}, depth #{depth}, parent #{parent_id}"
+	puts "-" * depth + "msg #{msg.id}, depth #{depth}, parent #{parent_id}, from #{msg.from.email}"
       end
+      puts "Creating array of thread IDs"
+      ids = thread.map {|msg, depth, parent| msg.id}
+      puts "IDs: #{ids}"
     end
   end
 end
