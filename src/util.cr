@@ -93,6 +93,18 @@ class String
   def to_sym
     raise "Crystal doesn't support changing string '#{self}' to a symbol!"
   end
+
+  def normalize_whitespace
+    #fix_encoding!
+    gsub(/\t/, "    ").gsub(/\r/, "")
+  end
+
+  ## a very complicated regex found on teh internets to split on
+  ## commas, unless they occur within double quotes.
+  def split_on_commas
+    normalize_whitespace.split(/,\s*(?=(?:[^"]*"[^"]*")*(?![^"]*"))/)
+  end
+
 end
 
 # Enumerable extensions

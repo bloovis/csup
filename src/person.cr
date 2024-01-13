@@ -75,6 +75,14 @@ class Person
     self.from_name_and_email name, email
   end
 
+  # Return an array of Person objects for a
+  # string of comma-separated email address.
+  def self.from_address_list(ss : String) : Array(Person)
+    return Array(Person).new if ss.nil?
+    ss.split_on_commas.map { |s| self.from_address s }
+  end
+
+
 end	# class Person
 
 end	# module Redwood
