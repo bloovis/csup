@@ -1,3 +1,5 @@
+require "./contact"
+
 module Redwood
 
 class Person
@@ -29,7 +31,10 @@ class Person
   # Class methods
 
   def self.from_name_and_email(name : (String | Nil), email : String)
-    # ContactManager.instantiated? && ContactManager.person_for(email) || Person.new(name, email)
+    if ContactManager.instantiated?
+      p = ContactManager.person_for(email)
+      return p if p
+    end
     Person.new(name, email)
   end
 

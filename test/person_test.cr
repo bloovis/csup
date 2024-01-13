@@ -18,5 +18,7 @@ ps = Person.from_address_list("marka@pobox.com, potus@whitehouse.gov")
 ps.each do |p|
   puts "Person from list: #{p.to_s}"
 end
+p = Person.from_name_and_email(nil, "hbiden@rosemontseneca.com")
+puts "Person from name and email: name #{p.name}, alias #{ContactManager.alias_for(p)}, email #{p.email}"
 
 end	# Redwood
