@@ -1,5 +1,6 @@
 require "../csup"
 require "../message"
+require "../time"
 require "./line_cursor_mode"
 require "./thread_view_mode"
 
@@ -15,6 +16,7 @@ class ThreadIndexMode < LineCursorMode
   @query = ""
   @threadlist : ThreadList?
   @size_widgets = Array(String).new
+  @date_widgets = Array(String).new
 
   register_keymap do |k|
     k.add(:help, "help", "h")
@@ -50,6 +52,7 @@ class ThreadIndexMode < LineCursorMode
     end
 
     @size_widgets = @threads.map { |t| size_widget_for_thread t }
+    @date_widgets = @threads.map { |t| date_widget_for_thread t }
     regen_text
   end
 
@@ -69,9 +72,10 @@ class ThreadIndexMode < LineCursorMode
 
   def text_for_thread(t : MsgThread, line : Int32)
     size_widget = @size_widgets[line]
+    date_widget = @date_widgets[line]
     m = t.msg
     if m
-      "#{size_widget} #{m.headers["From"]} / #{m.headers["Subject"]}"
+      "#{size_widget} #{date_widget} #{m.headers["From"]} / #{m.headers["Subject"]}"
     else
       "Thread has no associated message!"
     end
@@ -84,6 +88,10 @@ class ThreadIndexMode < LineCursorMode
     else
       "(#{t.size})"
     end
+  end
+
+  def date_widget_for_thread(t : MsgThread)
+    t.date.to_local.to_nice_s
   end
 
   # Commands

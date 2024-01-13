@@ -251,6 +251,14 @@ class MsgThread
     end
   end
 
+  def date
+    if m = @msg
+      Time.unix(m.timestamp)
+    else
+      Time.local
+    end
+  end
+
   def subj
     if m = @msg
       if m.headers.has_key?("Subject")
