@@ -17,6 +17,8 @@ class LineCursorMode < ScrollMode
     ## but j and k still scroll!
     k.add(:cursor_down, "Move cursor down one line", "Down", "j")
     k.add(:cursor_up, "Move cursor up one line", "Up", "k")
+    # In sup, this was named `select`, but here we rename it to
+    # `select_item` to avoid confusion with `select` from the standard library.
     k.add(:select_item, "Select this item", "C-m")
   end
 
@@ -78,7 +80,7 @@ class LineCursorMode < ScrollMode
   end
 
   protected def set_cursor_pos(p)
-    return if @curpos == p
+    return if @curpos == p || p.nil?
     @curpos = p.clamp @cursor_top, lines
     buffer.mark_dirty if buffer # not sure why the buffer is gone
     set_status

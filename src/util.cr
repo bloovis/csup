@@ -84,6 +84,15 @@ class String
     pad = width - self.display_length
     " " * pad + self
   end
+
+  def pad_right(width : Int32)
+    pad = width - self.display_length
+    self + " " * pad
+  end
+
+  def to_sym
+    raise "Crystal doesn't support changing string '#{self}' to a symbol!"
+  end
 end
 
 # Enumerable extensions

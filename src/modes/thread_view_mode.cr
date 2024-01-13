@@ -10,7 +10,6 @@ class ThreadViewMode < LineCursorMode
 
   register_keymap do |k|
     k.add(:help, "help", "h")
-    k.add(:select_item, "Select this item", "C-m")
   end
 
   def lines

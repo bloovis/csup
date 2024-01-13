@@ -134,6 +134,12 @@ def main
       puts "Setting query to #{query}"
     end
   end
+  if query == ""
+    puts "usage: message_test [-c] [-g] 'query'"
+    puts " -c : print message bodiy"
+    puts " -g : run Ncurses gui"
+    exit 1
+  end
   puts "About to call ThreadList.new, query #{query}"
   threadlist = Redwood::ThreadList.new(query, offset: 0, limit: 10)
   if gui
@@ -143,8 +149,13 @@ def main
     threadlist.print(print_content: print_content)
     threadlist.threads.each_with_index do |thread, i|
       puts "Walking message tree for thread #{i}"
-      thread.walktree do |msg, depth|
-        puts "-" * depth + "Message #{msg.id}, depth #{depth}, from #{msg.headers["From"]}"
+      thread.each do |msg, depth, parent|
+	if parent
+	  parent_id = parent.id
+	else
+	  parent_id = "<no parent>"
+	end
+	puts "-" * depth + "msg #{msg.id}, depth #{depth}, parent #{parent_id}"
       end
     end
   end

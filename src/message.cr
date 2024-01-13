@@ -233,11 +233,16 @@ class Message
 
 end	# Message
 
+alias ThreadEach = Tuple(Message, Int32, Message?)	# thread, depth, parent
+
 class MsgThread
+  include Enumerable(ThreadEach)
+
   property msg : Message?
   property next : MsgThread?
   property prev : MsgThread?
   property size = 0
+  property labels = Set(String).new	# named for compatibility with Sup
 
   def initialize(json : JSON::Any)
     #puts "MsgThread  #{json}"
@@ -247,8 +252,13 @@ class MsgThread
     @size = 0
     m.walktree do |msg, i|
       msg.thread = self
+      @labels = @labels + msg.tags
       @size += 1
     end
+  end
+
+  def has_label?(s : Symbol | String)
+    labels.includes?(s.to_s)
   end
 
   def date
@@ -277,11 +287,13 @@ class MsgThread
     end
   end
 
-  def walktree(&b : Message, Int32 -> _)
+  def each
     if m = @msg
+      results = Array(ThreadEach).new
       m.walktree do |msg, depth|
-        b.call msg, depth
+        results << {msg, depth, msg.parent}
       end
+      results.each {|r| yield r}
     end
   end
 

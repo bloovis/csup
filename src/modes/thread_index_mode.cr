@@ -45,6 +45,7 @@ class ThreadIndexMode < LineCursorMode
   # Methods for constructing @text
 
   def update
+    old_cursor_thread = cursor_thread
     threadlist = @threadlist
     return unless threadlist
 
@@ -57,6 +58,13 @@ class ThreadIndexMode < LineCursorMode
     @size_widget_width = @size_widgets.max_of { |w| w.display_length }
     @date_widgets = @threads.map { |t| date_widget_for_thread t }
     @date_widget_width = @date_widgets.max_of { |w| w.display_length }
+
+    if old_cursor_thread
+      set_cursor_pos @threads.index(old_cursor_thread)
+    else
+      set_cursor_pos curpos
+    end
+
     regen_text
   end
 
@@ -74,12 +82,14 @@ class ThreadIndexMode < LineCursorMode
     size_widget = @size_widgets[line]
     date_widget = @date_widgets[line]
 
+    starred = t.has_label? :starred
+
     size_widget_text = size_widget.pad_left(@size_widget_width)
     date_widget_text = date_widget.pad_left(@date_widget_width)
 
     m = t.msg
     if m
-      "#{size_widget_text} #{date_widget_text} #{m.headers["From"]} / #{m.headers["Subject"]}"
+      "#{size_widget_text} #{date_widget_text} #{t.labels.to_a.join(",")} #{m.headers["From"]} / #{m.headers["Subject"]}"
     else
       "Thread has no associated message!"
     end
@@ -98,14 +108,26 @@ class ThreadIndexMode < LineCursorMode
     t.date.to_local.to_nice_s
   end
 
+  def cursor_thread : MsgThread?
+    if curpos < @threads.size
+      @threads[curpos]
+    else
+      nil
+    end
+  end
+
   # Commands
 
   def select_item
-    BufferManager.flash "Selecting thread at #{@curpos}"
-    thread = @threads[@curpos]
-    mode = ThreadViewMode.new(thread, @display_content)
-    viewbuf = BufferManager.spawn(thread.subj, mode, Opts.new({:width => 80, :height => 25}))
-    BufferManager.raise_to_front(viewbuf)
+    thread = cursor_thread
+    if thread
+      BufferManager.flash "Selecting thread at #{@curpos}"
+      mode = ThreadViewMode.new(thread, @display_content)
+      viewbuf = BufferManager.spawn(thread.subj, mode, Opts.new({:width => 80, :height => 25}))
+      BufferManager.raise_to_front(viewbuf)
+    else
+      BufferManager.flash "No thread at #{@curpos}!"
+    end
   end
 
   def help
