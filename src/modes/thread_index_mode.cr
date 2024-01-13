@@ -17,6 +17,8 @@ class ThreadIndexMode < LineCursorMode
   @threadlist : ThreadList?
   @size_widgets = Array(String).new
   @date_widgets = Array(String).new
+  @size_widget_width = 0
+  @date_widget_width = 0
 
   register_keymap do |k|
     k.add(:help, "help", "h")
@@ -52,7 +54,9 @@ class ThreadIndexMode < LineCursorMode
     end
 
     @size_widgets = @threads.map { |t| size_widget_for_thread t }
+    @size_widget_width = @size_widgets.max_of { |w| w.display_length }
     @date_widgets = @threads.map { |t| date_widget_for_thread t }
+    @date_widget_width = @date_widgets.max_of { |w| w.display_length }
     regen_text
   end
 
@@ -67,15 +71,15 @@ class ThreadIndexMode < LineCursorMode
 
   def text_for_thread_at(line : Int32) : String
     t = @threads[line]
-    text_for_thread(t, line)
-  end
-
-  def text_for_thread(t : MsgThread, line : Int32)
     size_widget = @size_widgets[line]
     date_widget = @date_widgets[line]
+
+    size_widget_text = size_widget.pad_left(@size_widget_width)
+    date_widget_text = date_widget.pad_left(@date_widget_width)
+
     m = t.msg
     if m
-      "#{size_widget} #{date_widget} #{m.headers["From"]} / #{m.headers["Subject"]}"
+      "#{size_widget_text} #{date_widget_text} #{m.headers["From"]} / #{m.headers["Subject"]}"
     else
       "Thread has no associated message!"
     end

@@ -80,6 +80,10 @@ class String
     ret << s
   end
 
+  def pad_left(width : Int32)
+    pad = width - self.display_length
+    " " * pad + self
+  end
 end
 
 # Enumerable extensions
@@ -95,5 +99,9 @@ module Enumerable
 
   def member?(x)
     !index(x).nil?
+  end
+
+  def max_of
+    map { |e| yield e }.max
   end
 end
