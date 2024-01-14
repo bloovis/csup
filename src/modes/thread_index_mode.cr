@@ -9,7 +9,9 @@ module Redwood
 class ThreadIndexMode < LineCursorMode
   mode_class help
 
-  @text = Array(String).new
+  MIN_FROM_WIDTH = 15
+
+  @text = Array(Text).new # Array(String).new
   @lines = Hash(MsgThread, Int32).new
   @threads = Array(MsgThread).new
   @display_content = false
@@ -69,7 +71,7 @@ class ThreadIndexMode < LineCursorMode
   end
 
   def regen_text
-    @text = Array(String).new
+    @text = Array(Text).new
     @lines = Hash(MsgThread, Int32).new
     @threads.each_with_index do |t, i|
       @text << text_for_thread_at i
@@ -77,19 +79,97 @@ class ThreadIndexMode < LineCursorMode
     end
   end
 
-  def text_for_thread_at(line : Int32) : String
+  ## preserve author order from the thread
+  alias NameNewness = Tuple(String, Bool)
+
+  def author_names_and_newness_for_thread(t : MsgThread, limit = 0) : Array(NameNewness)
+    new = Hash(Person, Bool).new	# Person => newness
+    seen = Hash(Person, Bool).new	# Person => seen
+
+    authors : Array(Person) = t.map do |m, depth, parent|
+      next unless m && m.from
+      new[m.from] ||= m.has_label?(:unread)
+      next if seen[m.from]?
+      seen[m.from] = true
+      m.from
+    end.compact
+
+    result = Array(NameNewness).new
+    authors.each do |a|
+      break if limit && result.size >= limit
+      name = if AccountManager.is_account?(a)
+        "me"
+      elsif t.authors.size == 1
+        a.mediumname
+      else
+        a.shortname
+      end
+      name ||= "nobody"
+      result << {name, new[a]}
+    end
+
+    if result.size == 1 && result[0][0] == "me"
+      newness = result[0][1]
+      recipients = t.participants - t.authors
+      num_recipients = recipients.size
+      if num_recipients > 0
+        result = recipients.map do |r|
+          break if limit && result.size >= limit
+          name = (num_recipients == 1) ? r.mediumname : r.shortname
+          {"(#{name})", newness}
+        end
+      end
+    end
+
+    result || Array(NameNewness).new
+  end
+
+  AUTHOR_LIMIT = 5
+  def text_for_thread_at(line : Int32) : Text
     t = @threads[line]
     size_widget = @size_widgets[line]
     date_widget = @date_widgets[line]
 
     starred = t.has_label? :starred
 
+    ## format the from column
+    cur_width = 0
+    ann = author_names_and_newness_for_thread t, AUTHOR_LIMIT
+    from : ColoredLine = [] of ColoredText
+    ann.each_with_index do |(name, newness), i|
+      break if cur_width >= from_width
+      last = i == ann.size - 1
+
+      abbrev =
+        if cur_width + name.display_length > from_width
+          name.slice_by_display_length(from_width - cur_width - 1) + "."
+        elsif cur_width + name.display_length == from_width
+          name.slice_by_display_length(from_width - cur_width)
+        else
+          if last
+            name.slice_by_display_length(from_width - cur_width)
+          else
+            name.slice_by_display_length(from_width - cur_width - 1) + ","
+          end
+        end
+
+      cur_width += abbrev.display_length
+
+      if last && from_width > cur_width
+        abbrev += " " * (from_width - cur_width)
+      end
+
+      from << {(newness ? :index_new_color : (starred ? :index_starred_color : :index_old_color)), abbrev}
+    end
+
     size_widget_text = size_widget.pad_left(@size_widget_width)
     date_widget_text = date_widget.pad_left(@date_widget_width)
 
     m = t.msg
     if m
-      "#{size_widget_text} #{date_widget_text} #{t.labels.to_a.join(",")} #{m.headers["From"]} / #{m.headers["Subject"]}"
+      [{:text_color, "#{size_widget_text} #{date_widget_text}"}] +
+      from +
+      [{:text_color, "#{t.labels.to_a.join(",")} #{m.headers["From"]} / #{m.headers["Subject"]}"}]
     else
       "Thread has no associated message!"
     end
@@ -113,6 +193,14 @@ class ThreadIndexMode < LineCursorMode
       @threads[curpos]
     else
       nil
+    end
+  end
+
+  def from_width
+    if buffer
+      [(buffer.content_width.to_f * 0.2).to_i, MIN_FROM_WIDTH].max
+    else
+      MIN_FROM_WIDTH # not sure why the buffer is gone
     end
   end
 

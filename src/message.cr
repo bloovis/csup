@@ -322,6 +322,14 @@ class MsgThread
     end
   end
 
+  def authors : Array(Person)
+    map { |m, d, p| m.from if m }.compact.uniq
+  end
+
+  def participants : Array(Person)
+    map { |m, d, p| [m.from] + m.to + m.cc + m.bcc if m }.flatten.compact.uniq
+  end
+
 end	# MsgThread
 
 class ThreadList
