@@ -24,6 +24,25 @@ class Person
     end
   end
 
+  def shortname
+    case @name
+    when /\S+, (\S+)/
+      $1
+    when /(\S+) \S+/
+      $1
+    when nil
+      @email
+    else
+      @name
+    end
+  end
+
+  def mediumname; @name || @email; end
+
+  def longname
+    to_s
+  end
+
   def full_address
     Person.full_address @name, @email
   end

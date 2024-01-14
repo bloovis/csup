@@ -158,7 +158,7 @@ def main
 	prefix = "-" * depth
 	puts "#{prefix} ID: msg #{msg.id}, depth #{depth}, parent #{parent_id}"
 	puts "#{prefix} > Date: #{msg.date.to_nice_s}"
-	puts "#{prefix} > From: #{msg.from.email}"
+	puts "#{prefix} > From: #{msg.from.email} (#{msg.from.shortname}) (#{msg.from.mediumname}) (#{msg.from.longname})"
 	msg.to.each {|p| puts "#{prefix} > To: #{p.email}"}
 	msg.cc.each {|p| puts "#{prefix} > Cc: #{p.email}"}
 	msg.bcc.each {|p| puts "#{prefix} > Bcc: #{p.email}"}

@@ -309,6 +309,9 @@ class MsgThread
     end
   end
 
+  # This allows MsgThread.map to be used.  We can't yield inside
+  # the walktree block, so we have to save the results of walktree, then
+  # yield them afterwards.
   def each
     if m = @msg
       results = Array(ThreadEach).new
