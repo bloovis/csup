@@ -206,10 +206,14 @@ class Colormap
     color
   end
 
-  def sym_is_defined(sym_or_string : Symbol | String)
+  def sym_is_defined(sym_or_string : Symbol | String) : String?
     sym = sym_or_string.to_s
     #debug "checking if @entries has key #{sym}"
-    return sym if @entries.has_key?(sym)
+    if @entries.has_key?(sym)
+      return sym
+    else
+      return nil
+    end
   end
 
   # Eventually, the code for obtaining color_fn should be

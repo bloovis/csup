@@ -1,6 +1,7 @@
 require "../csup"
 require "../message"
 require "../time"
+require "../tagger"
 require "./line_cursor_mode"
 require "./thread_view_mode"
 
@@ -21,6 +22,7 @@ class ThreadIndexMode < LineCursorMode
   @date_widgets = Array(String).new
   @size_widget_width = 0
   @date_widget_width = 0
+  @hidden_labels = Set(String).new
 
   register_keymap do |k|
     k.add(:help, "help", "h")
@@ -40,7 +42,10 @@ class ThreadIndexMode < LineCursorMode
 
   def initialize(@query, @display_content=false)
     super()
+    @tags = Tagger(MsgThread).new
     @threadlist = ThreadList.new(@query, offset: 0, limit: buffer.content_height)
+    @hidden_labels = LabelManager::HIDDEN_RESERVED_LABELS +
+		     Set.new(Config.strarray(:hidden_labels))
     update
   end
 
@@ -162,17 +167,39 @@ class ThreadIndexMode < LineCursorMode
       from << {(newness ? :index_new_color : (starred ? :index_starred_color : :index_old_color)), abbrev}
     end
 
+    subj_color =
+      if t.has_label?(:draft)
+        :index_draft_color
+      elsif t.has_label?(:unread)
+        :index_new_color
+      elsif starred
+        :index_starred_color
+      elsif Colormap.sym_is_defined(:index_subject_color)
+        :index_subject_color
+      else
+        :index_old_color
+      end
+
     size_widget_text = size_widget.pad_left(@size_widget_width)
     date_widget_text = date_widget.pad_left(@date_widget_width)
 
-    m = t.msg
-    if m
-      [{:text_color, "#{size_widget_text} #{date_widget_text}"}] +
-      from +
-      [{:text_color, "#{t.labels.to_a.join(",")} #{m.headers["From"]} / #{m.headers["Subject"]}"}]
-    else
-      "Thread has no associated message!"
+    label_widgets : ColoredLine = [] of ColoredText
+    (t.labels - @hidden_labels).to_a.sort.map do |label|
+      label_widgets << {:label_color, "#{label} "}
     end
+
+    [
+      {:tagged_color, @tags.tagged?(t) ? ">" : " "},
+      {:date_color, date_widget_text},
+      {:starred_color, (starred ? "*" : " ")},
+    ] + from + [
+      {:size_widget_color, size_widget_text},
+      {:with_attachment_color , t.labels.member?(:attachment) ? "@" : " "},
+#      {:to_me_color, directly_participated ? ">" : (participated ? '+' : " ")},
+    ] + label_widgets + [
+      {subj_color, t.subj + (t.subj.empty? ? "" : " ")},
+#      {:snippet_color, t.snippet},
+    ]
   end
 
   def size_widget_for_thread(t : MsgThread)
