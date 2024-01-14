@@ -12,6 +12,7 @@
 require "json"
 require "./index"
 require "./person"
+require "./time"
 
 module Redwood
 
@@ -41,7 +42,11 @@ class Message
   property date_relative : String
   property thread : MsgThread?		# containing thread
   property from : Person
+  property to : Array(Person)
+  property cc : Array(Person)
+  property bcc : Array(Person)
   property subj = "<no subject>"
+  property date : Time
 
   # If a JSON result from "notmuch show" is provided in `data`, parse it
   # to fill in the message fields.  Otherwise use some empty default values, and
@@ -74,6 +79,10 @@ class Message
     else
       @subj = "<no subject>"
     end
+    @to = Person.from_address_list(@headers["To"]?)
+    @cc = Person.from_address_list(@headers["Cc"]?)
+    @bcc = Person.from_address_list(@headers["Bcc"]?)
+    @date = Time.unix(@timestamp)
   end
 
   def add_child(child : Message)
@@ -87,6 +96,11 @@ class Message
 
   def add_tag(name : String)
     @tags.add(name)
+  end
+
+  # For Sup compatibility
+  def has_label?(s : Symbol | String)
+    @tags.includes?(s.to_s)
   end
 
   def add_content(id : Int32, ctype : String, filename : String, s : String)
