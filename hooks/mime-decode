@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# Hook script to decode mime-encoded content.
+# Copy to the directory ~/.csup/hooks .
+# Presently only text/html and text/plain are recognized and processed.
+#
+# Read one line containing the content type.
+#
+# If the content type is recognized, pass the remainder
+# of the input to the appropriate decoding program, and return
+# the exit status of the decoding program.
+#
+# Otherwise ignore the content, and return a non-zero exit status.
+
+read type
+#echo type = $type
+case $type in
+text/html)
+  cat - | w3m -T text/html -dump
+  ;;
+text/plain)
+  cat
+  ;;
+*)
+  exit 1
+  ;;
+esac
