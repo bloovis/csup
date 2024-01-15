@@ -162,6 +162,12 @@ def main
 	msg.to.each {|p| puts "#{prefix} > To: #{p.email}"}
 	msg.cc.each {|p| puts "#{prefix} > Cc: #{p.email}"}
 	msg.bcc.each {|p| puts "#{prefix} > Bcc: #{p.email}"}
+	plain = msg.find_content {|c| c.content_type == "text/plain" && c.content.size > 0}
+	if plain
+	  puts "#{prefix} Content:\n---\n" + plain.content + "\n---\n"
+	else
+	  puts "#{prefix} No text/plain content"
+	end
       end
       puts "Creating array of thread IDs"
       ids = thread.map {|msg, depth, parent| msg.id}

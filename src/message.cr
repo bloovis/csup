@@ -107,6 +107,15 @@ class Message
     content[id] = Content.new(id, ctype, filename, s)
   end
 
+  def find_content(&b : Content -> Bool) : Content?
+    content.each do |id, c|
+      if b.call(c)
+	return c
+      end
+    end
+    return nil
+  end
+
   def print(level = 0, print_content = false)
     prefix = "  " * level
     puts "#{prefix}Message:"
