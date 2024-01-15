@@ -58,13 +58,13 @@ class MessageMode < LineCursorMode
       @text << "#{prefix}    #{k} = #{v}"
     end
 
-    msg.content.each do |id, c|
+    msg.parts.each do |id, p|
       colon = (@display_content ? ":" : "")
-      @text << "#{prefix}  Content ID #{c.id}, content type #{c.content_type}, filename '#{c.filename}'#{colon}\n"
-      if c.content == ""
+      @text << "#{prefix}  Part ID #{p.id}, content type #{p.content_type}, filename '#{p.filename}'#{colon}\n"
+      if p.content == ""
 	@text << "#{prefix}  Content missing!"
       elsif @display_content
-        c.content.lines.each {|l| @text << l}
+        p.content.lines.each {|l| @text << l}
       end
     end
 
@@ -162,7 +162,7 @@ def main
 	msg.to.each {|p| puts "#{prefix} > To: #{p.email}"}
 	msg.cc.each {|p| puts "#{prefix} > Cc: #{p.email}"}
 	msg.bcc.each {|p| puts "#{prefix} > Bcc: #{p.email}"}
-	plain = msg.find_content {|c| c.content_type == "text/plain" && c.content.size > 0}
+	plain = msg.find_part {|p| p.content_type == "text/plain" && p.content.size > 0}
 	if plain
 	  puts "#{prefix} Content:\n---\n" + plain.content + "\n---\n"
 	else

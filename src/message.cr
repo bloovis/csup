@@ -16,19 +16,20 @@ require "./time"
 
 module Redwood
 
-class Content
-  property id : Int32
-  property content_type : String
-  property filename : String
-  property content : String
-
-  def initialize(@id, @content_type, @filename, @content)
-  end
-end
-
 # A message is actually a tree of messages: it can have multiple children.
 class Message
-  alias ContentParts = Hash(Int32, Content)
+
+  class Part
+    property id : Int32
+    property content_type : String
+    property filename : String
+    property content : String
+
+    def initialize(@id, @content_type, @filename, @content)
+    end
+  end
+
+  alias Parts = Hash(Int32, Part)
   alias Headers = Hash(String, String)
 
   property id : String = ""
@@ -36,7 +37,7 @@ class Message
   property children : Array(Message)
   property headers : Headers
   property tags : Set(String)
-  property content : ContentParts	# content parts indexed by a numeric ID
+  property parts : Parts	# parts indexed by a numeric ID
   property timestamp : Int64
   property filename : String
   property date_relative : String
@@ -56,7 +57,7 @@ class Message
     @children = Array(Message).new
     @headers = Headers.new
     @tags = Set(String).new
-    @content = ContentParts.new
+    @parts = Parts.new
     @timestamp = 0
     @filename = ""
     @date_relative = ""
@@ -103,14 +104,14 @@ class Message
     @tags.includes?(s.to_s)
   end
 
-  def add_content(id : Int32, ctype : String, filename : String, s : String)
-    content[id] = Content.new(id, ctype, filename, s)
+  def add_part(id : Int32, ctype : String, filename : String, s : String)
+    parts[id] = Part.new(id, ctype, filename, s)
   end
 
-  def find_content(&b : Content -> Bool) : Content?
-    content.each do |id, c|
-      if b.call(c)
-	return c
+  def find_part(&b : Part -> Bool) : Part?
+    parts.each do |id, p|
+      if b.call(p)
+	return p
       end
     end
     return nil
@@ -135,13 +136,13 @@ class Message
       puts "#{prefix}    #{k} = #{v}"
     end
 
-    content.each do |id, c|
+    parts.each do |id, p|
       colon = (print_content ? ":" : "")
-      puts "#{prefix}  Content ID #{c.id}, content type #{c.content_type}, filename '#{c.filename}'#{colon}\n"
-      if c.content == ""
+      puts "#{prefix}  Part ID #{p.id}, content type #{p.content_type}, filename '#{p.filename}'#{colon}\n"
+      if p.content == ""
 	puts "#{prefix}  Content missing!"
       elsif print_content
-        puts c.content
+        puts p.content
       end
     end
 
@@ -184,7 +185,7 @@ class Message
 	content = part["content"].as_s?
 	if content
 	  #puts "Adding content for part #{id}, content:\n---\n#{content}\n---\n"
-	  add_content(id, ctype, filename, content)
+	  add_part(id, ctype, filename, content)
 	else
 	  content = part["content"].as_a?
 	  if content
@@ -194,7 +195,7 @@ class Message
 	  end
 	end
       else
-	add_content(id, ctype, filename, "")	# attachment with no content in JSON
+	add_part(id, ctype, filename, "")	# attachment with no content in JSON
       end
     end
   end

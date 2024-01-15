@@ -57,13 +57,13 @@ class ThreadViewMode < LineCursorMode
       @text << "#{prefix}    #{k} = #{v}"
     end
 
-    msg.content.each do |id, c|
+    msg.parts.each do |id, p|
       colon = (@display_content ? ":" : "")
-      @text << "#{prefix}  Content ID #{c.id}, content type #{c.content_type}, filename '#{c.filename}'#{colon}\n"
-      if c.content == ""
+      @text << "#{prefix}  Part ID #{p.id}, content type #{p.content_type}, filename '#{p.filename}'#{colon}\n"
+      if p.content == ""
 	@text << "#{prefix}  Content missing!"
       elsif @display_content
-        c.content.lines.each {|l| @text << prefix + "    " + l}
+        p.content.lines.each {|l| @text << prefix + "    " + l}
       end
     end
 
