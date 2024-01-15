@@ -173,7 +173,7 @@ class Message
     if part
       #puts "part: #{part.inspect}"
       id =      part["id"].as_i
-      ctype =   part["content-type"].as_s
+      ctype =   part["content-type"].as_s.downcase
       if part.has_key?("filename")
 	filename = part["filename"].as_s
       else
