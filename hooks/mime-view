@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# Hook script to view mime-encoded content.
+# Copy to the directory ~/.csup/hooks .
+#
+# Read one line containing the content type.
+#
+# If the content type is recognized, pass the remainder
+# of the input to the appropriate viewing program, and return
+# the exit status of the viewing program.
+#
+# Otherwise ignore the content, and return a non-zero exit status.
+
+view () {
+  viewer=$1
+  t=$(mktemp) || exit 1
+  trap "rm -f -- '$t'" EXIT
+  cat >$t
+  $viewer $t
+  status=$?
+  rm -f -- "$t"
+  trap - EXIT
+  exit $status
+}
+
+read type
+#echo type = $type
+case $type in
+text/html)
+  cat - | w3m -T text/html
+  ;;
+text/plain)
+  cat
+  ;;
+*/pdf)
+  view xreader
+  ;;
+image/*)
+  view xviewer
+  ;;
+*)
+  exit 1
+  ;;
+esac
