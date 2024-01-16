@@ -76,6 +76,23 @@ module Notmuch
     return true
   end
 
+  def view_part(msgid : String, partid : Int32, content_type : String) : Bool
+    puts "About to run notmuch show --part=#{partid} id:#{msgid}"
+    pipe = Pipe.new("notmuch", ["show", "--part=#{partid}", "id:#{msgid}"])
+    success = false
+    pipe.start do |p|
+      p.receive do |output|
+        success = HookManager.run("mime-view") do |hook|
+	  hook.send do |f|
+	    f.puts content_type
+	    IO.copy(output, f)
+	  end
+	end
+      end
+    end
+    return success
+  end
+
   # high-level
 
   def filenames_from_message_id(mid : String)
