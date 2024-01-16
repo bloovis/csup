@@ -2,7 +2,8 @@
 # hooks directly into a compiled Crystal binary.  Instead, hooks are individual
 # executable programs that take input from stdin, and produce output to stdout.
 # The input and output may be either JSON or plain text, depending on the
-# particular hook.
+# particular hook.  See test/hook_test.cr for examples of running hooks,
+# and see scripts in hooks/ for example of hooks themselves.
 
 require "./singleton"
 
@@ -10,6 +11,8 @@ module Redwood
 
 class HookManager
   singleton_class
+
+  property dir : String
 
   class HookPipe
     def initialize(@pipe : Process)
@@ -32,8 +35,8 @@ class HookManager
     singleton_post_init
   end
 
-  def run(name : String, &) : Bool
-    path = File.join(@dir, name)
+  def self.run(name : String, &) : Bool
+    path = File.join(self.instance.dir, name)
     begin
       pipe = Process.new(path,
                          input: Process::Redirect::Pipe,
@@ -44,12 +47,6 @@ class HookManager
     yield HookPipe.new(pipe)
     pipe.wait
     return true
-  end
-
-  def HookManager.run(name : String, &)
-    self.instance.run(name) do |pipe|
-      yield pipe
-    end
   end
 
 end	# HookManager
