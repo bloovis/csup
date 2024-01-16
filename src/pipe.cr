@@ -1,47 +1,99 @@
-require "./shellwords"
-
 module Redwood
 
-module Pipe
+class Pipe
   class PipeError < Exception
   end
 
-  extend self
+  property success = false
+  property input_closed = false
+  property output_closed = false
+  property error_closed = false
+  @process : Process?
 
-  def run(prog : String,		# name of program to run
-	  args : Array(String),		# arguments
-          check_status : Bool = true,	# raise exception if command fails
-	  check_stderr : Bool = true,	# raise exception if command wrote to stderr
-	  filter : String = "",		# command to filter output
-	  input : String = "")		# data to feed to standard input
-    if input.size == 0
-      io_input = Process::Redirect::Close
-    else
-      io_input = IO::Memory.new(input)
+  def initialize(prog : String, args : Array(String))
+    begin
+      @process = Process.new(prog,
+			     args,
+                             input: Process::Redirect::Pipe,
+                             output: Process::Redirect::Pipe,
+                             error: Process::Redirect::Pipe)
+      @success = true
+    rescue IO::Error
+      @success = false
     end
-    io_output = IO::Memory.new
-    io_error = IO::Memory.new
-    if filter.size > 0
-      command = prog +
-		" " +
-		args.map{|a| Shellwords.escape(a)}.join(" ") + "| " + filter
-      args = nil # [] of String
-      shell = true
-    else
-      command = prog
-      shell = false
-    end
-    #puts "Process.run: #{command}, #{args}, shell: #{shell}, input:\n---\n#{input}---\n"
-    status = Process.run(command, args, input: io_input, output: io_output,
-                         error: io_error, shell: shell)
-    #puts "Process success: #{status.success?}"
-    if (check_status && !status.success?) || (check_stderr && !io_error.empty?)
-      stderr_str = io_error.to_s
-      raise PipeError.new("Failed to execute #{command}: exitcode=#{status.exit_status}, stderr=#{stderr_str}")
-    end
-    io_output.to_s
   end
 
+  def start : Int32	# returns exit status
+    yield self
+    wait
+  end
+
+  def send(&)
+    if p = @process
+      yield p.input
+      p.input.close
+    end
+    @input_closed = true
+  end
+
+  def receive(&)
+    if p = @process
+      yield p.output
+      p.output.close
+    end
+    @output_closed = true
+  end
+
+  def receive_stderr(&)
+    if p = @process
+      yield p.error
+      p.error.close
+    end
+    @error_closed = true
+  end
+
+  def wait : Int32
+    if p = @process
+      p.input.close unless @input_closed
+      p.output.close unless @output_closed
+      p.error.close unless @error_closed
+      p.wait.exit_status
+    else
+      -1
+    end
+  end
+
+  # Used by Notmuch.run.  `input` is an optional string to pass
+  # to notmuch's standard input.  The output of notmuch is returned
+  # as a string.
+  def self.run(prog : String,			# name of program to run
+	       args : Array(String),		# arguments
+               check_status : Bool = true,	# raise exception if command fails
+	       check_stderr : Bool = true,	# raise exception if command wrote to stderr
+	       input : String = "") : String	# data to feed to standard input
+    pipe = Pipe.new(prog, args)
+    unless pipe.success
+      raise PipeError.new("Failed to execute #{prog}")
+    end
+
+    stdout_str = ""
+    stderr_str = ""
+
+    exit_status = pipe.start do |p|
+      if input.size != 0
+	p.send {|f| f << input}
+      end
+      p.receive {|f| stdout_str = f.gets_to_end}
+      if check_stderr
+	p.receive_stderr {|f| stderr_str = f.gets_to_end}
+      end
+    end
+
+    if (check_status && exit_status != 0) || (check_stderr && !stderr_str.empty?)
+      raise PipeError.new("Failed to execute #{prog}: exitcode=#{exit_status}, stderr=#{stderr_str}")
+    end
+    stdout_str
+  end
 end	# Pipe
 
 end	# Redwood

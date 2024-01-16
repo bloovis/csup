@@ -23,12 +23,6 @@ module Notmuch
     Pipe.run("notmuch", ["count", query]).to_i
   end
 
-  def address(query : String,
-	      limit : Int32 = 20)
-    Pipe.run("notmuch", ["address", "--format=text", query], filter: "head -n #{limit}")
-	.lines.uniq.map {|a| Person.from_address a}
-  end
-
   def search(query : String,
 	     format : String = "text",
 	     exclude : Bool = true,

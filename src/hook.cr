@@ -14,21 +14,6 @@ class HookManager
 
   property dir : String
 
-  class HookPipe
-    def initialize(@pipe : Process)
-    end
-
-    def send(&)
-      yield @pipe.input
-      @pipe.input.close
-    end
-
-    def receive(&)
-      yield @pipe.output
-      @pipe.output.close
-    end
-  end
-      
   def initialize(@dir : String)
     singleton_pre_init
     @dir = dir
@@ -38,15 +23,12 @@ class HookManager
   def self.run(name : String, &) : Bool
     path = File.join(self.instance.dir, name)
     begin
-      pipe = Process.new(path,
-                         input: Process::Redirect::Pipe,
-                         output: Process::Redirect::Pipe)
+      pipe = Pipe.new(path, [] of String)
+      exit_status = pipe.start {|p| yield p}
+      return exit_status == 0
     rescue IO::Error
       return false
     end
-    yield HookPipe.new(pipe)
-    pipe.wait
-    return true
   end
 
 end	# HookManager
