@@ -126,3 +126,19 @@ module Enumerable
     map { |e| yield e }.max
   end
 end
+
+# Number extensions
+
+struct Int
+  def to_human_size : String
+    if self < 1024
+      to_s + "B"
+    elsif self < (1024 * 1024)
+      (self // 1024).to_s + "KiB"
+    elsif self < (1024 * 1024 * 1024)
+      (self // 1024 // 1024).to_s + "MiB"
+    else
+      (self // 1024 // 1024 // 1024).to_s + "GiB"
+    end
+  end
+end
