@@ -10,7 +10,7 @@
 #   notmuch show --part=#{N} id:#{msgid} >filename
 
 require "json"
-require "./index"
+require "./notmuch"
 require "./person"
 require "./time"
 

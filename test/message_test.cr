@@ -146,6 +146,7 @@ def main
     puts "About to call run_gui, display_content #{print_content}"
     run_gui(threadlist, display_content: print_content)
   else
+    init_managers
     threadlist.print(print_content: print_content)
     threadlist.threads.each_with_index do |thread, i|
       puts "Walking message tree for thread #{i}"

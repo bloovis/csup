@@ -60,6 +60,22 @@ module Notmuch
     Pipe.run("notmuch", ["tag", "--remove-all", "--batch"], input: input)
   end
 
+  def save_part(msgid : String, partid : Int32, filename : String) : Bool
+    if File.exists?(filename)
+      return false
+    end
+    puts "About to run notmuch show --part=#{partid} id:#{msgid}"
+    pipe = Pipe.new("notmuch", ["show", "--part=#{partid}", "id:#{msgid}"])
+    pipe.start do |p|
+      p.receive do |output|
+        File.open(filename, "w") do |f|
+	  IO.copy(output, f)
+	end
+      end
+    end
+    return true
+  end
+
   # high-level
 
   def filenames_from_message_id(mid : String)
