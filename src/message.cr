@@ -113,6 +113,14 @@ class Message
   end
 
   def add_part(id : Int32, ctype : String, filename : String, s : String)
+    if filename == ""
+      newname = "csup-attachment-#{Time.now.to_i}-#{rand 10000}"
+      if ctype =~ /text\/html/
+	filename = newname + "." + "html"
+      elsif ctype =~ /image\/(.*)/
+	filename = newname + "." + $1
+      end
+    end
     @parts << Part.new(id, ctype, filename, s)
   end
 

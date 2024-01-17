@@ -6,6 +6,10 @@ struct Time
     local
   end
 
+  def to_i
+    to_unix
+  end
+
   def strftime(format)
     to_s(format)
   end
