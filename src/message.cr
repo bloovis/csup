@@ -30,7 +30,7 @@ class Message
   MAX_SIG_DISTANCE = 15 # lines from the end
   SNIPPET_LEN = 80
 
-  alias Parts = Hash(Int32, Part)
+  alias Parts =  Array(Part)
   alias Headers = Hash(String, String)
 
   property id : String = ""
@@ -113,11 +113,11 @@ class Message
   end
 
   def add_part(id : Int32, ctype : String, filename : String, s : String)
-    @parts[id] = Part.new(id, ctype, filename, s)
+    @parts << Part.new(id, ctype, filename, s)
   end
 
   def find_part(&b : Part -> Bool) : Part?
-    @parts.each do |id, p|
+    @parts.each do |p|
       if b.call(p)
 	return p
       end
@@ -144,7 +144,7 @@ class Message
       puts "#{prefix}    #{k} = #{v}"
     end
 
-    @parts.each do |id, p|
+    @parts.each do |p|
       colon = (print_content ? ":" : "")
       puts "#{prefix}  Part ID #{p.id}, content type #{p.content_type}, filename '#{p.filename}'#{colon}\n"
       if p.content == ""
@@ -278,7 +278,8 @@ class Message
   # Find all chunks for this message.
   def find_chunks
     @chunks = [] of Chunk
-    @parts.each do |id, p|
+    found_plain = false
+    @parts.each do |p|
       if p.content_type == "text/plain" && p.content.size > 0
 	lines = p.content.lines
 	@chunks = @chunks + text_to_chunks(lines)
