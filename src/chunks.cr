@@ -48,10 +48,11 @@ class Chunk
   # patina color and text are used only if expandable? is true
   property patina_color = :text_color
   property patina_text = "Chunk"
+  property quotable = false
 
   # Boolean methods to be overridden by subclasses
   def inlineable?; false end
-  def quotable?; false end
+  def quotable?; @quotable end
   def expandable?; false end
   def viewable?; false end
 

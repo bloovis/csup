@@ -1,18 +1,13 @@
-# Parse the result of: notmuch show --body=true --format=json --include-html thread:#{threadid}
-# where <threadid> is specified on the command line.  If the -c option
-# is also specified, content parts are also displayed.
-
-# Other useful notmuch commands for the future:
-#
-# Obtain readable version of HTML attachment:
-#   notmuch show --part=#{N} id:#{msgid} | w3m -T text/html
-# Save an attachment to a file:
-#   notmuch show --part=#{N} id:#{msgid} >filename
+# Create message thread list by parsing the result of:
+#  notmuch search --format=text "query"
+#  notmuch show --body=true --format=json --include-html --body=true "thread:ID1 or thread:ID2 or ..."
+# where the result of `notmuch search` is passed to `notmuch show`.
 
 require "json"
 require "./notmuch"
 require "./person"
 require "./time"
+require "./chunks"
 
 module Redwood
 
@@ -28,6 +23,12 @@ class Message
     def initialize(@id, @content_type, @filename, @content)
     end
   end
+
+  QUOTE_PATTERN = /^\s{0,4}[>|\}]/
+  BLOCK_QUOTE_PATTERN = /^-----\s*Original Message\s*----+$/
+  SIG_PATTERN = /(^(- )*-- ?$)|(^\s*----------+\s*$)|(^\s*_________+\s*$)|(^\s*--~--~-)|(^\s*--\+\+\*\*==)/
+  MAX_SIG_DISTANCE = 15 # lines from the end
+  SNIPPET_LEN = 80
 
   alias Parts = Hash(Int32, Part)
   alias Headers = Hash(String, String)
@@ -48,6 +49,9 @@ class Message
   property bcc : Array(Person)
   property subj = "<no subject>"
   property date : Time
+  property chunks = Array(Chunk).new
+  property have_snippet = false
+  property snippet = ""
 
   # If a JSON result from "notmuch show" is provided in `data`, parse it
   # to fill in the message fields.  Otherwise use some empty default values, and
@@ -84,6 +88,10 @@ class Message
     @cc = Person.from_address_list(@headers["Cc"]?)
     @bcc = Person.from_address_list(@headers["Bcc"]?)
     @date = Time.unix(@timestamp)
+
+    walktree do |msg, i|
+      msg.find_chunks
+    end
   end
 
   def add_child(child : Message)
@@ -105,11 +113,11 @@ class Message
   end
 
   def add_part(id : Int32, ctype : String, filename : String, s : String)
-    parts[id] = Part.new(id, ctype, filename, s)
+    @parts[id] = Part.new(id, ctype, filename, s)
   end
 
   def find_part(&b : Part -> Bool) : Part?
-    parts.each do |id, p|
+    @parts.each do |id, p|
       if b.call(p)
 	return p
       end
@@ -136,7 +144,7 @@ class Message
       puts "#{prefix}    #{k} = #{v}"
     end
 
-    parts.each do |id, p|
+    @parts.each do |id, p|
       colon = (print_content ? ":" : "")
       puts "#{prefix}  Part ID #{p.id}, content type #{p.content_type}, filename '#{p.filename}'#{colon}\n"
       if p.content == ""
@@ -165,6 +173,134 @@ class Message
 
   def walktree(&b : Message, Int32 -> _)
    do_walk(self, 0) {|msg, depth| b.call msg, depth}
+  end
+
+  def append_chunk(chunks : Array(Chunk), lines : Array(String), type : Symbol)
+    return if lines.empty?
+    chunk = case type
+            when :text
+              TextChunk.new(lines)
+            when :quote, :block_quote
+              QuoteChunk.new(lines)
+            when :sig
+              SignatureChunk.new(lines)
+            else
+              raise "unknown chunk type: #{type}"
+            end
+    if chunk
+      chunks << chunk
+    end
+  end
+
+  ## parse the lines of text into chunk objects.  the heuristics here
+  ## need tweaking in some nice manner. TODO: move these heuristics
+  ## into the classes themselves.
+  def text_to_chunks(lines : Array(String), encrypted = false) : Array(Chunk)
+    state = :text # one of :text, :quote, or :sig
+    chunks = [] of Chunk
+    chunk_lines = [] of String
+    nextline_index = -1
+
+    lines.each_with_index do |line, i|
+      if i >= nextline_index
+        # look for next nonblank line only when needed to avoid O(n²)
+        # behavior on sequences of blank lines
+        if nextline_index = lines[(i+1)..-1].index { |l| l !~ /^\s*$/ } # skip blank lines
+          nextline_index += i + 1
+          nextline = lines[nextline_index]
+        else
+          nextline_index = lines.length
+          nextline = nil
+        end
+      end
+
+      case state
+      when :text
+        newstate = nil
+
+        ## the following /:$/ followed by /\w/ is an attempt to detect the
+        ## start of a quote. this is split into two regexen because the
+        ## original regex /\w.*:$/ had very poor behavior on long lines
+        ## like ":a:a:a:a:a" that occurred in certain emails.
+        if line =~ QUOTE_PATTERN || (line =~ /:$/ && line =~ /\w/ && nextline =~ QUOTE_PATTERN)
+          newstate = :quote
+        elsif line =~ SIG_PATTERN && (lines.length - i) < MAX_SIG_DISTANCE && !lines[(i+1)..-1].index { |l| l =~ /^-- $/ }
+          newstate = :sig
+        elsif line =~ BLOCK_QUOTE_PATTERN
+          newstate = :block_quote
+        end
+
+        if newstate
+          append_chunk(chunks, chunk_lines, state)
+          chunk_lines = [line]
+          state = newstate
+        else
+          chunk_lines << line
+        end
+
+      when :quote
+        newstate = nil
+
+        if line =~ QUOTE_PATTERN || (line =~ /^\s*$/ && nextline =~ QUOTE_PATTERN)
+          chunk_lines << line
+        elsif line =~ SIG_PATTERN && (lines.length - i) < MAX_SIG_DISTANCE
+          newstate = :sig
+        else
+          newstate = :text
+        end
+
+        if newstate
+          append_chunk(chunks, chunk_lines, state)
+          chunk_lines = [line]
+          state = newstate
+        end
+
+      when :block_quote, :sig
+        chunk_lines << line
+      end
+
+      if !@have_snippet && state == :text && (@snippet.nil? || @snippet.length < SNIPPET_LEN) && line !~ /[=\*#_-]{3,}/ && line !~ /^\s*$/
+        @snippet ||= ""
+        @snippet += " " unless @snippet.empty?
+        @snippet += line.gsub(/^\s+/, "").gsub(/[\r\n]/, "").gsub(/\s+/, " ")
+        oldlen = @snippet.length
+        @snippet = @snippet[0 ... SNIPPET_LEN].chomp
+        @snippet += "..." if @snippet.length < oldlen
+        @snippet_contains_encrypted_content = true if encrypted
+      end
+    end
+
+    ## final object
+    append_chunk(chunks, chunk_lines, state)
+    chunks
+  end
+
+  # Find all chunks for this message.
+  def find_chunks
+    @chunks = [] of Chunk
+    @parts.each do |id, p|
+      if p.content_type == "text/plain" && p.content.size > 0
+	lines = p.content.lines
+	@chunks = @chunks + text_to_chunks(lines)
+      else
+        result = ""
+	success = HookManager.run("mime-decode") do |pipe|
+	  pipe.send do |f|
+	    f.puts(p.content_type)
+	    f << p.content
+	  end
+	  pipe.receive do |f|
+	    result = f.gets_to_end
+	  end
+	end
+	if result.size > 0
+	  lines = result.lines
+	  @chunks = @chunks + text_to_chunks(lines)
+	else
+	  @chunks << AttachmentChunk.new(p, self)
+	end
+      end
+    end
   end
 
   # Functions for parsing messages.

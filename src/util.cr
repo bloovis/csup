@@ -30,6 +30,10 @@ end
 # String extensions
 
 class String
+  def length
+    size
+  end
+
   def display_length
     Unicode.width(self)
   end
@@ -116,6 +120,10 @@ module Enumerable
     ret = nil
     find { |e| ret ||= yield(e) }
     ret || nil # force
+  end
+
+  def length
+    size
   end
 
   def member?(x)
