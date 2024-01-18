@@ -119,6 +119,8 @@ class Message
 	filename = newname + "." + "html"
       elsif ctype =~ /image\/(.*)/
 	filename = newname + "." + $1
+      else
+	filename = newname
       end
     end
     @parts << Part.new(id, ctype, filename, s)
