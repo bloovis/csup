@@ -186,3 +186,27 @@ class SavingHash(K,V) < Hash(K,V)
     @hash[k] ||= @constructor.call(k)
   end
 end
+
+# Sup expects Ruby arrays to be sparse, i.e., a value can be read or assigned
+# with an index that is greater than the current array size.  This
+# class simulates that behavior for the [i] and [i]= operators.
+
+class SparseArray(T) < Array(T?)
+  def [](i)
+    if i >= size
+      (size..i).each {|n| self.<<(nil)}
+      nil
+    else
+      super
+    end
+  end
+
+  def []=(i : Int32, v : T)
+    if i > size
+      (size..i-1).each {|n| self.<<(nil)}
+      self << v
+    else
+      super
+    end
+  end
+end
