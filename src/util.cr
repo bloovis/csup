@@ -150,3 +150,39 @@ struct Int
     end
   end
 end
+
+## acts like a hash with an initialization block, but saves any
+## newly-created value even upon lookup.
+##
+## for example:
+##
+## class C
+##   property val
+##   def initialize; @val = 0 end
+## end
+##
+## h = Hash(Symbol, C).new { C.new }
+## h[:a].val # => 0
+## h[:a].val = 1
+## h[:a].val # => 0
+##
+## h2 = SavingHash(Symbol, C).new { C.new }
+## h2[:a].val # => 0
+## h2[:a].val = 1
+## h2[:a].val # => 1
+##
+## important note: you REALLY want to use #has_key? to test existence,
+## because just checking h[anything] will always evaluate to true
+## (except for degenerate constructor blocks that return nil or false)
+
+class SavingHash(K,V) < Hash(K,V)
+  def initialize(&b : K -> V)
+    super
+    @constructor = b
+    @hash = Hash(K,V).new
+  end
+
+  def [](k)
+    @hash[k] ||= @constructor.call(k)
+  end
+end

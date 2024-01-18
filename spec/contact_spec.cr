@@ -1,7 +1,9 @@
 require "./spec_helper"
 require "../src/contact"
 
-def create_contacts(filename)
+module Redwood
+
+def self.create_contacts(filename)
   s = <<-EOS
 self: Mark Alexander <marka@pobox.com>
 potus: Robert L. Peters <potus@whitehouse.gov>
@@ -15,7 +17,7 @@ describe ContactManager do
     contacts_file = "/tmp/contacts.txt"
     create_contacts(contacts_file)
     File.exists?(contacts_file).should eq(true)
-    ContactManager.init(contacts_file)
+    ContactManager.new(contacts_file)
   end
 
   it "gets contacts"  do
@@ -94,3 +96,5 @@ describe ContactManager do
   end
 
 end
+
+end	# Redwood

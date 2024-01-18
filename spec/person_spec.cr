@@ -1,6 +1,8 @@
 require "./spec_helper"
 require "../src/person"
 
+module Redwood
+
 describe Person do
   it "creates a person with a name" do
     p = Person.new("Mark Alexander", "marka@pobox.com")
@@ -26,3 +28,5 @@ describe Person do
     p.to_s.should eq("A real somebody! <somebody@pobox.com>")
   end
 end
+
+end	# Redwood
