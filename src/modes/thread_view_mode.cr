@@ -57,7 +57,7 @@ class ThreadViewMode < LineCursorMode
       @text << "#{prefix}    #{k} = #{v}"
     end
 
-    msg.parts.each do |id, p|
+    msg.parts.each do |p|
       colon = (@display_content ? ":" : "")
       @text << "#{prefix}  Part ID #{p.id}, content type #{p.content_type}, filename '#{p.filename}'#{colon}\n"
       if p.content == ""
