@@ -13,9 +13,9 @@ class ScrollMode < Mode
 	     jump_to_end, jump_to_left, search_in_buffer,
 	     continue_search_in_buffer
 
-  alias ColoredText = Tuple(Symbol, String)       # {color, text}
-  alias ColoredLine = Array(ColoredText)
-  alias Text = ColoredLine | String
+  alias Widget = Tuple(Symbol, String)       # {color, text}
+  alias WidgetArray = Array(Widget)
+  alias Text = WidgetArray | String
   alias TextLines = Array(Text)
 
   ## we define topline and botline as the top and bottom lines of any
@@ -229,7 +229,7 @@ class ScrollMode < Mode
     when Array
       if in_search?
         ## seems like there ought to be a better way of doing this
-        array = ColoredLine.new
+        array = WidgetArray.new
         s.each do |color, text|
           if text =~ regex
             array += matching_text_array text, regex, color
@@ -251,7 +251,7 @@ class ScrollMode < Mode
       # return
   end
 
-  protected def matching_text_array(s, regex, oldcolor=:text_color) : ColoredLine
+  protected def matching_text_array(s, regex, oldcolor=:text_color) : WidgetArray
     s.split(regex).map do |text|
       next if text.empty?
       if text =~ regex
@@ -262,7 +262,7 @@ class ScrollMode < Mode
     end.compact + [{oldcolor, ""}]
   end
 
-  protected def draw_line_from_array(ln : Int32, a : ColoredLine, opts : Opts)
+  protected def draw_line_from_array(ln : Int32, a : WidgetArray, opts : Opts)
     xpos = 0
     a.each_with_index do |line, i|
       color = line[0]

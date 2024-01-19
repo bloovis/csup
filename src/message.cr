@@ -112,6 +112,9 @@ class Message
     @tags.includes?(s.to_s)
   end
 
+  def is_draft?; has_label?(:draft) end
+
+  # Code for constructing parts
   def add_part(id : Int32, ctype : String, filename : String, s : String)
     if filename == ""
       newname = "csup-attachment-#{Time.now.to_i}-#{rand 10000}"

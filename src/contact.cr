@@ -69,7 +69,7 @@ class ContactManager
   singleton_method person_for, email
 
   def is_aliased_contact?(person)
-    !@p2a[person].nil?
+    !@p2a[person]?.nil?
   end
   singleton_method is_aliased_contact?, person
 

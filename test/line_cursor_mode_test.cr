@@ -15,7 +15,7 @@ class StupidMode < LineCursorMode
   end
 
   def [](n) : Text
-    l = ColoredLine.new
+    l = WidgetArray.new
     l << {:text_color, "This is " }	# This part should be normal color
     l << {:to_me_color, "line #{n+1}."}	# This part should be green
     l

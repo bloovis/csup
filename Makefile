@@ -37,7 +37,8 @@ notmuch_view_part : test/notmuch_view_part.cr src/notmuch.cr
 # Mode tests
 scroll_mode_test : test/scroll_mode_test.cr src/modes/scroll_mode.cr src/buffer.cr
 line_cursor_mode_test : test/line_cursor_mode_test.cr src/modes/line_cursor_mode.cr src/buffer.cr
-thread_index_mode_test : test/thread_index_mode_test.cr src/modes/thread_index_mode.cr src/buffer.cr
+thread_index_mode_test : test/thread_index_mode_test.cr src/modes/thread_index_mode.cr src/buffer.cr \
+			 src/modes/thread_view_mode.cr
 
 test : src/test.cr src/notmuch.cr
 	crystal build src/test.cr

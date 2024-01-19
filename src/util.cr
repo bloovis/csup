@@ -182,8 +182,12 @@ class SavingHash(K,V) < Hash(K,V)
     @hash = Hash(K,V).new
   end
 
-  def [](k)
-    @hash[k] ||= @constructor.call(k)
+  def [](k : K)
+    if @hash.has_key?(k)
+      @hash[k]
+    else
+      @hash[k] = @constructor.call(k)
+    end
   end
 end
 
@@ -202,8 +206,11 @@ class SparseArray(T) < Array(T?)
   end
 
   def []=(i : Int32, v : T)
-    if i > size
-      (size..i-1).each {|n| self.<<(nil)}
+    STDERR.puts "SparseArray [#{i}]= #{v.object_id} (#{v.class.name})"
+    if i >= size
+      if i > 0
+	(size..i-1).each {|n| self.<<(nil)}
+      end
       self << v
     else
       super

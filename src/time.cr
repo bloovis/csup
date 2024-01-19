@@ -102,7 +102,11 @@ struct Time
 
   ## This is how a message date is displayed in thread-view-mode
   def to_message_nice_s(from=Time.local)
-    time_mode = Redwood::Config.str(:time_mode) || ""
+    if Redwood::Config.has_key?(:time_mode)
+      time_mode = Redwood::Config.str(:time_mode)
+    else
+      time_mode = ""
+    end
     format = time_mode == "24h" ? "%B %e %Y %k:%M" : "%B %e %Y %l:%M%p"
     strftime format
   end

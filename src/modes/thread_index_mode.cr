@@ -140,7 +140,7 @@ class ThreadIndexMode < LineCursorMode
     ## format the from column
     cur_width = 0
     ann = author_names_and_newness_for_thread t, AUTHOR_LIMIT
-    from : ColoredLine = [] of ColoredText
+    from = WidgetArray.new
     ann.each_with_index do |(name, newness), i|
       break if cur_width >= from_width
       last = i == ann.size - 1
@@ -183,7 +183,7 @@ class ThreadIndexMode < LineCursorMode
     size_widget_text = size_widget.pad_left(@size_widget_width)
     date_widget_text = date_widget.pad_left(@date_widget_width)
 
-    label_widgets : ColoredLine = [] of ColoredText
+    label_widgets = WidgetArray.new
     (t.labels - @hidden_labels).to_a.sort.map do |label|
       label_widgets << {:label_color, "#{label} "}
     end
@@ -237,7 +237,7 @@ class ThreadIndexMode < LineCursorMode
     thread = cursor_thread
     if thread
       BufferManager.flash "Selecting thread at #{@curpos}"
-      mode = ThreadViewMode.new(thread, @display_content)
+      mode = ThreadViewMode.new(thread)
       viewbuf = BufferManager.spawn(thread.subj, mode, Opts.new({:width => 80, :height => 25}))
       BufferManager.raise_to_front(viewbuf)
     else
