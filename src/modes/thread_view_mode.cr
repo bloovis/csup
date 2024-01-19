@@ -144,17 +144,19 @@ class ThreadViewMode < LineCursorMode
       prevm = m
       if l.state != :closed
         m.chunks.each do |c|
+	  #STDERR.puts "regen_text: msg #{m.id}, chunk #{c.type} has #{c.lines.size} lines"
           cl = @chunk_layout[c]
 
           ## set the default state for chunks
-          cl.state ||=
-            if c.expandable? # && c.respond_to?(:initial_state)
-              c.initial_state
-            else
-              :closed
-            end
+          if cl.state == :none
+	    if c.expandable? # && c.respond_to?(:initial_state)
+	      cl.state = c.initial_state
+	    else
+	      cl.state = :closed
+	    end
+	  end
 
-	  #STDERR.puts "About to call chunk_to_lines for chunk #{c.type}"
+	  #STDERR.puts "About to call chunk_to_lines for chunk #{c.type}, state #{cl.state}"
           text = chunk_to_lines c, cl.state, @text.length, depth
 	  #STDERR.puts "chunk_to_lines returned #{text.size} lines"
 	  #text.each {|t| STDERR.puts "line: #{t}"}
@@ -281,6 +283,23 @@ class ThreadViewMode < LineCursorMode
     p.longname + (ContactManager.is_aliased_contact?(p) ? " (#{ContactManager.alias_for p})" : "")
   end
 
+  def maybe_wrap_text(lines : Array(String)) : Array(String)
+    if @wrap
+      config_width = Config.int(:wrap_width)
+      if config_width && config_width != 0
+        width = [config_width, buffer.content_width].min
+      else
+        width = buffer.content_width
+      end
+      # lines can apparently be both String and Array, convert to Array for map.
+      if lines.is_a? String
+        lines = lines.lines.to_a
+      end
+      lines = lines.map { |l| l.chomp.wrap width }.flatten
+    end
+    return lines
+  end
+
   ## todo: check arguments on this overly complex function
   def chunk_to_lines(chunk : Chunk | Message,
 		     state : Symbol,
@@ -299,19 +318,17 @@ class ThreadViewMode < LineCursorMode
                  prefix + " >>> This message is a draft. Hit 'e' to edit, 'y' to send. <<<"}]
       end
     else
-      #STDERR.puts "chunk_to_lines: processing chunk #{chunk.type}"
+      #STDERR.puts "chunk_to_lines: processing chunk #{chunk.type}, state #{state}"
       #raise "Bad chunk: #{chunk.inspect}" unless chunk.respond_to?(:inlineable?) ## debugging
       if chunk.inlineable?
-        #lines = maybe_wrap_text(chunk.lines)	# FIXME
-	lines = chunk.lines
+        lines = maybe_wrap_text(chunk.lines)
 	lines.each {|line| ret << [{chunk.color, "#{prefix}#{line}"}]}
       elsif chunk.expandable?
         case state
         when :closed
           ret << [{chunk.patina_color, "#{prefix}+ #{chunk.patina_text}"}]
         when :open
-          #lines = maybe_wrap_text(chunk.lines)	# FIXME
-	  lines = chunk.lines
+          lines = maybe_wrap_text(chunk.lines)
 	  ret << [{chunk.patina_color, "#{prefix}- #{chunk.patina_text}"}]
 	  lines.each { |line| ret << [{chunk.color, "#{prefix}#{line}"}] }
         end
@@ -331,6 +348,7 @@ class ThreadViewMode < LineCursorMode
 
   def jump_to_first_open
     m = @message_lines[0]
+    #STDERR.puts "jump_to_first_open, m = #{m}"
     return unless m
     if @layout[m].state != :closed
       jump_to_message m #, true
@@ -398,6 +416,7 @@ class ThreadViewMode < LineCursorMode
 
   def jump_to_message(m, force_alignment=false)
     l = @layout[m]
+    #STDERR.puts "jump_to_message: l.top = #{l.top}"
 
     ## boundaries of the message
     message_left = l.depth * @indent_spaces

@@ -190,6 +190,7 @@ class Message
   end
 
   def append_chunk(chunks : Array(Chunk), lines : Array(String), type : Symbol)
+    #STDERR.puts "append_chunk: type #{type}, #lines = #{lines.size}"
     return if lines.empty?
     chunk = case type
             when :text
@@ -216,6 +217,7 @@ class Message
     nextline_index = -1
 
     lines.each_with_index do |line, i|
+      #STDERR.puts "text_to_chunks: line #{i} = '#{line.chomp}'"
       if i >= nextline_index
         # look for next nonblank line only when needed to avoid O(n²)
         # behavior on sequences of blank lines
@@ -237,6 +239,7 @@ class Message
         ## original regex /\w.*:$/ had very poor behavior on long lines
         ## like ":a:a:a:a:a" that occurred in certain emails.
         if line =~ QUOTE_PATTERN || (line =~ /:$/ && line =~ /\w/ && nextline =~ QUOTE_PATTERN)
+	  #STDERR.puts "in quote, line = '#{line}', nextline = '#{nextline}'"
           newstate = :quote
         elsif line =~ SIG_PATTERN && (lines.length - i) < MAX_SIG_DISTANCE && !lines[(i+1)..-1].index { |l| l =~ /^-- $/ }
           newstate = :sig

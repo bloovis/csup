@@ -82,6 +82,7 @@ class LineCursorMode < ScrollMode
   protected def set_cursor_pos(p)
     return if @curpos == p || p.nil?
     @curpos = p.clamp @cursor_top, lines
+    #STDERR.puts "set_cursor_pos @curpos=#{@curpos}"
     buffer.mark_dirty if buffer # not sure why the buffer is gone
     set_status
   end
