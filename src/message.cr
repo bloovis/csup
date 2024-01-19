@@ -19,8 +19,9 @@ class Message
     property content_type : String
     property filename : String
     property content : String
+    property content_size : Int32
 
-    def initialize(@id, @content_type, @filename, @content)
+    def initialize(@id, @content_type, @filename, @content, @content_size)
     end
   end
 
@@ -115,7 +116,7 @@ class Message
   def is_draft?; has_label?(:draft) end
 
   # Code for constructing parts
-  def add_part(id : Int32, ctype : String, filename : String, s : String)
+  def add_part(id : Int32, ctype : String, filename : String, s : String, content_size : Int32)
     if filename == ""
       newname = "csup-attachment-#{Time.now.to_i}-#{rand 10000}"
       if ctype =~ /text\/html/
@@ -126,7 +127,7 @@ class Message
 	filename = newname
       end
     end
-    @parts << Part.new(id, ctype, filename, s)
+    @parts << Part.new(id, ctype, filename, s, content_size)
   end
 
   def find_part(&b : Part -> Bool) : Part?
@@ -293,18 +294,24 @@ class Message
     @chunks = [] of Chunk
     found_plain = false
     @parts.each do |p|
-      if p.content_type == "text/plain" && p.content.size > 0
+      if p.content_type == "text/plain" && p.content_size > 0
+	found_plain = true
 	lines = p.content.lines
 	@chunks = @chunks + text_to_chunks(lines)
       else
         result = ""
-	success = HookManager.run("mime-decode") do |pipe|
-	  pipe.send do |f|
-	    f.puts(p.content_type)
-	    f << p.content
-	  end
-	  pipe.receive do |f|
-	    result = f.gets_to_end
+	# If this is a non-empty part HTML part, and we haven't
+	# seen a plain text part yet, decode it and treat it as it were
+	# plain text attachment.
+	if p.content_type == "text/html" && p.content_size > 0 && !found_plain
+	  success = HookManager.run("mime-decode") do |pipe|
+	    pipe.send do |f|
+	      f.puts(p.content_type)
+	      f << p.content
+	    end
+	    pipe.receive do |f|
+	      result = f.gets_to_end
+	    end
 	  end
 	end
 	if result.size > 0
@@ -330,12 +337,17 @@ class Message
       else
 	filename = ""
       end
+      if part.has_key?("content-length")
+	content_length = part["content-length"].as_i
+      else
+	content_length = 0
+      end
       #puts "about to get content for part #{id}, ctype #{ctype}"
       if part.has_key?("content")
 	content = part["content"].as_s?
 	if content
 	  #puts "Adding content for part #{id}, content:\n---\n#{content}\n---\n"
-	  add_part(id, ctype, filename, content)
+	  add_part(id, ctype, filename, content, content.size)
 	else
 	  content = part["content"].as_a?
 	  if content
@@ -345,7 +357,7 @@ class Message
 	  end
 	end
       else
-	add_part(id, ctype, filename, "")	# attachment with no content in JSON
+	add_part(id, ctype, filename, "", content_length)	# attachment with no content in JSON
       end
     end
   end

@@ -69,7 +69,7 @@ class AttachmentChunk < Chunk
 
     @color = :text_color
     @patina_color = :attachment_color
-    @patina_text = "Attachment: #{part.filename} (#{part.content_type}) ; #{part.content.size.to_human_size})"
+    @patina_text = "Attachment: #{part.filename} (#{part.content_type}); #{part.content_size.to_human_size})"
     @initial_state = :open
 
     text = ""
