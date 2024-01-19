@@ -3,7 +3,8 @@ require "./line_cursor_mode"
 module Redwood
 
 class ThreadViewMode < LineCursorMode
-  mode_class help
+  mode_class help, jump_to_next_and_open, jump_to_prev_and_open
+
 
   class Layout
     property state = :none
@@ -26,6 +27,8 @@ class ThreadViewMode < LineCursorMode
 
   register_keymap do |k|
     k.add(:help, "help", "h")
+    k.add :jump_to_next_and_open, "Jump to next message and open", "C-n"
+    k.add :jump_to_prev_and_open, "Jump to previous message and open", "C-p"
   end
 
   @text = TextLines.new
@@ -90,6 +93,11 @@ class ThreadViewMode < LineCursorMode
   def buffer=(b : Buffer)
     super
     regen_text
+  end
+
+  def update
+    regen_text
+    buffer.mark_dirty if buffer
   end
 
   ## here we generate the actual content lines. we accumulate
@@ -319,6 +327,96 @@ class ThreadViewMode < LineCursorMode
   def help
     BufferManager.flash "This is the help command."
     #puts "This is the help command."
+  end
+
+  def jump_to_first_open
+    m = @message_lines[0]
+    return unless m
+    if @layout[m].state != :closed
+      jump_to_message m #, true
+    else
+      jump_to_next_open #true
+    end
+  end
+
+  def jump_to_next_and_open
+    # return continue_search_in_buffer if in_search? # err.. don't know why im doing this
+
+    m = (curpos ... @message_lines.length).argfind { |i| @message_lines[i] }
+    return unless m
+
+    nextm = @layout[m].next
+    return unless nextm
+
+    if @layout[m].toggled_state == true
+      @layout[m].state = :closed
+      @layout[m].toggled_state = false
+      update
+    end
+
+    if @layout[nextm].state == :closed
+      @layout[nextm].state = :open
+      @layout[nextm].toggled_state = true
+    end
+
+    jump_to_message nextm if nextm
+    update if @layout[nextm].toggled_state
+  end
+
+  def jump_to_next_open(force_alignment=false)
+    return continue_search_in_buffer if in_search? # hack: allow 'n' to apply to both operations
+    m = (curpos ... @message_lines.length).argfind { |i| @message_lines[i] }
+    return unless m
+    while nextm = @layout[m].next
+      break if @layout[nextm].state != :closed
+      m = nextm
+    end
+    jump_to_message nextm, force_alignment if nextm
+  end
+
+  def jump_to_prev_and_open
+    m = (0 .. curpos).to_a.reverse.argfind { |i| @message_lines[i] }
+    return unless m
+
+    nextm = @layout[m].prev
+    return unless nextm
+
+    if @layout[m].toggled_state == true
+      @layout[m].state = :closed
+      @layout[m].toggled_state = false
+      update
+    end
+
+    if @layout[nextm].state == :closed
+      @layout[nextm].state = :open
+      @layout[nextm].toggled_state = true
+    end
+
+    jump_to_message nextm if nextm
+    update if @layout[nextm].toggled_state
+  end
+
+  def jump_to_message(m, force_alignment=false)
+    l = @layout[m]
+
+    ## boundaries of the message
+    message_left = l.depth * @indent_spaces
+    message_right = message_left + l.width
+
+    ## calculate leftmost column
+    left = if force_alignment # force mode: align exactly
+      message_left
+    else # regular: minimize cursor movement
+      ## leftmost and rightmost are boundaries of all valid left-column
+      ## alignments.
+      leftmost = [message_left, message_right - buffer.content_width + 1].min
+      rightmost = message_left
+      leftcol.clamp(leftmost, rightmost)
+    end
+
+    jump_to_line l.top    # move vertically
+    jump_to_col left      # move horizontally
+    set_cursor_pos l.top  # set cursor pos
   end
 
   def select_item

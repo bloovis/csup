@@ -238,8 +238,12 @@ class ThreadIndexMode < LineCursorMode
     if thread
       BufferManager.flash "Selecting thread at #{@curpos}"
       mode = ThreadViewMode.new(thread)
-      viewbuf = BufferManager.spawn(thread.subj, mode, Opts.new({:width => 80, :height => 25}))
-      BufferManager.raise_to_front(viewbuf)
+      viewbuf = BufferManager.spawn(thread.subj, mode)
+      BufferManager.draw_screen
+      mode.jump_to_first_open if Config.bool(:jump_to_open_message)
+      BufferManager.draw_screen # lame TODO: make this unnecessary
+      ## the first draw_screen is needed before topline and botline
+      ## are set, and the second to show the cursor having moved
     else
       BufferManager.flash "No thread at #{@curpos}!"
     end
