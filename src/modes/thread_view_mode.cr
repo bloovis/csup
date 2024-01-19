@@ -108,7 +108,7 @@ class ThreadViewMode < LineCursorMode
       #  next
       #end
       l = @layout[m]
-      STDERR.puts "regen_text: processing message #{m.id}, layout state #{l.state}"
+      #STDERR.puts "regen_text: processing message #{m.id}, layout state #{l.state}"
 
       ## is this still necessary?
       next unless @layout[m].state # skip discarded drafts
@@ -146,10 +146,10 @@ class ThreadViewMode < LineCursorMode
               :closed
             end
 
-	  STDERR.puts "About to call chunk_to_lines for chunk #{c.type}"
+	  #STDERR.puts "About to call chunk_to_lines for chunk #{c.type}"
           text = chunk_to_lines c, cl.state, @text.length, depth
-	  STDERR.puts "chunk_to_lines returned #{text.size} lines"
-	  text.each {|t| STDERR.puts "line: #{t}"}
+	  #STDERR.puts "chunk_to_lines returned #{text.size} lines"
+	  #text.each {|t| STDERR.puts "line: #{t}"}
           (0 ... text.length).each do |i|
             @chunk_lines[@text.length + i] = c
             @message_lines[@text.length + i] = m
@@ -173,7 +173,7 @@ class ThreadViewMode < LineCursorMode
   def message_patina_lines(m : Message, state : Symbol, start : Int32,
 			   parent : Message?, prefix : String, color : Symbol,
 			   star_color : Symbol) : TextLines
-    STDERR.puts "message_patina_lines processing message #{m.id}, state #{state}"
+    #STDERR.puts "message_patina_lines processing message #{m.id}, state #{state}"
     prefix_widget = {color, prefix}
     open_widget = {color, (state == :closed ? "+ " : "- ")}
     new_widget = {color, (m.has_label?(:unread) ? "N" : " ")}
@@ -204,7 +204,7 @@ class ThreadViewMode < LineCursorMode
       lines << header_widgets
       return lines
     when :detailed
-      STDERR.puts "processing detailed view for #{m.id}"
+      #STDERR.puts "processing detailed view for #{m.id}"
       @person_lines[start] = m.from
       from_line = WidgetArray.new
       [prefix_widget,
@@ -217,15 +217,15 @@ class ThreadViewMode < LineCursorMode
 
       addressee_lines = [] of String
       unless m.to.empty?
-        m.to.each_with_index { |p, i| @person_lines[start + addressee_lines.length + from_line.length + i] = p }
+        m.to.each_with_index { |p, i| @person_lines[start + addressee_lines.length + i + 1] = p }
         addressee_lines += format_person_list "   To: ", m.to
       end
       unless m.cc.empty?
-        m.cc.each_with_index { |p, i| @person_lines[start + addressee_lines.length + from_line.length + i] = p }
+        m.cc.each_with_index { |p, i| @person_lines[start + addressee_lines.length + i + 1] = p }
         addressee_lines += format_person_list "   Cc: ", m.cc
       end
       unless m.bcc.empty?
-        m.bcc.each_with_index { |p, i| @person_lines[start + addressee_lines.length + from_line.length + i] = p }
+        m.bcc.each_with_index { |p, i| @person_lines[start + addressee_lines.length + i + 1] = p }
         addressee_lines += format_person_list "   Bcc: ", m.bcc
       end
 
@@ -248,7 +248,7 @@ class ThreadViewMode < LineCursorMode
       lines << from_line
       addressee_lines.each {|a| lines << a}
       headers.each {|k,v| lines << [{color, prefix + "    #{k}: #{v}"}]}
-      lines.each {|l| STDERR.puts "detail line: #{l}"}
+      #lines.each {|l| STDERR.puts "detail line: #{l}"}
       return lines
       #return from_line + (addressee_lines +
       #       headers.map { |k, v| "   #{k}: #{v}" }).
@@ -281,14 +281,14 @@ class ThreadViewMode < LineCursorMode
     ret = TextLines.new
     prefix = " " * @indent_spaces * depth
     if chunk.is_a?(Message)
-      STDERR.puts "chunk_to_lines: processing message #{chunk.id}"
+      #STDERR.puts "chunk_to_lines: processing message #{chunk.id}"
       ret = message_patina_lines(chunk, state, start, parent, prefix, color, star_color)
       if chunk.is_draft?
 	ret << [{:draft_notification_color,
                  prefix + " >>> This message is a draft. Hit 'e' to edit, 'y' to send. <<<"}]
       end
     else
-      STDERR.puts "chunk_to_lines: processing chunk #{chunk.type}"
+      #STDERR.puts "chunk_to_lines: processing chunk #{chunk.type}"
       #raise "Bad chunk: #{chunk.inspect}" unless chunk.respond_to?(:inlineable?) ## debugging
       if chunk.inlineable?
         #lines = maybe_wrap_text(chunk.lines)	# FIXME
@@ -319,9 +319,34 @@ class ThreadViewMode < LineCursorMode
   end
 
   def select_item
-    BufferManager.flash "Select item at #{curpos}"
+    l = curpos
+    s = String.build do |s|
+      s << "Line #{l}: from "
+      m = @message_lines[l]
+      if m
+	s << m.from.email
+      else
+	s << "nobody"
+      end
+      s << ", chunk "
+      c = @chunk_lines[l]
+      if c
+	if c.is_a?(Message)
+	  s << "msg from " + c.from.email
+	else
+	  s << c.type
+	end
+      end
+      s << ", person "
+      p = @person_lines[l]
+      if p
+	s << p.email
+      else
+	s << "nobody"
+      end
+    end
+    BufferManager.flash s
   end
-
 
   # Old test code.
 

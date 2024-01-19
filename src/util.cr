@@ -206,7 +206,7 @@ class SparseArray(T) < Array(T?)
   end
 
   def []=(i : Int32, v : T)
-    STDERR.puts "SparseArray [#{i}]= #{v.object_id} (#{v.class.name})"
+    #STDERR.puts "SparseArray [#{i}]= #{v.object_id} (#{v.class.name}), caller #{caller[1]}"
     if i >= size
       if i > 0
 	(size..i-1).each {|n| self.<<(nil)}
