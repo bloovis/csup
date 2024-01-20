@@ -25,6 +25,11 @@ class SearchManager
     end
     @modified = false
 
+    @predefined_searches = { "inbox" => "tag:inbox not tag:spam not tag:deleted" }
+    @predefined_searches.each do |k,v|
+      @searches[k] = v
+    end
+
     singleton_post_init
   end
 
@@ -50,6 +55,10 @@ class SearchManager
 
   def add(name : String, search_string : String)
     return unless valid_name? name
+    if @predefined_searches.has_key? name
+      warn "cannot add search: #{name} is already taken by a predefined search"
+      return
+    end
     @searches[name] = search_string
     @modified = true
   end
@@ -57,6 +66,14 @@ class SearchManager
 
   def rename(old : String, new : String)
     return unless @searches.has_key? old
+    if @predefined_searches.has_key?(old)
+      warn "cannot rename search: old name #{old} is already taken by a predefined search"
+      return
+    end
+    if @predefined_searches.has_key?(new)
+      warn "cannot rename search: new name #{new} is already taken by a predefined search"
+      return
+    end
     search_string = @searches[old]
     delete(old) if add(new, search_string)
   end
@@ -64,6 +81,10 @@ class SearchManager
 
   def edit(name : String, search_string : String)
     return unless @searches.has_key? name
+    if @predefined_searches.has_key? name
+      warn "cannot edit predefined search: #{name}."
+      return
+    end
     @searches[name] = search_string
     @modified = true
   end
@@ -71,6 +92,10 @@ class SearchManager
 
   def delete(name : String)
     return unless @searches.has_key? name
+    if @predefined_searches.has_key? name
+      warn "cannot delete predefined search: #{name}."
+      return
+    end
     @searches.delete name
     @modified = true
   end
@@ -101,7 +126,7 @@ class SearchManager
   def save
     return unless @modified
     File.open(@fn, "w") do |f|
-      @searches.keys.sort.each do |k|
+      (@searches.keys - @predefined_searches.keys).sort.each do |k|
 	f.puts "#{k}: #{@searches[k]}"
       end
     end
