@@ -4,7 +4,7 @@ module Redwood
 
 class ThreadViewMode < LineCursorMode
   mode_class help, jump_to_next_and_open, jump_to_prev_and_open, expand_all_quotes,
-	     expand_all_messages, activate_chunk
+	     expand_all_messages, activate_chunk, jump_to_next_open, jump_to_prev_open
 
   class Layout
     property state = :none
@@ -28,9 +28,11 @@ class ThreadViewMode < LineCursorMode
   register_keymap do |k|
     k.add(:help, "help", "h")
     k.add :activate_chunk, "Expand/collapse or activate item", "C-m"
-    k.add :expand_all_messages, "Expand/collapse all messages", "E"
-    k.add :expand_all_quotes, "Expand/collapse all quotes in a message", "o"
+    k.add :expand_all_messages, "Expand/collapse all messages", 'E'
+    k.add :expand_all_quotes, "Expand/collapse all quotes in a message", 'o'
+    k.add :jump_to_next_open, "Jump to next open message", 'n'
     k.add :jump_to_next_and_open, "Jump to next message and open", "C-n"
+    k.add :jump_to_prev_open, "Jump to previous open message", 'p'
     k.add :jump_to_prev_and_open, "Jump to previous message and open", "C-p"
   end
 
@@ -446,6 +448,24 @@ class ThreadViewMode < LineCursorMode
 
     jump_to_message nextm if nextm
     update if @layout[nextm].toggled_state
+  end
+
+  def jump_to_prev_open
+    m = (0 .. curpos).to_a.reverse.argfind { |i| @message_lines[i] } # bah, .to_a
+    return unless m
+    ## jump to the top of the current message if we're in the body;
+    ## otherwise, to the previous message
+
+    top = @layout[m].top
+    if curpos == top
+      while(prevm = @layout[m].prev)
+        break if @layout[prevm].state != :closed
+        m = prevm
+      end
+      jump_to_message prevm if prevm
+    else
+      jump_to_message m
+    end
   end
 
   def jump_to_message(m, force_alignment=false)
