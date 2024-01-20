@@ -1,4 +1,7 @@
 require "./singleton"
+require "./supcurses"
+require "./buffer"
+require "./keymap"
 
 module Redwood
 
@@ -8,6 +11,10 @@ module Redwood
 ## things. When an action is called (such as 'archive'),
 ## a lambda is registered with UndoManager that will
 ## undo the archival action
+#
+# The Crystal implementation differs from the one in Sup
+# in that the register method does not take lambdas as
+# parameters, but instead expects a block that takes no parameters.
 
 class UndoManager
   singleton_class
@@ -22,23 +29,32 @@ class UndoManager
     singleton_post_init
   end
 
-  def register(desc : String, action : Proc(Nil))
+  def register(desc : String, &action)
     @@actionlist.push({desc: desc, action: action})
   end
-  singleton_method register, desc, action
+  def self.register(desc, &b)
+    instance.register(desc, &b)
+  end
 
   def undo
     unless @@actionlist.empty?
       actionset = @@actionlist.pop
       action = actionset[:action]
       action.call
-      puts "undid #{actionset[:desc]}"
-      # BufferManager.flash "undid #{actionset[:desc]}"
+      if Redwood.cursing
+        BufferManager.flash "undid #{actionset[:desc]}"
+      else
+	puts "undid #{actionset[:desc]}"
+      end
     else
-      # BufferManager.flash "nothing more to undo!"
+      if Redwood.cursing
+	BufferManager.flash "nothing more to undo!"
+      else
+	puts "nothing more to undo!"
+      end
     end
   end
-  singleton_method undo
+  singleton_method undo, b
 
   def clear
     @@actionlist = [] of UndoEntry
