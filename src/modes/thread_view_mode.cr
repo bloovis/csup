@@ -3,7 +3,7 @@ require "./line_cursor_mode"
 module Redwood
 
 class ThreadViewMode < LineCursorMode
-  mode_class help, jump_to_next_and_open, jump_to_prev_and_open
+  mode_class help, jump_to_next_and_open, jump_to_prev_and_open, expand_all_quotes
 
 
   class Layout
@@ -27,6 +27,7 @@ class ThreadViewMode < LineCursorMode
 
   register_keymap do |k|
     k.add(:help, "help", "h")
+    k.add :expand_all_quotes, "Expand/collapse all quotes in a message", "o"
     k.add :jump_to_next_and_open, "Jump to next message and open", "C-n"
     k.add :jump_to_prev_and_open, "Jump to previous message and open", "C-p"
   end
@@ -436,6 +437,16 @@ class ThreadViewMode < LineCursorMode
     jump_to_line l.top    # move vertically
     jump_to_col left      # move horizontally
     set_cursor_pos l.top  # set cursor pos
+  end
+
+  def expand_all_quotes
+    if(m = @message_lines[curpos])
+      quotes = m.chunks.select { |c| (c.type == :quote || c.type == :sig) && c.lines.length > 1 }
+      numopen = quotes.reduce(0) { |s, c| s + (@chunk_layout[c].state == :open ? 1 : 0) }
+      newstate = numopen > quotes.length / 2 ? :closed : :open
+      quotes.each { |c| @chunk_layout[c].state = newstate }
+      update
+    end
   end
 
   def select_item
