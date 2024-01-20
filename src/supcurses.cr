@@ -87,6 +87,11 @@ module NCurses
     LibNCurses.clrtoeol
   end
 
+  # Wrapper for `endwin`
+  def endwin : LibC::Int
+    LibNCurses.endwin
+  end
+
   A_NORMAL = 0
   A_BOLD = 0x200000
   A_BLINK = 0x80000

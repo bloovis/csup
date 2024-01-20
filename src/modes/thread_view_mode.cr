@@ -4,7 +4,7 @@ module Redwood
 
 class ThreadViewMode < LineCursorMode
   mode_class help, jump_to_next_and_open, jump_to_prev_and_open, expand_all_quotes,
-	     expand_all_messages
+	     expand_all_messages, activate_chunk
 
   class Layout
     property state = :none
@@ -27,6 +27,7 @@ class ThreadViewMode < LineCursorMode
 
   register_keymap do |k|
     k.add(:help, "help", "h")
+    k.add :activate_chunk, "Expand/collapse or activate item", "C-m"
     k.add :expand_all_messages, "Expand/collapse all messages", "E"
     k.add :expand_all_quotes, "Expand/collapse all quotes in a message", "o"
     k.add :jump_to_next_and_open, "Jump to next message and open", "C-n"
@@ -120,7 +121,7 @@ class ThreadViewMode < LineCursorMode
       #  next
       #end
       l = @layout[m]
-      STDERR.puts "regen_text: processing message #{m.id}, layout state #{l.state}"
+      #STDERR.puts "regen_text: processing message #{m.id}, layout state #{l.state}"
 
       ## is this still necessary?
       next unless @layout[m].state # skip discarded drafts
@@ -148,7 +149,7 @@ class ThreadViewMode < LineCursorMode
       prevm = m
       if l.state != :closed
         m.chunks.each do |c|
-	  STDERR.puts "regen_text: msg #{m.id}, chunk #{c.type} has #{c.lines.size} lines"
+	  #STDERR.puts "regen_text: msg #{m.id}, chunk #{c.type} has #{c.lines.size} lines"
           cl = @chunk_layout[c]
 
           ## set the default state for chunks
@@ -160,10 +161,10 @@ class ThreadViewMode < LineCursorMode
 	    end
 	  end
 
-	  STDERR.puts "About to call chunk_to_lines for chunk #{c.type}, state #{cl.state}"
+	  #STDERR.puts "About to call chunk_to_lines for chunk #{c.type}, state #{cl.state}"
           text = chunk_to_lines c, cl.state, @text.length, depth
-	  STDERR.puts "chunk_to_lines returned #{text.size} lines"
-	  text.each {|t| STDERR.puts "line: #{t}"}
+	  #STDERR.puts "chunk_to_lines returned #{text.size} lines"
+	  #text.each {|t| STDERR.puts "line: #{t}"}
           (0 ... text.length).each do |i|
             @chunk_lines[@text.length + i] = c
             @message_lines[@text.length + i] = m
@@ -350,6 +351,35 @@ class ThreadViewMode < LineCursorMode
     #puts "This is the help command."
   end
 
+  ## called when someone presses enter when the cursor is highlighting
+  ## a chunk. for expandable chunks (including messages) we toggle
+  ## open/closed state; for viewable chunks (like attachments) we
+  ## view.
+  def activate_chunk
+    return unless chunk = @chunk_lines[curpos]
+    if chunk.is_a?(Chunk) && chunk.type == :text
+      ## if the cursor is over a text region, expand/collapse the
+      ## entire message
+      chunk = @message_lines[curpos]
+    end
+    layout = if chunk.is_a?(Message)
+      @layout[chunk]
+    elsif chunk && chunk.expandable?
+      @chunk_layout[chunk]
+    end
+    if layout
+      layout.state = (layout.state != :closed ? :closed : :open)
+      #cursor_down if layout.state == :closed # too annoying
+      update
+    elsif chunk.is_a?(Chunk) && chunk.viewable?
+      view chunk
+    end
+    if chunk.is_a?(Message) && Config.bool(:jump_to_open_message)
+      jump_to_message chunk
+      jump_to_next_open if layout && layout.state == :closed
+    end
+  end
+
   def jump_to_first_open
     m = @message_lines[0]
     #STDERR.puts "jump_to_first_open, m = #{m}"
@@ -447,9 +477,9 @@ class ThreadViewMode < LineCursorMode
       @global_message_state = :closed
     end
     @global_message_state = (@global_message_state == :closed ? :open : :closed)
-    STDERR.puts "expand_all_messages: setting global message state to #{@global_message_state}"
+    #STDERR.puts "expand_all_messages: setting global message state to #{@global_message_state}"
     @layout.each do |m, l|
-      STDERR.puts "expand_all_messages: setting layout for #{m.id} to #{@global_message_state}"
+      #STDERR.puts "expand_all_messages: setting layout for #{m.id} to #{@global_message_state}"
       l.state = @global_message_state
     end
     update
@@ -548,6 +578,17 @@ class ThreadViewMode < LineCursorMode
 
   end
 
+  def view(chunk)
+    return unless chunk.is_a?(AttachmentChunk)
+    BufferManager.flash "viewing #{chunk.part.content_type} attachment..."
+    success = chunk.view!
+    BufferManager.erase_flash
+    BufferManager.completely_redraw_screen
+    unless success
+      #BufferManager.spawn "Attachment: #{chunk.filename}", TextMode.new(chunk.to_s.ascii, chunk.filename)
+      BufferManager.flash "Couldn't execute view command, viewing as text."
+    end
+  end
 end
 
 end	# Redwood

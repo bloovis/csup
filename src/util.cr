@@ -193,6 +193,8 @@ class SavingHash(K,V) < Hash(K,V)
   def each(&b : K, V -> _)
     @hash.each(&b)
   end
+
+  forward_missing_to @hash
 end
 
 # Sup expects Ruby arrays to be sparse, i.e., a value can be read or assigned

@@ -446,6 +446,24 @@ class BufferManager
   end
   singleton_method clear, id
 
+  def completely_redraw_screen
+    return if @shelled
+
+    ## this magic makes Ncurses get the new size of the screen
+    Ncurses.endwin
+    Ncurses.stdscr.keypad true
+    Ncurses.curs_set 0
+    Ncurses.refresh
+    #@sigwinch_mutex.synchronize { @sigwinch_happened = false }
+    #debug "new screen size is #{Ncurses.rows} x #{Ncurses.cols}"
+
+    draw_screen Opts.new({:clear => true, :refresh => true, :dirty => true, :sync => true})
+
+    # don't know why but a second non-clear draw will resolve some blank screens
+    draw_screen Opts.new({:clear => false, :refresh => true, :dirty => true, :sync => true})
+  end
+  singleton_method completely_redraw_screen
+
   def draw_screen(opts = Opts.new)
     #minibuf_all.each_with_index {|s, i| Ncurses.print "draw_screen: caller line #{caller_line}, minibuf[#{i}]='#{s}'\n" }
     return if @shelled
