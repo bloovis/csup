@@ -3,8 +3,8 @@ require "./line_cursor_mode"
 module Redwood
 
 class ThreadViewMode < LineCursorMode
-  mode_class help, jump_to_next_and_open, jump_to_prev_and_open, expand_all_quotes
-
+  mode_class help, jump_to_next_and_open, jump_to_prev_and_open, expand_all_quotes,
+	     expand_all_messages
 
   class Layout
     property state = :none
@@ -27,16 +27,19 @@ class ThreadViewMode < LineCursorMode
 
   register_keymap do |k|
     k.add(:help, "help", "h")
+    k.add :expand_all_messages, "Expand/collapse all messages", "E"
     k.add :expand_all_quotes, "Expand/collapse all quotes in a message", "o"
     k.add :jump_to_next_and_open, "Jump to next message and open", "C-n"
     k.add :jump_to_prev_and_open, "Jump to previous message and open", "C-p"
   end
 
+  # Instance variables
   @text = TextLines.new
   @indent_spaces = 0
   @chunk_lines = SparseArray(Chunk | Message).new
   @message_lines = SparseArray(Message).new
   @person_lines = SparseArray(Person).new
+  @global_message_state = :none
 
   def lines
     @text.size
@@ -117,7 +120,7 @@ class ThreadViewMode < LineCursorMode
       #  next
       #end
       l = @layout[m]
-      #STDERR.puts "regen_text: processing message #{m.id}, layout state #{l.state}"
+      STDERR.puts "regen_text: processing message #{m.id}, layout state #{l.state}"
 
       ## is this still necessary?
       next unless @layout[m].state # skip discarded drafts
@@ -145,7 +148,7 @@ class ThreadViewMode < LineCursorMode
       prevm = m
       if l.state != :closed
         m.chunks.each do |c|
-	  #STDERR.puts "regen_text: msg #{m.id}, chunk #{c.type} has #{c.lines.size} lines"
+	  STDERR.puts "regen_text: msg #{m.id}, chunk #{c.type} has #{c.lines.size} lines"
           cl = @chunk_layout[c]
 
           ## set the default state for chunks
@@ -157,10 +160,10 @@ class ThreadViewMode < LineCursorMode
 	    end
 	  end
 
-	  #STDERR.puts "About to call chunk_to_lines for chunk #{c.type}, state #{cl.state}"
+	  STDERR.puts "About to call chunk_to_lines for chunk #{c.type}, state #{cl.state}"
           text = chunk_to_lines c, cl.state, @text.length, depth
-	  #STDERR.puts "chunk_to_lines returned #{text.size} lines"
-	  #text.each {|t| STDERR.puts "line: #{t}"}
+	  STDERR.puts "chunk_to_lines returned #{text.size} lines"
+	  text.each {|t| STDERR.puts "line: #{t}"}
           (0 ... text.length).each do |i|
             @chunk_lines[@text.length + i] = c
             @message_lines[@text.length + i] = m
@@ -437,6 +440,19 @@ class ThreadViewMode < LineCursorMode
     jump_to_line l.top    # move vertically
     jump_to_col left      # move horizontally
     set_cursor_pos l.top  # set cursor pos
+  end
+
+  def expand_all_messages
+    if @global_message_state == :none
+      @global_message_state = :closed
+    end
+    @global_message_state = (@global_message_state == :closed ? :open : :closed)
+    STDERR.puts "expand_all_messages: setting global message state to #{@global_message_state}"
+    @layout.each do |m, l|
+      STDERR.puts "expand_all_messages: setting layout for #{m.id} to #{@global_message_state}"
+      l.state = @global_message_state
+    end
+    update
   end
 
   def expand_all_quotes

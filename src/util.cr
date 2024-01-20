@@ -189,6 +189,10 @@ class SavingHash(K,V) < Hash(K,V)
       @hash[k] = @constructor.call(k)
     end
   end
+
+  def each(&b : K, V -> _)
+    @hash.each(&b)
+  end
 end
 
 # Sup expects Ruby arrays to be sparse, i.e., a value can be read or assigned
