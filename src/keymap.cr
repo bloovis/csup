@@ -16,7 +16,7 @@ class Keymap
 
   def add(action : Action, help : String, *keynames)
     keys = [] of String
-    keynames.each {|k| keys << k}
+    keynames.each {|k| keys << k.to_s}
     entry = Entry.new(action, help, keys)
     keys.each do |k|
       raise ArgumentError.new("key '#{k}' already defined (as #{@map[k].first})") if @map.includes? k
