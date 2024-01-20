@@ -59,7 +59,7 @@ class Mode
 
   # Need these dummies to allow the subclassed versions defined
   # by mode_class to be recognized.
-  def send(action : String | Symbol)
+  def send(action : String | Symbol, *args)
     #puts "Mode.send: should never get here!"
   end
 
