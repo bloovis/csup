@@ -53,6 +53,7 @@ class Message
   property chunks = Array(Chunk).new
   property have_snippet = false
   property snippet = ""
+  property dirty_labels = false
 
   # If a JSON result from "notmuch show" is provided in `data`, parse it
   # to fill in the message fields.  Otherwise use some empty default values, and
@@ -95,6 +96,8 @@ class Message
     end
   end
 
+  def dirty_labels?; @dirty_labels end
+
   def add_child(child : Message)
     @children << child
     child.parent = self
@@ -109,6 +112,10 @@ class Message
   end
 
   # For Sup compatibility
+  def clear_dirty_labels
+    @dirty_labels = false
+  end
+
   def has_label?(s : Symbol | String)
     @labels.includes?(s.to_s)
   end
@@ -127,8 +134,17 @@ class Message
     @dirty_labels = true
   end
 
-
   def is_draft?; has_label?(:draft) end
+
+  def sync_back_labels
+    Message.sync_back_labels [self]
+  end
+
+  def self.sync_back_labels(messages : Array(Message))
+    dirtymessages = messages.select{|m| m && m.dirty_labels?}
+    Notmuch.tag_batch(dirtymessages.map{|m| {"id:#{m.id}", m.labels.to_a}})
+    dirtymessages.each(&.clear_dirty_labels)
+  end
 
   # Code for constructing parts
   def add_part(id : Int32, ctype : String, filename : String, s : String, content_size : Int32)
@@ -469,12 +485,20 @@ class MsgThread
     m = Message.new(msglist[0])
     @msg = m
     @size = 0
-    m.walktree do |msg, i|
+    m.walktree do |msg, depth|
       msg.thread = self
       @size += 1
     end
     @dirty_labels = false
     @subj = m.subj
+  end
+
+  def messages : Array(Message)
+    a = Array(Message).new
+    if m = @msg
+      m.walktree { |msg, depth| a << msg }
+    end
+    return a
   end
 
   def apply_label(t); each { |m, d, p| m && m.add_label(t) }; end

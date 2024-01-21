@@ -31,14 +31,14 @@ module Notmuch
 	     exclude : Bool = true,
 	     output : String = "threads",
 	     offset : (Int32 | Nil) = nil,
-	     limit : (Int32 | Nil) = nil)
+	     limit : (Int32 | Nil) = nil) : Array(String)
     # search threads, return thread ids
     args = ["search", "--format=#{format}", "--output=#{output}"]
     args << "--offset=#{offset}" if offset
     args << "--limit=#{limit}" if limit
     args << "--exclude=false" unless exclude
     args << query
-    #system("echo notmuch #{Shellwords.escape(args.inspect)} >>/tmp/csup.log")
+    #STDERR.puts "notmuch #{args}"
     Pipe.run("notmuch", args).lines
   end
 
@@ -54,12 +54,16 @@ module Notmuch
     Pipe.run("notmuch", ["tag", query])
   end
 
+  # Each entry in query_tags is a tuple containing:
+  # - a query string in the form "id:messageid"
+  # - an array of tags to apply to that message
   def tag_batch(query_tags : Array({String, Array(String)}))
     return if query_tags.empty?
     input = query_tags.map do |q, ls|
       "#{ls.map{|l| "+#{l} "}.join} -- #{q}\n"
     end.join
     # @@logger.debug("tag input: #{input}") if @@logger
+    #STDERR.puts "notmuch tag --remove-all --batch, input:\n#{input}\n"
     Pipe.run("notmuch", ["tag", "--remove-all", "--batch"], input: input)
   end
 
@@ -102,8 +106,14 @@ module Notmuch
     search("id:#{mid}", exclude: false, format: "text", output: "files", limit: 1)
   end
 
-  def thread_id_from_message_id(mid : String)
-    search("id:#{mid}", exclude: false, format: "text", output: "threads", limit: 1)[0]
+  # Return thread id for the given message id, or empty string if not found.
+  def thread_id_from_message_id(mid : String) : String
+    lines = search("id:#{mid}", exclude: false, format: "text", output: "threads", limit: 1)
+    if lines.size > 0
+      return lines[0]
+    else
+      return ""
+    end
   end
 
   def tags_from_message_id(mid : String)
@@ -111,7 +121,16 @@ module Notmuch
   end
 
   def save_thread(t : MsgThread)
-    # Message.sync_back_labels t.messages
+{% if false %}
+    tags = t.labels.to_a.join(",")
+    if m = t.msg
+      mid = m.id
+    else
+      mid = "<unknown>"
+    end
+    STDERR.puts "Notmuch.save_thread: saving thread for message #{mid}, tags #{tags}"
+{% end %}
+    Message.sync_back_labels t.messages
   end
 
   def load_contacts(email_addresses : Array(String), limit : Int32 = 20)
