@@ -4,7 +4,8 @@ module Redwood
 
 class ThreadViewMode < LineCursorMode
   mode_class help, jump_to_next_and_open, jump_to_prev_and_open, expand_all_quotes,
-	     expand_all_messages, activate_chunk, jump_to_next_open, jump_to_prev_open
+	     expand_all_messages, activate_chunk, jump_to_next_open, jump_to_prev_open,
+	     align_current_message
 
   class Layout
     property state = :none
@@ -34,6 +35,7 @@ class ThreadViewMode < LineCursorMode
     k.add :jump_to_next_and_open, "Jump to next message and open", "C-n"
     k.add :jump_to_prev_open, "Jump to previous open message", 'p'
     k.add :jump_to_prev_and_open, "Jump to previous message and open", "C-p"
+    k.add :align_current_message, "Align current message in buffer", 'z'
   end
 
   # Instance variables
@@ -448,6 +450,11 @@ class ThreadViewMode < LineCursorMode
 
     jump_to_message nextm if nextm
     update if @layout[nextm].toggled_state
+  end
+
+  def align_current_message
+    return unless m = @message_lines[curpos]
+    jump_to_message m, true
   end
 
   def jump_to_prev_open

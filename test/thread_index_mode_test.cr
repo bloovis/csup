@@ -17,8 +17,6 @@ def kill_buffer
 end
 
 def run_gui(query : String)
-  puts "About to call spawn ThreadIndexMode, query #{query}"
-
   init_managers
 
   start_cursing
