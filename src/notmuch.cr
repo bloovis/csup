@@ -1,5 +1,8 @@
 require "json"
 require "./pipe"
+require "./hook"
+require "./contact"
+require "./account"
 
 module Redwood
 
@@ -108,6 +111,89 @@ module Notmuch
   end
 
   def load_contacts(email_addresses : Array(String), limit : Int32 = 20)
+  end
+
+  # Translate a query string from the user into one that can
+  # be passed to notmuch search.  Translations include:
+  # - to:/from:person -> look up person's email address contacts list
+  # - label:/is:/has: -> tag:
+  # - filename: -> attachment:
+  # - filetype: -> mimetype:
+  # - before|on|in|during|after: -> date:?..?
+
+  def translate_query(s : String) : String
+    subs = ""
+
+    begin
+      subs = SearchManager.expand s
+    rescue e : SearchManager::ExpansionError
+      raise ParseError.new(e.message)
+    end
+    subs = subs.gsub(/\b(to|from):(\S+)\b/) do
+      field, value = $1, $2
+      p = ContactManager.contact_for(value)
+      if p
+        "#{field}:#{p.email}"
+      elsif value == "me"
+        "(" + AccountManager.user_emails.map { |e| "#{field}:#{e}" }.join(" OR ") + ")"
+      else
+        "#{field}:#{value}"
+      end
+    end
+
+    ## gmail style "is" operator
+    subs = subs.gsub(/\b(is|has):(\S+)\b/) do
+      field, label = $1, $2
+      case label
+      when "read"
+        "(not tag:unread)"
+      when "spam"
+        "tag:spam"
+      when "deleted"
+        "tag:deleted"
+      else
+        "tag:#{$2}"
+      end
+    end
+
+    ## labels are stored lower-case in the index
+    subs = subs.gsub(/\blabel:([\w-]+)\b/) do
+      label = $1
+      "tag:#{label.downcase}"
+    end
+    subs = subs.gsub(/\B-(tag|label):([\w-]+)/) do
+      label = $2
+      "(not tag:#{label.downcase})"
+    end
+
+    ## gmail style attachments "filename" and "filetype" searches
+    subs = subs.gsub(/\b(filename|filetype):(\((.+?)\)\B|(\S+)\b)/) do
+      field, name = $1, ($3? || $2)
+      case field
+      when "filename"
+        #debug "filename: translated #{field}:#{name} to attachment:\"#{name.downcase}\""
+        "attachment:\"#{name.downcase}\""
+      when "filetype"
+        #debug "filetype: translated #{field}:#{name} to mimetype:#{name.downcase}"
+        "mimetype:#{name.downcase}"
+      end
+    end
+
+    subs = subs.gsub(/\b(before|on|in|during|after):(\((.+?)\)\B|(\S+)\b)/) do
+      field, datestr = $1, ($3? || $2)
+      datestr = datestr.gsub(" ","_")       # translate spaces to underscores
+      case field
+      when "after"
+	"date:#{datestr}.."
+      when "before"
+	"date:..#{datestr}"
+      else
+	"date:#{datestr}"
+      end
+    end
+
+    #debug "translated query: #{subs.inspect}"
+    return subs
   end
 
 end	# module Notmuch

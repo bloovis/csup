@@ -1,8 +1,11 @@
 require "../src/search"
+require "../src/notmuch"
+require "../src/csup"
 
 module Redwood
 
-sm = SearchManager.new(File.join(ENV["HOME"], ".csup", "searches.txt"))
+init_managers
+
 SearchManager.all_searches.each do |name|
   search_string = SearchManager.search_string_for(name)
   puts "Search #{name} = #{search_string}"
@@ -28,6 +31,8 @@ puts "Search for testuser is #{s}"
 ARGV.each do |search_string|
   expand = SearchManager.expand(search_string)
   puts "Expanded '#{search_string}' to '#{expand}'"
+  translated = Notmuch.translate_query(expand)
+  puts "Translated of #{expand}:\n#{translated}"
 end
 
 SearchManager.delete("testuser")
