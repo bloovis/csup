@@ -3,12 +3,18 @@ require "../src/undo"
 module Redwood
 
 class UndoTest
+  property x = 42
+
   def handle_undo_1
     puts "Handling undo #1 for class #{self.class.name}"
   end
 
   def handle_undo_2
     puts "Handling undo #2 for class #{self.class.name}"
+  end
+
+  def undo_proc
+    return -> { puts "undo in a proc returned by a method, x = #{x}" }
   end
 
   def doit
@@ -44,6 +50,15 @@ class UndoTest
     end
     UndoManager.undo
     UndoManager.undo	# should result in error message
+
+    # Try it with a Proc returned by a method
+    puts "Testing with Proc returned by a method"
+    UndoManager.register("Proc returned by method", undo_proc);
+    # Changing x now should not change the context of the undo_proc.
+    x = 666
+    UndoManager.undo
+    UndoManager.undo	# should result in error message
+
   end
 end
 
