@@ -110,6 +110,10 @@ module Notmuch
     search("id:#{mid}", exclude: false, output: "tags")
   end
 
+  def save_thread(t : MsgThread)
+    # Message.sync_back_labels t.messages
+  end
+
   def load_contacts(email_addresses : Array(String), limit : Int32 = 20)
   end
 

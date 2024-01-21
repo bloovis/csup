@@ -38,7 +38,7 @@ class Message
   property parent : Message | Nil
   property children : Array(Message)
   property headers : Headers
-  property tags : Set(String)
+  property labels : Set(String)
   property parts : Parts	# parts indexed by a numeric ID
   property timestamp : Int64
   property filename : String
@@ -61,7 +61,7 @@ class Message
     @parent = nil
     @children = Array(Message).new
     @headers = Headers.new
-    @tags = Set(String).new
+    @labels = Set(String).new
     @parts = Parts.new
     @timestamp = 0
     @filename = ""
@@ -105,13 +105,28 @@ class Message
   end
 
   def add_tag(name : String)
-    @tags.add(name)
+    @labels.add(name)
   end
 
   # For Sup compatibility
   def has_label?(s : Symbol | String)
-    @tags.includes?(s.to_s)
+    @labels.includes?(s.to_s)
   end
+
+  def add_label(l : Symbol | String)
+    l = l.to_s
+    return if @labels.includes? l
+    @labels.add(l)
+    @dirty_labels = true
+  end
+
+  def remove_label(l : Symbol | String)
+    l = l.to_s
+    return unless @labels.includes? l
+    @labels.delete l
+    @dirty_labels = true
+  end
+
 
   def is_draft?; has_label?(:draft) end
 
@@ -150,7 +165,7 @@ class Message
     end
 
     puts "#{prefix}  timestamp: #{@timestamp} (#{Time.unix(@timestamp)})"
-    puts "#{prefix}  tags: #{@tags.to_a.join(",")}"
+    puts "#{prefix}  tags: #{@labels.to_a.join(",")}"
     puts "#{prefix}  date_relative: #{@date_relative}"
 
     puts "#{prefix}  headers:"
@@ -446,7 +461,6 @@ class MsgThread
   property next : MsgThread?
   property prev : MsgThread?
   property size = 0
-  property labels = Set(String).new	# named for compatibility with Sup
   property subj = "<no subject>"
 
   def initialize(json : JSON::Any)
@@ -457,14 +471,31 @@ class MsgThread
     @size = 0
     m.walktree do |msg, i|
       msg.thread = self
-      @labels = @labels + msg.tags
       @size += 1
     end
+    @dirty_labels = false
     @subj = m.subj
   end
 
-  def has_label?(s : Symbol | String)
-    labels.includes?(s.to_s)
+  def apply_label(t); each { |m, d, p| m && m.add_label(t) }; end
+  def remove_label(t); each { |m, d, p| m && m.remove_label(t) }; end
+
+  def toggle_label(label)
+    if has_label? label
+      remove_label label
+      false
+    else
+      apply_label label
+      true
+    end
+  end
+
+  def has_label?(t); any? { |m, d, p| m && m.has_label?(t) }; end
+
+  def labels
+    l = Set(String).new
+    each {|m, d, p| l = l + m.labels}
+    return l
   end
 
   def date

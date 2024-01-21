@@ -14,7 +14,9 @@ class UndoTest
   end
 
   def undo_proc
-    return -> { puts "undo in a proc returned by a method, x = #{x}" }
+    return -> do
+      puts "undo in a proc returned by a method, x = #{x}"
+    end
   end
 
   def doit

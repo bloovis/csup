@@ -8,7 +8,12 @@ require "./thread_view_mode"
 module Redwood
 
 class ThreadIndexMode < LineCursorMode
-  mode_class help
+  mode_class toggle_archived, undo
+
+  register_keymap do |k|
+    k.add :toggle_archived, "Toggle archived status", 'a'
+    k.add :undo, "Undo the previous action", 'u'
+  end
 
   MIN_FROM_WIDTH = 15
 
@@ -23,10 +28,7 @@ class ThreadIndexMode < LineCursorMode
   @size_widget_width = 0
   @date_widget_width = 0
   @hidden_labels = Set(String).new
-
-  register_keymap do |k|
-    k.add(:help, "help", "h")
-  end
+  @hidden_threads = Set(MsgThread).new
 
   def killable?
     false	# change this to true when we have some derived classes!
@@ -40,8 +42,9 @@ class ThreadIndexMode < LineCursorMode
     @text[n]
   end
 
-  def initialize(@query, @display_content=false)
+  def initialize(query : String, @display_content=false)
     super()
+    @query = Notmuch.translate_query(query)
     @tags = Tagger(MsgThread).new
     @threadlist = ThreadList.new(@query, offset: 0, limit: buffer.content_height)
     @hidden_labels = LabelManager::HIDDEN_RESERVED_LABELS +
@@ -56,10 +59,7 @@ class ThreadIndexMode < LineCursorMode
     threadlist = @threadlist
     return unless threadlist
 
-    @threads = Array(MsgThread).new
-    threadlist.threads.each_with_index do |thread, i|
-      @threads << thread
-    end
+    @threads = threadlist.threads.select {|t|!@hidden_threads.includes?(t)}
 
     @size_widgets = @threads.map { |t| size_widget_for_thread t }
     @size_widget_width = @size_widgets.max_of { |w| w.display_length }
@@ -73,6 +73,33 @@ class ThreadIndexMode < LineCursorMode
     end
 
     regen_text
+  end
+
+  def update_text_for_line(l : Int32)
+    return unless l # not sure why this happens, but it does, occasionally
+
+    need_update = false
+
+    # and certainly not sure why this happens..
+    #
+    # probably a race condition between thread modification and updating
+    # going on.
+    return if @threads[l].empty?
+
+    @size_widgets[l] = size_widget_for_thread @threads[l]
+    @date_widgets[l] = date_widget_for_thread @threads[l]
+
+    ## if a widget size has increased, we need to redraw everyone
+    need_update =
+      (@size_widgets[l].size > @size_widget_width) ||
+      (@date_widgets[l].size > @date_widget_width)
+
+    if need_update
+      update
+    else
+      @text[l] = text_for_thread_at l
+      buffer.mark_dirty if buffer
+    end
   end
 
   def regen_text
@@ -231,9 +258,18 @@ class ThreadIndexMode < LineCursorMode
     end
   end
 
+  def set_status
+    l = lines
+    @status = l > 0 ? "\"#{@query}\" line #{@curpos + 1} of #{l}" : ""
+  end
+
   # Commands
 
-  def select_item
+  def undo(*args)
+    UndoManager.undo
+  end
+
+  def select_item(*args)
     thread = cursor_thread
     if thread
       BufferManager.flash "Selecting thread at #{@curpos}"
@@ -252,14 +288,43 @@ class ThreadIndexMode < LineCursorMode
     end
   end
 
-  def help
-    BufferManager.flash "This is the help command."
-    #puts "This is the help command."
+  ## returns an undo lambda
+  def actually_toggle_archived(t : MsgThread)
+    thread = t
+    pos = curpos
+    if t.has_label? :inbox
+      t.remove_label :inbox
+      UpdateManager.relay self, :archived, t
+      return -> do
+        thread.apply_label :inbox
+        update_text_for_line pos
+        UpdateManager.relay self, :unarchived, thread
+      end
+    else
+      t.apply_label :inbox
+      UpdateManager.relay self, :unarchived, t
+      return -> do
+        thread.remove_label :inbox
+        update_text_for_line pos
+        UpdateManager.relay self, :unarchived, thread
+      end
+    end
   end
 
-  def set_status
-    l = lines
-    @status = l > 0 ? "\"#{@query}\" line #{@curpos + 1} of #{l}" : ""
+  def toggle_archived(*args)
+    return unless t = cursor_thread
+    undo = actually_toggle_archived t
+    if m = t.msg
+      mid = m.id[0,10]+"..."
+    else
+      mid = "<unknown>"
+    end
+    UndoManager.register("deleting/undeleting thread for message #{mid}", undo) do
+      update_text_for_line curpos
+      Notmuch.save_thread t
+    end
+    update_text_for_line curpos
+    Notmuch.save_thread t
   end
 
 end

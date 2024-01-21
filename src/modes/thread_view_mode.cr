@@ -350,7 +350,7 @@ class ThreadViewMode < LineCursorMode
 
   # Commands
 
-  def help
+  def help(*args)
     BufferManager.flash "This is the help command."
     #puts "This is the help command."
   end
@@ -359,7 +359,7 @@ class ThreadViewMode < LineCursorMode
   ## a chunk. for expandable chunks (including messages) we toggle
   ## open/closed state; for viewable chunks (like attachments) we
   ## view.
-  def activate_chunk
+  def activate_chunk(*args)
     return unless chunk = @chunk_lines[curpos]
     if chunk.is_a?(Chunk) && chunk.type == :text
       ## if the cursor is over a text region, expand/collapse the
@@ -395,7 +395,7 @@ class ThreadViewMode < LineCursorMode
     end
   end
 
-  def jump_to_next_and_open
+  def jump_to_next_and_open(*args)
     # return continue_search_in_buffer if in_search? # err.. don't know why im doing this
 
     m = (curpos ... @message_lines.length).argfind { |i| @message_lines[i] }
@@ -419,7 +419,7 @@ class ThreadViewMode < LineCursorMode
     update if @layout[nextm].toggled_state
   end
 
-  def jump_to_next_open(force_alignment=false)
+  def jump_to_next_open(force_alignment=false, *args)
     return continue_search_in_buffer if in_search? # hack: allow 'n' to apply to both operations
     m = (curpos ... @message_lines.length).argfind { |i| @message_lines[i] }
     return unless m
@@ -430,7 +430,7 @@ class ThreadViewMode < LineCursorMode
     jump_to_message nextm, force_alignment if nextm
   end
 
-  def jump_to_prev_and_open
+  def jump_to_prev_and_open(*args)
     m = (0 .. curpos).to_a.reverse.argfind { |i| @message_lines[i] }
     return unless m
 
@@ -452,12 +452,12 @@ class ThreadViewMode < LineCursorMode
     update if @layout[nextm].toggled_state
   end
 
-  def align_current_message
+  def align_current_message(*args)
     return unless m = @message_lines[curpos]
     jump_to_message m, true
   end
 
-  def jump_to_prev_open
+  def jump_to_prev_open(*args)
     m = (0 .. curpos).to_a.reverse.argfind { |i| @message_lines[i] } # bah, .to_a
     return unless m
     ## jump to the top of the current message if we're in the body;
@@ -499,7 +499,7 @@ class ThreadViewMode < LineCursorMode
     set_cursor_pos l.top  # set cursor pos
   end
 
-  def expand_all_messages
+  def expand_all_messages(*args)
     if @global_message_state == :none
       @global_message_state = :closed
     end
@@ -512,7 +512,7 @@ class ThreadViewMode < LineCursorMode
     update
   end
 
-  def expand_all_quotes
+  def expand_all_quotes(*args)
     if(m = @message_lines[curpos])
       quotes = m.chunks.select { |c| (c.type == :quote || c.type == :sig) && c.lines.length > 1 }
       numopen = quotes.reduce(0) { |s, c| s + (@chunk_layout[c].state == :open ? 1 : 0) }

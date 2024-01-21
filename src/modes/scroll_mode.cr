@@ -89,7 +89,7 @@ class ScrollMode < Mode
   def in_search?; @search_line end
   def cancel_search!; @search_line = nil end
 
-  def continue_search_in_buffer
+  def continue_search_in_buffer(*args)
     unless @search_query
       BufferManager.flash "No current search!"
       return
@@ -111,7 +111,7 @@ class ScrollMode < Mode
     end
   end
 
-  def search_in_buffer
+  def search_in_buffer(*args)
     query = BufferManager.ask :search, "search in buffer: "
     return if query.nil? || query.empty?
     @search_query = Regex.escape query
@@ -133,13 +133,13 @@ class ScrollMode < Mode
     Config.int(:col_jump) || 2
   end
 
-  def col_left
+  def col_left(*args)
     return unless @leftcol > 0
     @leftcol -= col_jump
     buffer.mark_dirty
   end
 
-  def col_right
+  def col_right(*args)
     @leftcol += col_jump
     buffer.mark_dirty
   end
@@ -150,7 +150,7 @@ class ScrollMode < Mode
     @leftcol = col
   end
 
-  def jump_to_left; jump_to_col 0; end
+  def jump_to_left(*args); jump_to_col 0; end
 
   ## set top line to l
   def jump_to_line(l)
@@ -165,22 +165,22 @@ class ScrollMode < Mode
   def at_top?; @topline == 0 end
   def at_bottom?; @botline == lines end
 
-  def line_down; jump_to_line @topline + 1; end
-  def line_up;  jump_to_line @topline - 1; end
-  def page_down
+  def line_down(*args); jump_to_line @topline + 1; end
+  def line_up(*args);  jump_to_line @topline - 1; end
+  def page_down(*args)
     jump_to_line @topline + buffer.content_height - @slip_rows
   end
-  def page_up
+  def page_up(*args)
     jump_to_line @topline - buffer.content_height + @slip_rows
   end
-  def half_page_down
+  def half_page_down(*args)
     jump_to_line @topline + buffer.content_height // 2
   end
-  def half_page_up
+  def half_page_up(*args)
     jump_to_line @topline - buffer.content_height // 2
   end
-  def jump_to_start; jump_to_line 0; end
-  def jump_to_end; jump_to_line lines - buffer.content_height; end
+  def jump_to_start(*args); jump_to_line 0; end
+  def jump_to_end(*args); jump_to_line lines - buffer.content_height; end
 
   def ensure_mode_validity
     @topline = @topline.clamp 0, [lines - 1, 0].max

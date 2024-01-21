@@ -101,18 +101,18 @@ class LineCursorMode < ScrollMode
 
   protected def search_start_line; @curpos end
 
-  protected def line_down # overwrite scrollmode
+  protected def line_down(*args) # overwrite scrollmode
     super
     #call_load_more_callbacks([topline + buffer.content_height - lines, 10].max) if topline + buffer.content_height > lines
     set_cursor_pos topline if @curpos < topline
   end
 
-  protected def line_up # overwrite scrollmode
+  protected def line_up(*args) # overwrite scrollmode
     super
     set_cursor_pos botline - 1 if @curpos > botline - 1
   end
 
-  protected def cursor_down
+  protected def cursor_down(*args)
     #call_load_more_callbacks buffer.content_height if @curpos >= lines - [buffer.content_height/2,1].max
     return false unless @curpos < lines - 1
 
@@ -141,7 +141,7 @@ class LineCursorMode < ScrollMode
     true
   end
 
-  protected def cursor_up
+  protected def cursor_up(*args)
     return false unless @curpos > @cursor_top
 
     if Config.bool(:continuous_scroll) && (@curpos == topline + 2)
@@ -212,7 +212,7 @@ class LineCursorMode < ScrollMode
   end
 
 
-  private def select_item
+  private def select_item(*args)
   end
 
   private def set_status
