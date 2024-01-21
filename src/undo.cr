@@ -11,38 +11,50 @@ module Redwood
 ## things. When an action is called (such as 'archive'),
 ## a lambda is registered with UndoManager that will
 ## undo the archival action
-#
-# The Crystal implementation differs from the one in Sup
-# in that the register method does not take lambdas as
-# parameters, but instead expects a block that takes no parameters.
 
 class UndoManager
   singleton_class
 
-  alias UndoEntry = NamedTuple(desc: String, action: Proc(Nil))
+  alias Action = Proc(Nil)
+  alias UndoEntry = NamedTuple(desc: String, actions: Array(Action))
 
-  @@actionlist = [] of UndoEntry
+  @actionlist = [] of UndoEntry
 
   def initialize
     singleton_pre_init
-    # @@actionlist = [] of UndoEntry
+    @actionlist = [] of UndoEntry
     singleton_post_init
   end
 
-  def register(desc : String, &action)
-    @@actionlist.push({desc: desc, action: action})
+  # Because Crystal doesn't have way to test for the existence of a block,
+  # like Ruby's block_given?, we provide two entry points for register: one that
+  # takes a block and one that doesn't.
+  def do_register(desc : String, block_given? = true, *actions, &block : Action)
+    a = Array(Action).new
+    actions.map {|action| a << action}
+    if block_given?
+      a << block
+    end
+    @actionlist.push({desc: desc, actions: a})
   end
-  def self.register(desc, &b)
-    instance.register(desc, &b)
+
+  def self.register(desc, *actions, &b)
+    instance.do_register(desc, true, *actions, &b)
+  end
+
+  def self.register(desc, *actions)
+    instance.do_register(desc, false, *actions) {}
   end
 
   def undo
-    unless @@actionlist.empty?
-      actionset = @@actionlist.pop
-      action = actionset[:action]
-      action.call
+    unless @actionlist.empty?
+      actionset = @actionlist.pop
+      actions = actionset[:actions]
+      actions.each do |action|
+	action.call
+      end
       if Redwood.cursing
-        BufferManager.flash "undid #{actionset[:desc]}"
+	BufferManager.flash "undid #{actionset[:desc]}"
       else
 	puts "undid #{actionset[:desc]}"
       end
@@ -57,7 +69,7 @@ class UndoManager
   singleton_method undo, b
 
   def clear
-    @@actionlist = [] of UndoEntry
+    @actionlist = [] of UndoEntry
   end
   singleton_method clear
 end	# UndoManager
