@@ -54,6 +54,18 @@ class ThreadIndexMode < LineCursorMode
     UpdateManager.register self
   end
 
+  # handle_{type}_update methods invoked by UpdateManager.relay should call
+  # this to get the actual thread being updated.  We need to do this because
+  # the sender's thread object may be different from the receiver's, even when
+  # both refer to the same Notmuch thread.  So we have to find a matching thread
+  # based on the sent thread's top message's ID.
+  def get_update_thread(*args) : MsgThread?
+    t : MsgThread? = args[1]?
+    if t && (ts = @ts) && (t = ts.find_thread(t))
+      return t
+    end
+  end
+
   # Methods for constructing @text
 
   def update

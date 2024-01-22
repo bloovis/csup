@@ -642,6 +642,11 @@ class ThreadList
     end
   end
 
+  # Find a thread in this thread list that matches the `other` thread.
+  # The match is based on the threads' top message ID.  This is used
+  # by get_update_thread in thread index modes, because of the possibility
+  # that two different thread objects in diffent modes may refer
+  # to the same thread.
   def find_thread(other : MsgThread) : MsgThread?
     return unless m = other.msg
     mid = m.id

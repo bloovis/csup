@@ -72,16 +72,16 @@ class InboxMode < ThreadIndexMode
 
   def handle_unarchived_update(*args)
     #STDERR.puts "inbox mode handle_unarchived_update"
-    t : MsgThread? = args[1]?
-    if t && (ts = @ts) && (t = ts.find_thread(t))
+    t = get_update_thread(*args)
+    if t
       add_or_unhide t
     end
   end
 
   def handle_archived_update(*args)
-    t : MsgThread? = args[1]?
-    if t && (ts = @ts) && (t = ts.find_thread(t))
-      #STDERR.puts "inbox: handle_archived_update for thread #{t.object_id}"
+    t = get_update_thread(*args)
+    if t
+      STDERR.puts "inbox: handle_archived_update for #{t.to_s}"
       hide_thread t
       regen_text
     end
