@@ -1,3 +1,14 @@
+# This implementation of Tagger differs from the one in Sup in these ways:
+# - It is a generic type, and you have to specify the type of the object
+#   being tagged when creating it, e.g., Tagger(Message).new, and new
+#   takes no parameters.
+# - It can only be used by Mode subclasses.
+# - After you create the Tagger instance, you must call #setmode.
+# - Mode multi_{type} methods don't take parameters; instead, they
+#   must call #all to obtain an array of tagged objects.
+#
+# See test/tagger_test.cr for a simple example.
+
 #require 'sup/util/ncurses'
 require "./mode"
 
