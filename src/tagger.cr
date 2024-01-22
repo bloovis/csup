@@ -61,6 +61,7 @@ class Tagger(T)
   # Also, the invoked multi_{action} method must call Tagger(T).all
   # to obtain the tagged objects.
   def apply_to_tagged(action=nil)
+    #STDERR.puts "apply_to_tagged, mode = #{@mode.object_id}"
     mode = @mode
     return unless mode
     if num_tagged == 0
@@ -79,6 +80,7 @@ class Tagger(T)
     if action
       tagged_sym = "multi_" + action.to_s
       if mode.respond_to? tagged_sym
+	#STDERR.puts "sending #{tagged_sym} to #{mode.class.name}"
         mode.send tagged_sym	# method must fetch targets using Tagger.all
       else
         BufferManager.flash "That command cannot be applied to multiple #{@plural_noun}."

@@ -37,6 +37,7 @@ class InboxMode < ThreadIndexMode
   def killable?; false; end
 
   def archive(*args)
+    #STDERR.puts "inbox mode archiving thread"
     return unless thread = cursor_thread # to make sure lambda only knows about 'old' cursor_thread
 
     UndoManager.register "archiving thread" do
@@ -52,8 +53,9 @@ class InboxMode < ThreadIndexMode
   end
 
   def multi_archive(*args)
+    #STDERR.puts "inbox mode multi_archive"
     threads = @tags.all
-    UndoManager.register "archiving #{threads.size} threads" do
+    UndoManager.register "archiving #{threads.size.pluralize "thread"}" do
       threads.map do |t|
         t.apply_label :inbox
 	add_or_unhide t
@@ -81,7 +83,7 @@ class InboxMode < ThreadIndexMode
   def handle_archived_update(*args)
     t = get_update_thread(*args)
     if t
-      STDERR.puts "inbox: handle_archived_update for #{t.to_s}"
+      #STDERR.puts "inbox: handle_archived_update for #{t.to_s}"
       hide_thread t
       regen_text
     end

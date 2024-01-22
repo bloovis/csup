@@ -8,10 +8,13 @@ require "./thread_view_mode"
 module Redwood
 
 class ThreadIndexMode < LineCursorMode
-  mode_class toggle_archived, undo
+  mode_class toggle_archived, toggle_tagged, apply_to_tagged, multi_toggle_archived,
+	     undo
 
   register_keymap do |k|
     k.add :toggle_archived, "Toggle archived status", 'a'
+    k.add :toggle_tagged, "Tag/untag selected thread", 't'
+    k.add :apply_to_tagged, "Apply next command to all tagged threads", '+', '='
     k.add :undo, "Undo the previous action", 'u'
   end
 
@@ -47,6 +50,7 @@ class ThreadIndexMode < LineCursorMode
     @untranslated_query = query
     @query = Notmuch.translate_query(query)
     @tags = Tagger(MsgThread).new
+    @tags.setmode(self)
     @ts = ThreadList.new(@query, offset: 0, limit: buffer.content_height)
     @hidden_labels = LabelManager::HIDDEN_RESERVED_LABELS +
 		     Set.new(Config.strarray(:hidden_labels))
@@ -325,13 +329,14 @@ class ThreadIndexMode < LineCursorMode
   end
 
   ## returns an undo lambda
-  def actually_toggle_archived(t : MsgThread)
+  def actually_toggle_archived(t : MsgThread) : Proc(Nil)
     thread = t
     pos = curpos
     if t.has_label? :inbox
       t.remove_label :inbox
       UpdateManager.relay self, :archived, t
       return -> do
+        #STDERR.puts "undo lambda applying :inbox"
         thread.apply_label :inbox
         update_text_for_line pos
         UpdateManager.relay self, :unarchived, thread
@@ -340,11 +345,33 @@ class ThreadIndexMode < LineCursorMode
       t.apply_label :inbox
       UpdateManager.relay self, :unarchived, t
       return -> do
+        #STDERR.puts "undo lambda removing :inbox"
         thread.remove_label :inbox
         update_text_for_line pos
         UpdateManager.relay self, :unarchived, thread
       end
     end
+  end
+
+  def multi_toggle_archived(*args)
+    threads = @tags.all
+    undos = threads.map { |t| actually_toggle_archived t }
+    #STDERR.puts "multi_toggle_archived: #{threads.size.pluralize "thread"}, #{undos.size.pluralize "undo"}"
+    UndoManager.register("deleting/undeleting #{threads.size.pluralize "thread"}") do
+      #STDERR.puts "Undo block in multi_toggle_archived"
+      undos.each {|u| u.call }
+      regen_text
+      threads.each { |t| Notmuch.save_thread t }
+    end
+    regen_text
+    threads.each { |t| Notmuch.save_thread t }
+  end
+
+  def toggle_tagged(*args)
+    return unless t = cursor_thread
+    @tags.toggle_tag_for t
+    update_text_for_line curpos
+    cursor_down
   end
 
   def toggle_archived(*args)
@@ -362,6 +389,8 @@ class ThreadIndexMode < LineCursorMode
     update_text_for_line curpos
     Notmuch.save_thread t
   end
+
+  def apply_to_tagged(*args); @tags.apply_to_tagged; end
 
 end
 

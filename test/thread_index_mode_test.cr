@@ -1,4 +1,4 @@
-require "../src/modes/thread_index_mode.cr"
+require "../src/modes/inbox_mode.cr"
 
 module Redwood
 
@@ -21,7 +21,7 @@ def run_gui(query : String)
 
   start_cursing
 
-  mode = ThreadIndexMode.new(query, true)
+  mode = ThreadIndexMode.new(query)
   buf = BufferManager.spawn("Thread Index Mode", mode, Opts.new({:width => 80, :height => 25}))
   BufferManager.raise_to_front(buf)
 

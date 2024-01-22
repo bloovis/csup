@@ -149,6 +149,17 @@ struct Int
       (self // 1024 // 1024 // 1024).to_s + "GiB"
     end
   end
+
+  # Definitely cheesy, but it keeps Sup code happy, if
+  # if it's not always correct.
+  def pluralize(s : String) : String
+    if self > 1
+      "#{self} #{s}s"
+    else
+      "#{self} #{s}"
+    end
+  end
+
 end
 
 ## acts like a hash with an initialization block, but saves any
