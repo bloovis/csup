@@ -530,6 +530,20 @@ class MsgThread
     end
   end
 
+  def snippet : String
+    with_snippets = Array(Message).new
+    each do |m, d, p|
+      if m && m.snippet != ""
+	with_snippets << m
+      end
+    end
+    first_unread = with_snippets.select { |m| m.has_label?(:unread) }.sort_by(&.date).first?
+    return first_unread.snippet if first_unread
+    last_read = with_snippets.sort_by(&.date).last?
+    return last_read.snippet if last_read
+    ""
+  end
+
   def print(print_content = false)
     if m = @msg
       puts "Thread object id #{self.object_id}, prev #{@prev.object_id}, next #{@next.object_id}"

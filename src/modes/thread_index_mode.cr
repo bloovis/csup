@@ -225,7 +225,7 @@ class ThreadIndexMode < LineCursorMode
 #      {:to_me_color, directly_participated ? ">" : (participated ? '+' : " ")},
     ] + label_widgets + [
       {subj_color, t.subj + (t.subj.empty? ? "" : " ")},
-#      {:snippet_color, t.snippet},
+      {:snippet_color, t.snippet},
     ]
   end
 
