@@ -493,6 +493,15 @@ class MsgThread
     @subj = m.subj
   end
 
+  def to_s : String	# for creating debug messages
+    if m = @msg
+      mid = m.id
+    else
+      mid = "<unknown>"
+    end
+    "thread #{self.object_id}, msg id:#{mid}"
+  end
+
   def messages : Array(Message)
     a = Array(Message).new
     if m = @msg

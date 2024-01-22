@@ -5,7 +5,7 @@ module Redwood
 class ThreadViewMode < LineCursorMode
   mode_class help, jump_to_next_and_open, jump_to_prev_and_open, expand_all_quotes,
 	     expand_all_messages, activate_chunk, jump_to_next_open, jump_to_prev_open,
-	     align_current_message, archive_and_kill
+	     align_current_message, archive_and_kill, archive_and_next, archive_and_prev
 
   class Layout
     property state = :none
@@ -38,6 +38,12 @@ class ThreadViewMode < LineCursorMode
     k.add :align_current_message, "Align current message in buffer", 'z'
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read:", '.' do |kk|
       kk.add :archive_and_kill, "Archive this thread and kill buffer", 'a'
+    end
+    k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read/do (n)othing:", ',' do |kk|
+      kk.add :archive_and_next, "Archive this thread and view next", 'a'
+    end
+    k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read/do (n)othing:", ']' do |kk|
+      kk.add :archive_and_prev, "Archive this thread and view previous", 'a'
     end
   end
 
@@ -526,43 +532,47 @@ class ThreadViewMode < LineCursorMode
     end
   end
 
-  def archive_and_kill(*args)
-    archive_and_then :kill
-  end
+  def archive_and_kill(*args); archive_and_then :kill end
+  def archive_and_next(*args); archive_and_then :next end
+  def archive_and_prev(*args); archive_and_then :prev end
 
   def dispatch(op : Symbol, &block)
-    return if @dying
-    @dying = true
-
-    l = -> do
-      block.call # if block_given?
-      BufferManager.kill_buffer_safely buffer
-    end
-
+    yield
+    new_thread = nil
     case op
     when :next
-      BufferManager.flash "dispatch :next not implemented"
+      new_thread = @thread.next
+      #BufferManager.flash "dispatch :next not implemented"
       #@index_mode.launch_next_thread_after @thread, &l
     when :prev
-      BufferManager.flash "dispatch :prev not implemented"
+      new_thread = @thread.prev
+      #BufferManager.flash "dispatch :prev not implemented"
       #@index_mode.launch_prev_thread_before @thread, &l
     when :kill
-      l.call
+      new_thread = nil
+      #BufferManager.kill_buffer_safely buffer
     else
       raise ArgumentError.new("unknown thread dispatch operation #{op.inspect}")
+    end
+    if new_thread
+      initialize(new_thread)
+    else
+      BufferManager.kill_buffer_safely buffer
     end
   end
 
   def archive_and_then(op : Symbol)
     dispatch(op) do
+      undo_thread = @thread	# save thread for the undo block, because @thread might change
       @thread.remove_label :inbox
-      #STDERR.puts "archive_and_then about to relay :archived to thread #{@thread.object_id}"
+      STDERR.puts "archive_and_then about to relay :archived to thread #{@thread.to_s}"
       UpdateManager.relay self, :archived, @thread
       Notmuch.save_thread @thread
       UndoManager.register "archiving 1 thread" do
-        @thread.apply_label :inbox
-        Notmuch.save_thread @thread
-        UpdateManager.relay self, :unarchived, @thread
+        STDERR.puts "undoing archive of #{undo_thread.to_s}"
+        undo_thread.apply_label :inbox
+        Notmuch.save_thread undo_thread
+        UpdateManager.relay self, :unarchived, undo_thread
       end
     end
   end
