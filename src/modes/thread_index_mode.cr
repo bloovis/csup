@@ -20,9 +20,9 @@ class ThreadIndexMode < LineCursorMode
   @text = Array(Text).new # Array(String).new
   @lines = Hash(MsgThread, Int32).new
   @threads = Array(MsgThread).new
-  @display_content = false
   @query = ""
-  @threadlist : ThreadList?
+  @untranslated_query = ""
+  @ts : ThreadList?
   @size_widgets = Array(String).new
   @date_widgets = Array(String).new
   @size_widget_width = 0
@@ -42,11 +42,12 @@ class ThreadIndexMode < LineCursorMode
     @text[n]
   end
 
-  def initialize(query : String, @display_content=false)
+  def initialize(query : String)
     super()
+    @untranslated_query = query
     @query = Notmuch.translate_query(query)
     @tags = Tagger(MsgThread).new
-    @threadlist = ThreadList.new(@query, offset: 0, limit: buffer.content_height)
+    @ts = ThreadList.new(@query, offset: 0, limit: buffer.content_height)
     @hidden_labels = LabelManager::HIDDEN_RESERVED_LABELS +
 		     Set.new(Config.strarray(:hidden_labels))
     update
@@ -56,7 +57,7 @@ class ThreadIndexMode < LineCursorMode
 
   def update
     old_cursor_thread = cursor_thread
-    threadlist = @threadlist
+    threadlist = @ts
     return unless threadlist
 
     @threads = threadlist.threads.select {|t|!@hidden_threads.includes?(t)}
@@ -73,6 +74,19 @@ class ThreadIndexMode < LineCursorMode
     end
 
     regen_text
+  end
+
+  def hide_thread(t : MsgThread)
+    return unless i = @threads.index(t)
+    #STDERR.puts "hide_thread: before hiding thread #{i}, nthreads = #{@threads.size}"
+    raise "already hidden" if @hidden_threads.includes?(t)
+    @hidden_threads.add(t)
+    @threads.delete_at i
+    @size_widgets.delete_at i
+    @date_widgets.delete_at i
+    #@patchwork_widgets.delete_at i if @patchwork_widgets
+    @tags.drop_tag_for t
+    #STDERR.puts "hide_thread: after hiding thread #{i}, nthreads = #{@threads.size}"
   end
 
   def update_text_for_line(l : Int32)
@@ -109,6 +123,8 @@ class ThreadIndexMode < LineCursorMode
       @text << text_for_thread_at i
       @lines[t] = i
     end
+    buffer.mark_dirty if buffer
+    #STDERR.puts "regen_text: nlines = #{@text.size}"
   end
 
   ## preserve author order from the thread
@@ -229,6 +245,13 @@ class ThreadIndexMode < LineCursorMode
     ]
   end
 
+  def add_or_unhide(t : MsgThread)
+    if t
+      @hidden_threads.delete t
+      update
+    end
+  end
+
   def size_widget_for_thread(t : MsgThread)
     case t.size
     when 1
@@ -260,7 +283,7 @@ class ThreadIndexMode < LineCursorMode
 
   def set_status
     l = lines
-    @status = l > 0 ? "\"#{@query}\" line #{@curpos + 1} of #{l}" : ""
+    @status = l > 0 ? "\"#{@untranslated_query}\" line #{@curpos + 1} of #{l}" : ""
   end
 
   # Commands

@@ -7,7 +7,8 @@ tests : colormap_test keymap_test ncurses_test email_test logger_test \
 	contact_test account_test opts_test notmuch_test message_test \
 	search_test time_test string_test label_test person_test \
 	notmuch_save_part notmuch_view_part \
-	scroll_mode_test line_cursor_mode_test thread_index_mode_test
+	scroll_mode_test line_cursor_mode_test thread_index_mode_test \
+	inbox_mode_test
 
 # Manager tests
 colormap_test : test/colormap_test.cr src/colormap.cr src/supcurses.cr
@@ -38,6 +39,8 @@ notmuch_view_part : test/notmuch_view_part.cr src/notmuch.cr
 scroll_mode_test : test/scroll_mode_test.cr src/modes/scroll_mode.cr src/buffer.cr
 line_cursor_mode_test : test/line_cursor_mode_test.cr src/modes/line_cursor_mode.cr src/buffer.cr
 thread_index_mode_test : test/thread_index_mode_test.cr src/modes/thread_index_mode.cr src/buffer.cr \
+			 src/modes/thread_view_mode.cr
+inbox_mode_test : test/inbox_mode_test.cr src/modes/thread_index_mode.cr src/buffer.cr \
 			 src/modes/thread_view_mode.cr
 
 test : src/test.cr src/notmuch.cr

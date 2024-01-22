@@ -22,7 +22,7 @@ module Notmuch
     Pipe.run("notmuch", ["new", "--quiet"], check_stderr: false)
   end
 
-  def count(query : String)
+  def count(query : String = "")
     Pipe.run("notmuch", ["count", query]).to_i
   end
 

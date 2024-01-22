@@ -544,6 +544,10 @@ class MsgThread
     ""
   end
 
+  def first : Message?
+    @msg
+  end
+
   def print(print_content = false)
     if m = @msg
       puts "Thread object id #{self.object_id}, prev #{@prev.object_id}, next #{@next.object_id}"
@@ -627,6 +631,19 @@ class ThreadList
     else
       puts "results is a #{json.class.name}, expected array"
     end
+  end
+
+  def find_thread(other : MsgThread) : MsgThread?
+    return unless m = other.msg
+    mid = m.id
+    threads.each do |t|
+      t.messages.each do |m|
+        if m.id == mid
+	  return t
+	end
+      end
+    end
+    return nil
   end
 
   def print(print_content = false)
