@@ -1,6 +1,9 @@
 % : test/%.cr
 	crystal build --no-color --error-trace $<
 
+csup : src/csup.cr
+	crystal build --no-color --error-trace -D MAIN src/csup.cr
+
 .PHONY: tests
 tests : colormap_test keymap_test ncurses_test email_test logger_test \
         undo_test update_test tagger_test hook_test config_test \
@@ -44,7 +47,4 @@ inbox_mode_test : test/inbox_mode_test.cr src/modes/thread_index_mode.cr src/buf
 			 src/modes/thread_view_mode.cr
 
 test : src/test.cr src/notmuch.cr
-	crystal build src/test.cr
-
-csup : src/csup.cr
-	crystal build src/csup.cr
+	crystal build --no-color --error-trace src/test.cr
