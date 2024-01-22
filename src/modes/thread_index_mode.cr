@@ -21,7 +21,6 @@ class ThreadIndexMode < LineCursorMode
   @lines = Hash(MsgThread, Int32).new
   @threads = Array(MsgThread).new
   @query = ""
-  @untranslated_query = ""
   @ts : ThreadList?
   @size_widgets = Array(String).new
   @date_widgets = Array(String).new
@@ -42,12 +41,11 @@ class ThreadIndexMode < LineCursorMode
     @text[n]
   end
 
-  def initialize(query : String)
+  def initialize(@query : String)
     super()
-    @untranslated_query = query
-    @query = Notmuch.translate_query(query)
+    translated_query = Notmuch.translate_query(@query)
     @tags = Tagger(MsgThread).new
-    @ts = ThreadList.new(@query, offset: 0, limit: buffer.content_height)
+    @ts = ThreadList.new(translated_query, offset: 0, limit: buffer.content_height)
     @hidden_labels = LabelManager::HIDDEN_RESERVED_LABELS +
 		     Set.new(Config.strarray(:hidden_labels))
     update
@@ -296,7 +294,7 @@ class ThreadIndexMode < LineCursorMode
 
   def set_status
     l = lines
-    @status = l > 0 ? "\"#{@untranslated_query}\" line #{@curpos + 1} of #{l}" : ""
+    @status = l > 0 ? "\"#{@query}\" line #{@curpos + 1} of #{l}" : ""
   end
 
   # Commands
