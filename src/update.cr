@@ -29,7 +29,7 @@ class UpdateManager
   end
 
   def register(o : Mode)
-    puts "UpdateManager.register: classname #{o.class.name}"
+    #STDERR.puts "UpdateManager.register: classname #{o.class.name}"
     @targets[o] = true
   end
   singleton_method register, o
@@ -41,9 +41,11 @@ class UpdateManager
   singleton_method unregister, o
 
   def relay(sender : Mode, type : Symbol, *args)
+    #STDERR.puts "relay: sender #{sender.class.name}, type #{type}"
     meth = "handle_#{type.to_s}_update"
     @targets.keys.each do |o|
       if o != sender && o.respond_to?(meth)
+	#STDERR.puts "relay: sending #{meth} to #{o.class.name}"
         o.send meth, sender, *args
       end
     end

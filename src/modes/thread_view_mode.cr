@@ -5,7 +5,7 @@ module Redwood
 class ThreadViewMode < LineCursorMode
   mode_class help, jump_to_next_and_open, jump_to_prev_and_open, expand_all_quotes,
 	     expand_all_messages, activate_chunk, jump_to_next_open, jump_to_prev_open,
-	     align_current_message
+	     align_current_message, archive_and_kill
 
   class Layout
     property state = :none
@@ -36,6 +36,9 @@ class ThreadViewMode < LineCursorMode
     k.add :jump_to_prev_open, "Jump to previous open message", 'p'
     k.add :jump_to_prev_and_open, "Jump to previous message and open", "C-p"
     k.add :align_current_message, "Align current message in buffer", 'z'
+    k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read:", '.' do |kk|
+      kk.add :archive_and_kill, "Archive this thread and kill buffer", 'a'
+    end
   end
 
   # Instance variables
@@ -45,6 +48,7 @@ class ThreadViewMode < LineCursorMode
   @message_lines = SparseArray(Message).new
   @person_lines = SparseArray(Person).new
   @global_message_state = :none
+  @dying = false
 
   def lines
     @text.size
@@ -519,6 +523,47 @@ class ThreadViewMode < LineCursorMode
       newstate = numopen > quotes.length / 2 ? :closed : :open
       quotes.each { |c| @chunk_layout[c].state = newstate }
       update
+    end
+  end
+
+  def archive_and_kill(*args)
+    archive_and_then :kill
+  end
+
+  def dispatch(op : Symbol, &block)
+    return if @dying
+    @dying = true
+
+    l = -> do
+      block.call # if block_given?
+      BufferManager.kill_buffer_safely buffer
+    end
+
+    case op
+    when :next
+      BufferManager.flash "dispatch :next not implemented"
+      #@index_mode.launch_next_thread_after @thread, &l
+    when :prev
+      BufferManager.flash "dispatch :prev not implemented"
+      #@index_mode.launch_prev_thread_before @thread, &l
+    when :kill
+      l.call
+    else
+      raise ArgumentError.new("unknown thread dispatch operation #{op.inspect}")
+    end
+  end
+
+  def archive_and_then(op : Symbol)
+    dispatch(op) do
+      @thread.remove_label :inbox
+      #STDERR.puts "archive_and_then about to relay :archived to thread #{@thread.object_id}"
+      UpdateManager.relay self, :archived, @thread
+      Notmuch.save_thread @thread
+      UndoManager.register "archiving 1 thread" do
+        @thread.apply_label :inbox
+        Notmuch.save_thread @thread
+        UpdateManager.relay self, :unarchived, @thread
+      end
     end
   end
 

@@ -33,7 +33,8 @@ class Keymap
     @map[s]
   end
 
-  def add_multi(prompt : String, kc : String)
+  def add_multi(prompt : String, k : String | Char)
+    kc = k.to_s
     if @map.member? kc
       action = @map[kc].first
       raise "existing action is not a keymap" unless action.is_a?(Keymap)

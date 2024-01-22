@@ -51,6 +51,7 @@ class ThreadIndexMode < LineCursorMode
     @hidden_labels = LabelManager::HIDDEN_RESERVED_LABELS +
 		     Set.new(Config.strarray(:hidden_labels))
     update
+    UpdateManager.register self
   end
 
   # Methods for constructing @text
