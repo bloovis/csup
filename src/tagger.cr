@@ -90,6 +90,7 @@ class Tagger(T)
 
     if action
       tagged_sym = "multi_" + action.to_s
+      #STDERR.puts "checking if we can send #{tagged_sym} to #{mode.class.name}"
       if mode.respond_to? tagged_sym
 	#STDERR.puts "sending #{tagged_sym} to #{mode.class.name}"
         mode.send tagged_sym	# method must fetch targets using Tagger.all

@@ -35,13 +35,19 @@ macro actions(*names)
       super(action, *args)
     end
   end
-    def respond_to?(action)
-      return [
-        {% for name in names %}
-          {{ name.stringify }},
-        {% end %}
-      ].index(action.to_s)
+
+  def respond_to?(action)
+    found = [
+      {% for name in names %}
+        {{ name.stringify }},
+      {% end %}
+    ].index(action.to_s)
+    if found
+      true
+    else
+      super(action)
     end
+  end
 end
 
 class Mode

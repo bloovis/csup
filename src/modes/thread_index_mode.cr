@@ -8,7 +8,8 @@ require "./thread_view_mode"
 module Redwood
 
 class ThreadIndexMode < LineCursorMode
-  mode_class toggle_archived, toggle_tagged, apply_to_tagged, multi_toggle_archived,
+  mode_class toggle_archived, multi_toggle_archived,
+	     toggle_tagged, multi_toggle_tagged, apply_to_tagged,
 	     undo
 
   register_keymap do |k|
@@ -363,6 +364,11 @@ class ThreadIndexMode < LineCursorMode
     end
     regen_text
     threads.each { |t| Notmuch.save_thread t }
+  end
+
+  def multi_toggle_tagged(*args)
+    @tags.drop_all_tags
+    regen_text
   end
 
   def toggle_tagged(*args)
