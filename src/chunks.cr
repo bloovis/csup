@@ -92,6 +92,9 @@ class AttachmentChunk < Chunk
     else
       @lines = [] of String
     end
+    if filename != "" && !filename =~ /^c?sup-attachment-/
+      @message.add_label :attachment
+    end
   end
 
   ## an attachment is expandable if we've managed to decode it into

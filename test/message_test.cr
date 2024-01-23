@@ -50,7 +50,7 @@ class MessageMode < LineCursorMode
     end
 
     @text << "#{prefix}  timestamp: #{msg.timestamp} (#{Time.unix(msg.timestamp)})"
-    @text << "#{prefix}  tags: #{msg.tags.join(",")}"
+    @text << "#{prefix}  labels: #{msg.labels.join(",")}"
     @text << "#{prefix}  date_relative: #{msg.date_relative}"
 
     @text << "#{prefix}  headers:"
@@ -77,12 +77,12 @@ class MessageMode < LineCursorMode
 
   end
 
-  def help
+  def help(*args)
     BufferManager.flash "This is the help command."
     #puts "This is the help command."
   end
 
-  def select_item
+  def select_item(*args)
     BufferManager.flash "Select item at #{curpos}"
   end
 end

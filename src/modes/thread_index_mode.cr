@@ -252,7 +252,7 @@ class ThreadIndexMode < LineCursorMode
       {:starred_color, (starred ? "*" : " ")},
     ] + from + [
       {:size_widget_color, size_widget_text},
-      {:with_attachment_color , t.labels.member?(:attachment) ? "@" : " "},
+      {:with_attachment_color , t.labels.includes?("attachment") ? "@" : " "},
 #      {:to_me_color, directly_participated ? ">" : (participated ? '+' : " ")},
     ] + label_widgets + [
       {subj_color, t.subj + (t.subj.empty? ? "" : " ")},
