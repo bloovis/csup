@@ -322,7 +322,9 @@ class ThreadIndexMode < LineCursorMode
   end
 
   def do_select(t : MsgThread, &when_done)
-    BufferManager.flash "Selecting thread at #{@curpos}"
+    num = t.size
+    message = "Loading #{num.pluralize "message body"}..."
+    BufferManager.flash(message)
     t.reload
     mode = ThreadViewMode.new(t, self)
     viewbuf = BufferManager.spawn(t.subj, mode)

@@ -150,11 +150,15 @@ struct Int
     end
   end
 
-  # Definitely cheesy, but it keeps Sup code happy, if
+  # Definitely cheesy, but it keeps existing Sup code happy, even if
   # if it's not always correct.
   def pluralize(s : String) : String
     if self > 1
-      "#{self} #{s}s"
+      if s =~/(.*)y$/
+	"#{self} #{$1}ies"
+      else
+	"#{self} #{s}s"
+      end
     else
       "#{self} #{s}"
     end

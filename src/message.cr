@@ -82,7 +82,7 @@ class Message
       @from = Person.new("nobody", "nobody@example.com")
     end
     if @headers.has_key?("Subject")
-      @subj = @headers["Subject"]
+      @subj = @headers["Subject"].gsub(/\s+/, " ").gsub(/\s+$/, "")
     else
       @subj = "<no subject>"
     end
