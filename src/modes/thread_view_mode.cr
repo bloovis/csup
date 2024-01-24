@@ -3,9 +3,8 @@ require "./line_cursor_mode"
 module Redwood
 
 class ThreadViewMode < LineCursorMode
-  mode_class help,
-	     expand_all_quotes, expand_all_messages, activate_chunk,
-	     align_current_message,
+  mode_class expand_all_quotes, expand_all_messages, activate_chunk,
+	     align_current_message, toggle_detailed_header,
 	     jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
 	     archive_and_kill, do_nothing_and_kill,
@@ -32,7 +31,7 @@ class ThreadViewMode < LineCursorMode
   end
 
   register_keymap do |k|
-    k.add(:help, "help", "h")
+    k.add :toggle_detailed_header, "Toggle detailed header", 'h'
     k.add :activate_chunk, "Expand/collapse or activate item", "C-m"
     k.add :expand_all_messages, "Expand/collapse all messages", 'E'
     k.add :expand_all_quotes, "Expand/collapse all quotes in a message", 'o'
@@ -120,6 +119,12 @@ class ThreadViewMode < LineCursorMode
   def buffer=(b : Buffer)
     super
     regen_text
+  end
+
+  def toggle_detailed_header(*args)
+    return unless m = @message_lines[curpos]
+    @layout[m].state = (@layout[m].state == :detailed ? :open : :detailed)
+    update
   end
 
   def update
@@ -373,11 +378,6 @@ class ThreadViewMode < LineCursorMode
   end
 
   # Commands
-
-  def help(*args)
-    BufferManager.flash "This is the help command."
-    #puts "This is the help command."
-  end
 
   ## called when someone presses enter when the cursor is highlighting
   ## a chunk. for expandable chunks (including messages) we toggle
