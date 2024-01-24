@@ -480,17 +480,40 @@ class MsgThread
   property subj = "<no subject>"
 
   def initialize(json : JSON::Any)
-    #puts "MsgThread  #{json}"
+    #STDERR.puts "MsgThread #{json}"
     msglist = json.as_a	# There always seems to be only one message in the array
     m = Message.new(msglist[0])
     @msg = m
+    @dirty_labels = false
+    @subj = m.subj if m
+    set_msg_threads_and_size
+  end
+
+  def set_msg_threads_and_size
+    return unless m = @msg
     @size = 0
     m.walktree do |msg, depth|
       msg.thread = self
       @size += 1
     end
-    @dirty_labels = false
-    @subj = m.subj
+  end
+
+  # Reload message thread data with body and html content.  This involves
+  # using notmuch search and show to get the thread data, and replacing
+  # the current top level message, which doesn't have body and html content.
+  def reload
+    return unless m = @msg
+    thread_id = Notmuch.thread_id_from_message_id(m.id)
+    ts = ThreadList.new(thread_id, offset: 0, limit: 1, body: true)
+    if ts
+      if thread = ts.threads[0]?
+	@msg = thread.msg
+	#if m = @msg
+	#  STDERR.puts "new message snippet = #{m.snippet}"
+	#end
+      end
+    end
+    set_msg_threads_and_size
   end
 
   def to_s : String	# for creating debug messages
@@ -593,16 +616,16 @@ class ThreadList
   property threads = Array(MsgThread).new
   property query = ""
 
-  def initialize(@query, offset : Int32, limit : Int32)
+  def initialize(@query, offset : Int32, limit : Int32, body = false)
     #system("echo ThreadList.new: query #{@query}, offset #{offset}, limit #{limit} >>/tmp/csup.log")
     if query
-      run_notmuch_show(@query, offset: offset, limit: limit)
+      run_notmuch_show(@query, offset: offset, limit: limit, body: body)
     end
   end
 
   # Run 'notmuch search' and 'notmuch show' to obtain the threads for the
   # specified query string.
-  def run_notmuch_show(query : String, offset : Int32? = nil, limit : Int32? = nil)
+  def run_notmuch_show(query : String, offset : Int32? = nil, limit : Int32? = nil, body = false)
     #puts "run_notmuch_show: query #{query}, caller #{caller[0]}"
     #system("echo run_notmuch_show query #{query}, offset #{offset}, limit #{limit} >>/tmp/csup.log")
     @query = query
@@ -618,7 +641,7 @@ class ThreadList
     # the JSON output.
     show_query = lines.join(" or ")
     #puts "run_notmuch_show: query #{query}"
-    json = Notmuch.show(show_query, body: true, html: true)
+    json = Notmuch.show(show_query, body: body, html: body)
     parse_json(json)
   end
 

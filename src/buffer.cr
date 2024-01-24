@@ -481,6 +481,7 @@ class BufferManager
     # Ncurses.mutex.lock unless opts[:sync] == false
 
     buf = @buffers.last
+    #STDERR.puts "BufferManager.draw_screen: buffer = #{buf.object_id}, dirty = #{@dirty}"
     buf.resize Ncurses.rows - minibuf_lines, Ncurses.cols
     if @dirty
       buf.draw(status || "")

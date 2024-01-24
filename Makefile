@@ -1,7 +1,7 @@
 % : test/%.cr
 	crystal build --no-color --error-trace $<
 
-csup : src/csup.cr
+csup : src/csup.cr src/modes/inbox_mode.cr src/modes/thread_index_mode.cr
 	crystal build --no-color --error-trace -D MAIN src/csup.cr
 
 .PHONY: tests
@@ -44,7 +44,7 @@ line_cursor_mode_test : test/line_cursor_mode_test.cr src/modes/line_cursor_mode
 thread_index_mode_test : test/thread_index_mode_test.cr src/modes/thread_index_mode.cr src/buffer.cr \
 			 src/modes/thread_view_mode.cr
 inbox_mode_test : test/inbox_mode_test.cr src/modes/thread_index_mode.cr src/buffer.cr \
-			 src/modes/thread_view_mode.cr
+			 src/modes/thread_view_mode.cr src/modes/inbox_mode.cr
 
 test : src/test.cr src/notmuch.cr
 	crystal build --no-color --error-trace src/test.cr

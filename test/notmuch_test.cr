@@ -26,4 +26,9 @@ puts "threadid: #{threadid}"
 tags = Notmuch.tags_from_message_id(msgid1)
 puts "tags: #{tags}"
 
+ARGV.each do |arg|
+  threadid = Notmuch.thread_id_from_message_id(arg)
+  puts "thread id for message id #{arg} = #{threadid}"
+end
+
 end	# Redwood

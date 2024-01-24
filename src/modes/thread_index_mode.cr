@@ -132,6 +132,14 @@ class ThreadIndexMode < LineCursorMode
     end
   end
 
+  def update_text_for_thread(thread : MsgThread)
+    return unless ts = @ts
+    return unless t = ts.find_thread(thread)
+    return unless i = @threads.index(t)
+    @threads[i] = thread
+    update_text_for_line(i)
+  end
+
   def regen_text
     @text = Array(Text).new
     @lines = Hash(MsgThread, Int32).new
@@ -309,22 +317,25 @@ class ThreadIndexMode < LineCursorMode
   end
 
   def select_item(*args)
-    thread = cursor_thread
-    if thread
-      BufferManager.flash "Selecting thread at #{@curpos}"
-      mode = ThreadViewMode.new(thread)
-      viewbuf = BufferManager.spawn(thread.subj, mode)
-      #STDERR.puts "Spawned ThreadViewMode"
-      BufferManager.draw_screen
-      if Config.bool(:jump_to_open_message)
-	 mode.jump_to_first_open
-       end
-      BufferManager.draw_screen # lame TODO: make this unnecessary
-      ## the first draw_screen is needed before topline and botline
-      ## are set, and the second to show the cursor having moved
-    else
-      BufferManager.flash "No thread at #{@curpos}!"
-    end
+    return unless t = cursor_thread
+    BufferManager.flash "Selecting thread at #{@curpos}"
+    t.reload
+    mode = ThreadViewMode.new(t, self)
+    viewbuf = BufferManager.spawn(t.subj, mode)
+    #STDERR.puts "Spawned ThreadViewMode"
+    BufferManager.draw_screen
+    if Config.bool(:jump_to_open_message)
+       mode.jump_to_first_open
+     end
+    BufferManager.draw_screen # lame TODO: make this unnecessary
+    ## the first draw_screen is needed before topline and botline
+    ## are set, and the second to show the cursor having moved
+
+    t.remove_label :unread
+    Notmuch.save_thread t
+
+    update_text_for_line curpos
+    UpdateManager.relay self, :read, t
   end
 
   ## returns an undo lambda

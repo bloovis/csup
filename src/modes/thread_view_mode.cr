@@ -5,7 +5,8 @@ module Redwood
 class ThreadViewMode < LineCursorMode
   mode_class help, jump_to_next_and_open, jump_to_prev_and_open, expand_all_quotes,
 	     expand_all_messages, activate_chunk, jump_to_next_open, jump_to_prev_open,
-	     align_current_message, archive_and_kill, archive_and_next, archive_and_prev
+	     align_current_message, archive_and_kill, archive_and_next, archive_and_prev,
+	     do_nothing_and_next
 
   class Layout
     property state = :none
@@ -41,6 +42,7 @@ class ThreadViewMode < LineCursorMode
     end
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read/do (n)othing:", ',' do |kk|
       kk.add :archive_and_next, "Archive this thread and view next", 'a'
+      kk.add :do_nothing_and_next, "View next", 'n', ','
     end
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read/do (n)othing:", ']' do |kk|
       kk.add :archive_and_prev, "Archive this thread and view previous", 'a'
@@ -64,7 +66,7 @@ class ThreadViewMode < LineCursorMode
     @text[n]
   end
 
-  def initialize(thread : MsgThread)
+  def initialize(thread : MsgThread, @index_mode : ThreadIndexMode)
     super()
     @indent_spaces = Config.int(:indent_spaces)
     @thread = thread
@@ -116,7 +118,11 @@ class ThreadViewMode < LineCursorMode
 
   def update
     regen_text
+    #@text.each_with_index do |l, i|
+      #STDERR.puts "update: line #{i} = #{l}"
+    #end
     buffer.mark_dirty if buffer
+    #STDERR.puts "update: buffer dirty = #{buffer.dirty}"
   end
 
   ## here we generate the actual content lines. we accumulate
@@ -129,7 +135,8 @@ class ThreadViewMode < LineCursorMode
     @person_lines = SparseArray(Person).new
 
     prevm = nil
-    @thread.each do |m, depth, parent|
+    return unless thread = @thread
+    thread.each do |m, depth, parent|
       #unless m.is_a? Message # handle nil and :fake_root
       #  @text += chunk_to_lines m, nil, @text.length, depth, parent
       #  next
@@ -141,6 +148,7 @@ class ThreadViewMode < LineCursorMode
       next unless @layout[m].state # skip discarded drafts
 
       ## build the patina
+      #STDERR.puts "regen_text: calling chunk_to_lines for message #{m.id}"
       text = chunk_to_lines m, l.state, @text.length, depth, parent, l.color, l.star_color
 
       l.top = @text.length
@@ -536,28 +544,28 @@ class ThreadViewMode < LineCursorMode
   def archive_and_next(*args); archive_and_then :next end
   def archive_and_prev(*args); archive_and_then :prev end
 
+  def do_nothing_and_next(*args); do_nothing_and_then :next end
+
   def dispatch(op : Symbol, &block)
-    yield
-    new_thread = nil
+    return if @dying
+    @dying = true
+
+    l = -> do
+      block.call	# always assume that a block is given
+      BufferManager.kill_buffer_safely buffer
+    end
+
     case op
     when :next
-      new_thread = @thread.next
-      #BufferManager.flash "dispatch :next not implemented"
+      BufferManager.flash "dispatch #{op} not implemented yet"
       #@index_mode.launch_next_thread_after @thread, &l
     when :prev
-      new_thread = @thread.prev
-      #BufferManager.flash "dispatch :prev not implemented"
+      BufferManager.flash "dispatch #{op} not implemented yet"
       #@index_mode.launch_prev_thread_before @thread, &l
     when :kill
-      new_thread = nil
-      #BufferManager.kill_buffer_safely buffer
+      l.call
     else
       raise ArgumentError.new("unknown thread dispatch operation #{op.inspect}")
-    end
-    if new_thread
-      initialize(new_thread)
-    else
-      BufferManager.kill_buffer_safely buffer
     end
   end
 
@@ -565,16 +573,20 @@ class ThreadViewMode < LineCursorMode
     dispatch(op) do
       undo_thread = @thread	# save thread for the undo block, because @thread might change
       @thread.remove_label :inbox
-      STDERR.puts "archive_and_then about to relay :archived for #{@thread.to_s}"
+      #STDERR.puts "archive_and_then about to relay :archived for #{@thread.to_s}"
       UpdateManager.relay self, :archived, @thread
       Notmuch.save_thread @thread
       UndoManager.register "archiving 1 thread" do
-        STDERR.puts "undoing archive of #{undo_thread.to_s}"
+        #STDERR.puts "undoing archive of #{undo_thread.to_s}"
         undo_thread.apply_label :inbox
         Notmuch.save_thread undo_thread
         UpdateManager.relay self, :unarchived, undo_thread
       end
     end
+  end
+
+  def do_nothing_and_then(op)
+    dispatch(op) {}
   end
 
   def select_item

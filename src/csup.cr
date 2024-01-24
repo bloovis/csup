@@ -85,7 +85,15 @@ def main
   end
 
   # Interactive loop.
-  event_loop(global_keymap) {|ch| BufferManager.flash "No action for #{ch}"}
+  begin
+    event_loop(global_keymap) {|ch| BufferManager.flash "No action for #{ch}"}
+  rescue ex
+    Ncurses.end
+    puts "Oh crap!  An exception occurred!"
+    puts ex.inspect_with_backtrace
+    exit 1
+  end
+
 end
 
 main
