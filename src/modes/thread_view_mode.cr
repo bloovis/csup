@@ -1,4 +1,5 @@
 require "./line_cursor_mode"
+require "./text_mode"
 
 module Redwood
 
@@ -681,14 +682,16 @@ class ThreadViewMode < LineCursorMode
   end
 
   def view(chunk)
+    #STDERR.puts "view: chunk type = #{chunk.type}"
     return unless chunk.is_a?(AttachmentChunk)
     BufferManager.flash "viewing #{chunk.part.content_type} attachment..."
     success = chunk.view!
+    #STDERR.puts "chunk.view! returned #{success}"
     BufferManager.erase_flash
     BufferManager.completely_redraw_screen
     unless success
-      #BufferManager.spawn "Attachment: #{chunk.filename}", TextMode.new(chunk.to_s.ascii, chunk.filename)
-      BufferManager.flash "Couldn't execute view command, viewing as text."
+      BufferManager.spawn "Attachment: #{chunk.filename}", TextMode.new(chunk.to_s, chunk.filename)
+      #BufferManager.flash "Couldn't execute view command, viewing as text."
     end
   end
 end

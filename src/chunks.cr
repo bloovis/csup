@@ -113,7 +113,7 @@ class AttachmentChunk < Chunk
 
   ## an attachment is expandable if we've managed to decode it into
   ## something we can display inline. otherwise, it's viewable.
-  def view!
+  def view! : Bool
     Notmuch.view_part(@message.id, @part.id, @part.content_type)
   end
 
@@ -125,7 +125,7 @@ class AttachmentChunk < Chunk
   def to_s
     # What should we use for raw_content?  Does it make sense to use part.content
     # when that could be binary data like JPEG?
-    @lines # || @raw_content
+    @lines.join("\n") # || @raw_content
   end
 end
 

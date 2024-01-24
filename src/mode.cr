@@ -1,5 +1,7 @@
 require "./buffer"
 require "./supcurses"
+require "./pipe"
+require "file_utils"
 
 class Object
   def send(action : String | Symbol)
@@ -159,6 +161,42 @@ class Mode
     else
       return false
     end
+  end
+
+### helper functions
+
+  def save_to_file(fn : String, talk=true)
+    if File.exists? fn
+      unless BufferManager.ask_yes_or_no "File \"#{fn}\" exists. Overwrite?"
+        #info "Not overwriting #{fn}"
+        return
+      end
+    end
+    FileUtils.mkdir_p File.dirname(fn)
+    begin
+      File.open(fn, "w") { |f| yield f }
+      BufferManager.flash "Successfully wrote #{fn}." if talk
+      true
+    rescue e
+      m = "Error writing file: #{e.message}"
+      #info m
+      BufferManager.flash m
+      false
+    end
+  end
+
+  def pipe_to_process(command : String) : Tuple(String?, Bool)
+    pipe = Pipe.new(command, [] of String, shell: true)
+    output = nil
+    exit_status = pipe.start do |p|
+      p.transmit do |f|
+        yield f
+      end
+      p.receive do |f|
+        output = f.gets_to_end
+      end
+    end
+    return {output, exit_status == 0}
   end
 
 end	# class Mode

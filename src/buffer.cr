@@ -220,6 +220,7 @@ class BufferManager
   ## screen.
   # Crystal note: we don't use TextField or Ncurses forms, so ignore
   # then domain parameter, but allow it for compatibility with existing code.
+  # FIXME: should take an optional block!
   def ask(domain : Symbol, question : String, default=nil) : String
     raise "impossible!" if @asking
     raise "Question too long" if Ncurses.cols <= question.size
@@ -326,6 +327,49 @@ class BufferManager
     end
   end
   singleton_method ask_yes_or_no, question
+
+  def ask_for_filename(domain : Symbol, question : String, default=nil, allow_directory=false) : String
+{% if true %}
+    return ask(domain, question, default)
+{% else %}
+    answer = ask domain, question, default do |s|
+      if s =~ /(~([^\s\/]*))/ # twiddle directory expansion
+        full = $1
+        name = $2.empty? ? Etc.getlogin : $2
+        dir = Etc.getpwnam(name).dir rescue nil
+        if dir
+          [[s.sub(full, dir), "~#{name}"]]
+        else
+          users.select { |u| u =~ /^#{Regexp::escape name}/u }.map do |u|
+            [s.sub("~#{name}", "~#{u}"), "~#{u}"]
+          end
+        end
+      else # regular filename completion
+        Dir["#{s}*"].sort.map do |fn|
+          suffix = File.directory?(fn) ? "/" : ""
+          [fn + suffix, File.basename(fn) + suffix]
+        end
+      end
+    end
+
+    if answer
+      # Strip single quotes to allow filenames to be dragged and dropped
+      # from file browsers like Mate Caja.
+      answer.gsub!(/'/, '')
+
+      answer =
+        if answer.empty?
+          spawn_modal "file browser", FileBrowserMode.new
+        elsif File.directory?(answer) && !allow_directory
+          spawn_modal "file browser", FileBrowserMode.new(answer)
+        else
+          File.expand_path answer
+        end
+    end
+    retur answer
+{% end %}
+  end
+  singleton_method ask_for_filename, domain, question, default, allow_directory
 
   def resolve_input_with_keymap(c : String, keymap : Keymap) : Symbol | Nil
     #puts "resolve_input_with_keymap: c #{c}, keymap #{keymap.object_id}"

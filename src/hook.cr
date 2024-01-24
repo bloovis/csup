@@ -25,6 +25,7 @@ class HookManager
     begin
       pipe = Pipe.new(path, [] of String)
       exit_status = pipe.start {|p| yield p}
+      #STDERR.puts "hook.run: exit status of #{path} was #{exit_status}"
       return exit_status == 0
     rescue IO::Error
       return false

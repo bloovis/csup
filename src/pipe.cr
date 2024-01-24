@@ -13,7 +13,7 @@ class Pipe
   def initialize(prog : String, args : Array(String), shell = false)
     begin
       @process = Process.new(prog,
-			     args,
+			     shell ? nil : args,
                              input: Process::Redirect::Pipe,
                              output: Process::Redirect::Pipe,
                              error: Process::Redirect::Pipe,

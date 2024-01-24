@@ -84,13 +84,14 @@ module Notmuch
   end
 
   def view_part(msgid : String, partid : Int32, content_type : String) : Bool
-    puts "About to run notmuch show --part=#{partid} id:#{msgid}"
+    #STDERR.puts "view_part: notmuch show --part=#{partid}  id:#{msgid}"
     pipe = Pipe.new("notmuch", ["show", "--part=#{partid}", "id:#{msgid}"])
     success = false
     pipe.start do |p|
       p.receive do |output|
+        #STDERR.puts "view_part: running mime-view hook, content type #{content_type}"
         success = HookManager.run("mime-view") do |hook|
-	  hook.send do |f|
+	  hook.transmit do |f|
 	    f.puts content_type
 	    IO.copy(output, f)
 	  end

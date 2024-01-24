@@ -24,14 +24,16 @@ view () {
 }
 
 read type
-#echo type = $type
+#echo "mime-view: type = $type" >>/tmp/csup.log
 case $type in
-text/html)
-  cat - | w3m -T text/html
-  ;;
-text/plain)
-  cat
-  ;;
+#text/html)
+#  echo "mime-view: running w3m" >>/tmp/csup.log
+#  cat - | w3m -T text/html
+#  echo "mime-view: done running w3m" >>/tmp/csup.log
+#  ;;
+#text/plain)
+#  cat
+#  ;;
 */pdf)
   view xreader
   ;;
