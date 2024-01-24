@@ -3,10 +3,14 @@ require "./line_cursor_mode"
 module Redwood
 
 class ThreadViewMode < LineCursorMode
-  mode_class help, jump_to_next_and_open, jump_to_prev_and_open, expand_all_quotes,
-	     expand_all_messages, activate_chunk, jump_to_next_open, jump_to_prev_open,
-	     align_current_message, archive_and_kill, archive_and_next, archive_and_prev,
-	     do_nothing_and_next
+  mode_class help,
+	     expand_all_quotes, expand_all_messages, activate_chunk,
+	     align_current_message,
+	     jump_to_next_and_open, jump_to_prev_and_open,
+	     jump_to_next_open, jump_to_prev_open,
+	     archive_and_kill, do_nothing_and_kill,
+	     archive_and_next, do_nothing_and_next,
+	     archive_and_prev, do_nothing_and_prev
 
   class Layout
     property state = :none
@@ -39,13 +43,15 @@ class ThreadViewMode < LineCursorMode
     k.add :align_current_message, "Align current message in buffer", 'z'
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read:", '.' do |kk|
       kk.add :archive_and_kill, "Archive this thread and kill buffer", 'a'
+      kk.add :do_nothing_and_kill, "Just kill this buffer", '.'
     end
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read/do (n)othing:", ',' do |kk|
       kk.add :archive_and_next, "Archive this thread and view next", 'a'
-      kk.add :do_nothing_and_next, "View next", 'n', ','
+      kk.add :do_nothing_and_next, "Kill buffer, and view next", 'n', ','
     end
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read/do (n)othing:", ']' do |kk|
-      kk.add :archive_and_prev, "Archive this thread and view previous", 'a'
+      kk.add :archive_and_prev, "Archive this thread, kill buffer, and view previous", 'a'
+      kk.add :do_nothing_and_prev, "Kill buffer, and view previous", 'n', ']'
     end
   end
 
@@ -541,10 +547,14 @@ class ThreadViewMode < LineCursorMode
   end
 
   def archive_and_kill(*args); archive_and_then :kill end
-  def archive_and_next(*args); archive_and_then :next end
-  def archive_and_prev(*args); archive_and_then :prev end
+  def do_nothing_and_kill(*args); do_nothing_and_then :kill end
 
+  def archive_and_next(*args); archive_and_then :next end
   def do_nothing_and_next(*args); do_nothing_and_then :next end
+
+  def archive_and_prev(*args); archive_and_then :prev end
+  def do_nothing_and_prev(*args); do_nothing_and_then :prev end
+
 
   def dispatch(op : Symbol, &block)
     return if @dying
@@ -557,11 +567,9 @@ class ThreadViewMode < LineCursorMode
 
     case op
     when :next
-      BufferManager.flash "dispatch #{op} not implemented yet"
-      #@index_mode.launch_next_thread_after @thread, &l
+      @index_mode.launch_next_thread_after @thread, &l
     when :prev
-      BufferManager.flash "dispatch #{op} not implemented yet"
-      #@index_mode.launch_prev_thread_before @thread, &l
+      @index_mode.launch_prev_thread_before @thread, &l
     when :kill
       l.call
     else
@@ -574,7 +582,7 @@ class ThreadViewMode < LineCursorMode
       undo_thread = @thread	# save thread for the undo block, because @thread might change
       @thread.remove_label :inbox
       #STDERR.puts "archive_and_then about to relay :archived for #{@thread.to_s}"
-      UpdateManager.relay self, :archived, @thread
+      UpdateManager.relay self, :archived, @thread 	# .first is bogus!
       Notmuch.save_thread @thread
       UndoManager.register "archiving 1 thread" do
         #STDERR.puts "undoing archive of #{undo_thread.to_s}"

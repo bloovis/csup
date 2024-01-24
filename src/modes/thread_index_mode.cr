@@ -318,6 +318,10 @@ class ThreadIndexMode < LineCursorMode
 
   def select_item(*args)
     return unless t = cursor_thread
+    do_select(t) {}
+  end
+
+  def do_select(t : MsgThread, &when_done)
     BufferManager.flash "Selecting thread at #{@curpos}"
     t.reload
     mode = ThreadViewMode.new(t, self)
@@ -336,6 +340,33 @@ class ThreadIndexMode < LineCursorMode
 
     update_text_for_line curpos
     UpdateManager.relay self, :read, t
+    when_done.call
+  end
+
+  ## these two methods are called by thread-view-modes when the user
+  ## wants to view the previous/next thread without going back to
+  ## index-mode. we update the cursor as a convenience.
+  def launch_next_thread_after(thread, &b)
+    launch_another_thread(thread, 1, &b)
+  end
+
+  def launch_prev_thread_before(thread, &b)
+    launch_another_thread(thread, -1, &b)
+  end
+
+  def launch_another_thread(thread, direction, &b)
+    return unless l = @lines[thread]
+    target_l = l + direction
+    t = if target_l >= 0 && target_l < @threads.length
+      @threads[target_l]
+    end
+
+    if t # there's a next thread
+      set_cursor_pos target_l # move out of mutex?
+      do_select(t, &b)
+    else # no next thread. call the block anyways
+      b.call
+    end
   end
 
   ## returns an undo lambda
