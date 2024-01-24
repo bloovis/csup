@@ -339,7 +339,7 @@ class Message
 	# plain text attachment.
 	if p.content_type == "text/html" && p.content_size > 0 && !found_plain
 	  success = HookManager.run("mime-decode") do |pipe|
-	    pipe.send do |f|
+	    pipe.transmit do |f|
 	      f.puts(p.content_type)
 	      f << p.content
 	    end

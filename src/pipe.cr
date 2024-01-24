@@ -10,13 +10,14 @@ class Pipe
   property error_closed = false
   @process : Process?
 
-  def initialize(prog : String, args : Array(String))
+  def initialize(prog : String, args : Array(String), shell = false)
     begin
       @process = Process.new(prog,
 			     args,
                              input: Process::Redirect::Pipe,
                              output: Process::Redirect::Pipe,
-                             error: Process::Redirect::Pipe)
+                             error: Process::Redirect::Pipe,
+			     shell: shell)
       @success = true
     rescue IO::Error
       @success = false
@@ -28,7 +29,7 @@ class Pipe
     wait
   end
 
-  def send(&)
+  def transmit(&)
     if p = @process
       yield p.input
       p.input.close
@@ -81,7 +82,7 @@ class Pipe
 
     exit_status = pipe.start do |p|
       if input.size != 0
-	p.send {|f| f << input}
+	p.transmit {|f| f << input}
       end
       p.receive {|f| stdout_str = f.gets_to_end}
       if check_stderr

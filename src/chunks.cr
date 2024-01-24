@@ -74,7 +74,7 @@ class AttachmentChunk < Chunk
 
     text = ""
     success = HookManager.run("mime-decode") do |pipe|
-      pipe.send do |f|
+      pipe.transmit do |f|
 	f.puts(@part.content_type)
 	f << @part.content
       end
