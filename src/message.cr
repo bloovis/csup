@@ -82,7 +82,7 @@ class Message
       @from = Person.new("nobody", "nobody@example.com")
     end
     if @headers.has_key?("Subject")
-      @subj = @headers["Subject"].gsub(/\s+/, " ").gsub(/\s+$/, "")
+      @subj = @headers["Subject"].gsub(/\s+/, " ").strip
     else
       @subj = "<no subject>"
     end
@@ -310,7 +310,7 @@ class Message
       if !@have_snippet && state == :text && (@snippet.nil? || @snippet.length < SNIPPET_LEN) && line !~ /[=\*#_-]{3,}/ && line !~ /^\s*$/
         @snippet ||= ""
         @snippet += " " unless @snippet.empty?
-        @snippet += line.gsub(/^\s+/, "").gsub(/[\r\n]/, "").gsub(/\s+/, " ")
+        @snippet += line.gsub(/[\r\n]/, "").strip
         oldlen = @snippet.length
         @snippet = @snippet[0 ... SNIPPET_LEN].chomp
         @snippet += "..." if @snippet.length < oldlen

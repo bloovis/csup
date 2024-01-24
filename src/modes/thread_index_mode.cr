@@ -45,14 +45,16 @@ class ThreadIndexMode < LineCursorMode
     @text[n]
   end
 
-  def initialize(@query : String)
+  def initialize(@query : String, hidden_labels = [] of Symbol)
     super()
     translated_query = Notmuch.translate_query(@query)
     @tags = Tagger(MsgThread).new
     @tags.setmode(self)
     @ts = ThreadList.new(translated_query, offset: 0, limit: buffer.content_height)
+
     @hidden_labels = LabelManager::HIDDEN_RESERVED_LABELS +
-		     Set.new(Config.strarray(:hidden_labels))
+		     Set.new(Config.strarray(:hidden_labels)) +
+		     Set.new(hidden_labels.map(&.to_s))
     update
     UpdateManager.register self
   end

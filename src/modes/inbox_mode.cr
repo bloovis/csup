@@ -15,7 +15,7 @@ class InboxMode < ThreadIndexMode
   end
 
   def initialize
-    super("{inbox}")
+    super("{inbox}", [:inbox, :sent, :draft])
     raise "can't have more than one!" if !@@instance.nil?
     @@instance = self
   end
