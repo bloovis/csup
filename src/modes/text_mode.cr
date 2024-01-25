@@ -52,6 +52,14 @@ class TextMode < ScrollMode
     end
   end
 
+  def <<(line : String)
+    @text << line.rstrip
+    if buffer
+      ensure_mode_validity
+      buffer.mark_dirty
+    end
+  end
+
   def text=(t)
     @text = t.lines
   end

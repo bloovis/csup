@@ -10,11 +10,14 @@ require "./account"
 require "./label"
 require "./contact"
 require "./modes/inbox_mode"
+require "./logger"
 
 module Redwood
   BASE_DIR = File.join(ENV["HOME"], ".csup")
 
   extend self
+
+  @@log_io : IO?
 
   def init_managers
     basedir = BASE_DIR
@@ -31,9 +34,21 @@ module Redwood
     hm = HookManager.new(File.join(basedir, "hooks"))
     am = AccountManager.new(Config.accounts)
     lm = LabelManager.new(File.join(basedir, "labels.txt"))
+
+    log_io = File.open(File.join(basedir, "log"), "a")
+    if log_io
+      logm = Logger.new
+      Logger.add_sink(log_io)
+      @@log_io = log_io
+    end
   end
 
   def event_loop(keymap, &b)
+    lmode = Redwood::LogMode.new "system log"
+    lmode.on_kill { Logger.clear! }
+    Logger.add_sink lmode
+    Logger.force_message "Welcome to Sup! Log level is set to #{Logger.level}."
+
     # The initial draw_screen won't draw the buffer status, because
     # the status is set as a result of calling draw_screen.  Hence,
     # we need to call it again at the beginning of the event loop.
@@ -60,8 +75,12 @@ extend self
 actions(quit, kill_buffer)
 
 def quit
-  BufferManager.say "This is the global quit command."
+  #BufferManager.say "This is the global quit command."
   #puts "This is the global quit command."
+  if log_io = @@log_io
+    Logger.remove_sink(log_io)
+    log_io.close
+  end
   Ncurses.end
   exit 0
 end

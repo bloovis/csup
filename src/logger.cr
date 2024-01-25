@@ -1,4 +1,5 @@
 require "./singleton"
+require "./modes/log_mode"
 
 module Redwood
 
@@ -7,6 +8,8 @@ module Redwood
 ## previous messages to it by default.
 class Logger
   singleton_class
+
+  alias Sink = IO | LogMode
 
   LEVELS = %w(debug info warn error) # in order!
 
@@ -20,13 +23,14 @@ class Logger
     set_level(level)
     #@mutex = Mutex.new
     @buf = IO::Memory.new
-    @sinks = [] of IO
+    @sinks = [] of Sink
     singleton_post_init
   end
 
   def level
     LEVELS[@level]
   end
+  singleton_method level
 
   def set_level(level)
     @level = LEVELS.index(level) ||
@@ -37,7 +41,7 @@ class Logger
     self.instance.set_level(level)
   end
 
-  def add_sink(s : IO, copy_current=true)
+  def add_sink(s : Sink, copy_current=true)
     #@mutex.synchronize do
       @sinks << s
       s << @buf.to_s if copy_current
@@ -50,6 +54,7 @@ class Logger
       @sinks.delete s
     #end
   end
+  singleton_method remove_sink, s
 
   def remove_all_sinks!
     #@mutex.synchronize do
@@ -85,6 +90,7 @@ class Logger
   def force_message(m)
     send_message(format_message("", Time.now, m))
   end
+  singleton_method force_message, m
 
 
   ## level can be nil!

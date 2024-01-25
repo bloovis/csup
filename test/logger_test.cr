@@ -1,4 +1,5 @@
-require "../src/logger.cr"
+require "../src/logger"
+require "../src/modes/log_mode"
 
 module Redwood
 
