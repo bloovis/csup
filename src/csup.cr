@@ -9,8 +9,9 @@ require "./hook"
 require "./account"
 require "./label"
 require "./contact"
-require "./modes/inbox_mode"
 require "./logger"
+require "./modes/inbox_mode"
+require "./modes/buffer_list_mode"
 
 module Redwood
   BASE_DIR = File.join(ENV["HOME"], ".csup")
@@ -67,7 +68,8 @@ module Redwood
 
 extend self
 
-actions(quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards)
+actions quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards,
+        list_buffers
 
 def quit_now
   #BufferManager.say "This is the global quit command."
@@ -99,6 +101,10 @@ def kill_buffer
   BufferManager.kill_buffer_safely(BufferManager.focus_buf)
 end
 
+def list_buffers
+  BufferManager.spawn_unless_exists("buffer list", Opts.new({:system => true})) { BufferListMode.new }
+end
+
 def main
   init_managers
 
@@ -118,11 +124,12 @@ def main
   BufferManager.raise_to_front(buf)
 
   global_keymap = Keymap.new do |k|
-    k.add :roll_buffers, "Switch to next buffer", 'b'
-    k.add :roll_buffers_backwards, "Switch to previous buffer", 'B'
     k.add :quit_ask, "Quit Sup, but ask first", 'q'
     k.add :quit_now, "Quit Sup immediately", 'Q'
+    k.add :roll_buffers, "Switch to next buffer", 'b'
+    k.add :roll_buffers_backwards, "Switch to previous buffer", 'B'
     k.add :kill_buffer, "Kill the current buffer", 'x'
+    k.add :list_buffers, "List all buffers", ';'
   end
 
   # Interactive loop.

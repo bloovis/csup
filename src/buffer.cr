@@ -33,6 +33,11 @@ class Buffer
     @system = opts.bool(:system) || false
   end
 
+  # For Sup compatibility
+  def hidden?; @hidden; end
+  def dirty?; @dirty; end
+  def system?; @system; end
+
   def content_height; @height - 1; end
   def content_width; @width; end
 
@@ -145,6 +150,11 @@ class BufferManager
       buf.focus
     end
   end
+
+  def buffers : Array(Tuple(String, Buffer))
+    @name_map.to_a
+  end
+  singleton_method buffers
 
   def raise_to_front(buf : Buffer)
     #puts "raise_to_front before delete"
@@ -579,6 +589,26 @@ class BufferManager
     # Ncurses.mutex.unlock unless opts[:sync] == false
   end
   singleton_method draw_screen, opts
+
+  ## if the named buffer already exists, pops it to the front without
+  ## calling the block. otherwise, gets the mode from the block and
+  ## creates a new buffer. returns two things: the buffer, and a boolean
+  ## indicating whether it's a new buffer or not.
+  def spawn_unless_exists(title : String, opts=Opts.new, &b : -> Mode)
+    new =
+      if @name_map.has_key? title
+        raise_to_front @name_map[title] unless opts.bool(:hidden)
+        false
+      else
+        mode = b.call
+        spawn title, mode, opts
+        true
+      end
+    [@name_map[title], new]
+  end
+  def self.spawn_unless_exists(title : String, opts=Opts.new, &b : -> Mode)
+    self.instance.spawn_unless_exists(title, opts, &b)
+  end
 
   def spawn(title : String, mode : Mode, opts = Opts.new)
     # raise ArgumentError, "title must be a string" unless title.is_a? String
