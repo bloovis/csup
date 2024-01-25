@@ -162,6 +162,33 @@ class BufferManager
   end
   singleton_method raise_to_front, buf
 
+  ## we reset force_to_top when rolling buffers. this is so that the
+  ## human can actually still move buffers around, while still
+  ## programmatically being able to pop stuff up in the middle of
+  ## drawing a window without worrying about covering it up.
+  ##
+  ## if we ever start calling roll_buffers programmatically, we will
+  ## have to change this. but it's not clear that we will ever actually
+  ## do that.
+  def roll_buffers(*args)
+    bufs = rollable_buffers
+    bufs.last.force_to_top = false
+    raise_to_front bufs.first
+  end
+  singleton_method roll_buffers
+
+  def roll_buffers_backwards(*args)
+    bufs = rollable_buffers
+    return unless bufs.length > 1
+    bufs.last.force_to_top = false
+    raise_to_front bufs[bufs.length - 2]
+  end
+  singleton_method roll_buffers_backwards
+
+  def rollable_buffers
+    @buffers.select { |b| !(b.system || b.hidden) || @buffers.last == b }
+  end
+
   def handle_input(c : String)
     b = @focus_buf
     if b
@@ -180,6 +207,16 @@ class BufferManager
     end
   end
   singleton_method handle_input, c
+
+  def kill_all_buffers_safely
+    until @buffers.empty?
+      ## inbox mode always claims it's unkillable. we'll ignore it.
+      return false unless @buffers.last.mode.is_a?(InboxMode) || @buffers.last.mode.killable?
+      kill_buffer @buffers.last
+    end
+    true
+  end
+  singleton_method kill_all_buffers_safely
 
   def kill_buffer_safely(buf)
     if buf

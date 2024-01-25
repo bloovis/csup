@@ -72,17 +72,32 @@ module Redwood
 
 extend self
 
-actions(quit, kill_buffer)
+actions(quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards)
 
-def quit
+def quit_now
   #BufferManager.say "This is the global quit command."
   #puts "This is the global quit command."
+  BufferManager.kill_all_buffers_safely
   if log_io = @@log_io
     Logger.remove_sink(log_io)
     log_io.close
   end
   Ncurses.end
   exit 0
+end
+
+def quit_ask
+  if BufferManager.ask_yes_or_no "Really quit?"
+    quit_now
+  end
+end
+
+def roll_buffers
+  BufferManager.roll_buffers
+end
+
+def roll_buffers_backwards
+  BufferManager.roll_buffers_backwards
 end
 
 def kill_buffer
@@ -99,8 +114,11 @@ def main
   BufferManager.raise_to_front(buf)
 
   global_keymap = Keymap.new do |k|
-    k.add(:quit, "Quit", "q", "C-q")
-    k.add(:kill_buffer, "Kill the current buffer", "x")
+    k.add :roll_buffers, "Switch to next buffer", 'b'
+    k.add :roll_buffers_backwards, "Switch to previous buffer", 'B'
+    k.add :quit_ask, "Quit Sup, but ask first", 'q'
+    k.add :quit_now, "Quit Sup immediately", 'Q'
+    k.add :kill_buffer, "Kill the current buffer", 'x'
   end
 
   # Interactive loop.
