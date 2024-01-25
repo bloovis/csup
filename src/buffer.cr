@@ -114,6 +114,7 @@ class BufferManager
   ## it has special semantics that BufferManager deals with---current searches
   ## are canceled by any keypress except this one.
   CONTINUE_IN_BUFFER_SEARCH_KEY = "n"
+  KEY_CANCEL = "C-g"
 
   @focus_buf : Buffer | Nil
   @flash : String?
@@ -269,7 +270,7 @@ class BufferManager
   # Crystal note: we don't use TextField or Ncurses forms, so ignore
   # then domain parameter, but allow it for compatibility with existing code.
   # FIXME: should take an optional block!
-  def ask(domain : Symbol, question : String, default=nil) : String
+  def ask(domain : Symbol, question : String, default=nil) : String?
     raise "impossible!" if @asking
     raise "Question too long" if Ncurses.cols <= question.size
     @asking = true
@@ -286,6 +287,7 @@ class BufferManager
 
     ret = ""
     done = false
+    aborted = false
     until done
       c = Ncurses.getkey
       next if c == ""
@@ -296,6 +298,9 @@ class BufferManager
 	end
       when "C-m"
         done = true
+      when KEY_CANCEL
+	done = true
+	aborted = true
       else
 	if c.size == 1
 	  ret += c
@@ -310,7 +315,11 @@ class BufferManager
     Ncurses.curs_set 0
     draw_screen Opts.new({:sync => false, :status => status, :title => title})
 
-    ret
+    if aborted
+      return ret
+    else
+      return nil
+    end
   end
   singleton_method ask, domain, question, default
 
@@ -345,7 +354,7 @@ class BufferManager
     until done
       key = Ncurses.getkey
       next if key == ""
-      if key == "C-g"
+      if key == KEY_CANCEL
         done = true
       elsif accept_string == "" || accept.index(key)
         ret = key
@@ -376,7 +385,7 @@ class BufferManager
   end
   singleton_method ask_yes_or_no, question
 
-  def ask_for_filename(domain : Symbol, question : String, default=nil, allow_directory=false) : String
+  def ask_for_filename(domain : Symbol, question : String, default=nil, allow_directory=false) : String?
 {% if true %}
     return ask(domain, question, default)
 {% else %}
