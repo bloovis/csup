@@ -69,7 +69,7 @@ module Redwood
 extend self
 
 actions quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards,
-        list_buffers
+        list_buffers, redraw
 
 def quit_now
   #BufferManager.say "This is the global quit command."
@@ -105,6 +105,10 @@ def list_buffers
   BufferManager.spawn_unless_exists("buffer list", Opts.new({:system => true})) { BufferListMode.new }
 end
 
+def redraw
+  BufferManager.completely_redraw_screen
+end
+
 def main
   init_managers
 
@@ -130,6 +134,7 @@ def main
     k.add :roll_buffers_backwards, "Switch to previous buffer", 'B'
     k.add :kill_buffer, "Kill the current buffer", 'x'
     k.add :list_buffers, "List all buffers", ';'
+    k.add :redraw, "Redraw screen", "C-l"
   end
 
   # Interactive loop.
