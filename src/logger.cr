@@ -32,7 +32,10 @@ class Logger
     @level = LEVELS.index(level) ||
       raise ArgumentError.new("invalid log level #{level.inspect}: should be one of #{LEVELS.join(", ")}")
   end
-  singleton_method set_level, level
+
+  def Logger.level=(level)
+    self.instance.set_level(level)
+  end
 
   def add_sink(s : IO, copy_current=true)
     #@mutex.synchronize do
