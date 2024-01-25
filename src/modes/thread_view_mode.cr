@@ -8,9 +8,9 @@ class ThreadViewMode < LineCursorMode
 	     align_current_message, toggle_detailed_header,
 	     jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
-	     archive_and_kill, do_nothing_and_kill,
-	     archive_and_next, do_nothing_and_next,
-	     archive_and_prev, do_nothing_and_prev
+	     archive_and_kill, delete_and_kill, do_nothing_and_kill,
+	     archive_and_next, delete_and_next, do_nothing_and_next,
+	     archive_and_prev, delete_and_prev, do_nothing_and_prev
 
   class Layout
     property state = :none
@@ -41,16 +41,23 @@ class ThreadViewMode < LineCursorMode
     k.add :jump_to_prev_open, "Jump to previous open message", 'p'
     k.add :jump_to_prev_and_open, "Jump to previous message and open", "C-p"
     k.add :align_current_message, "Align current message in buffer", 'z'
+
+    k.add :archive_and_next, "Archive this thread, kill buffer, and view next", 'a'
+    k.add :delete_and_next, "Delete this thread, kill buffer, and view next", 'd'
+
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read:", '.' do |kk|
       kk.add :archive_and_kill, "Archive this thread and kill buffer", 'a'
+      kk.add :delete_and_kill, "Delete this thread and kill buffer", 'd'
       kk.add :do_nothing_and_kill, "Just kill this buffer", '.'
     end
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read/do (n)othing:", ',' do |kk|
       kk.add :archive_and_next, "Archive this thread and view next", 'a'
+      kk.add :delete_and_next, "Delete this thread, kill buffer, and view next", 'd'
       kk.add :do_nothing_and_next, "Kill buffer, and view next", 'n', ','
     end
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read/do (n)othing:", ']' do |kk|
       kk.add :archive_and_prev, "Archive this thread, kill buffer, and view previous", 'a'
+      kk.add :delete_and_prev, "Delete this thread, kill buffer, and view previous", 'd'
       kk.add :do_nothing_and_prev, "Kill buffer, and view previous", 'n', ']'
     end
   end
@@ -548,12 +555,15 @@ class ThreadViewMode < LineCursorMode
   end
 
   def archive_and_kill(*args); archive_and_then :kill end
+  def delete_and_kill(*args); delete_and_then :kill end
   def do_nothing_and_kill(*args); do_nothing_and_then :kill end
 
   def archive_and_next(*args); archive_and_then :next end
+  def delete_and_next(*args); delete_and_then :next end
   def do_nothing_and_next(*args); do_nothing_and_then :next end
 
   def archive_and_prev(*args); archive_and_then :prev end
+  def delete_and_prev(*args); delete_and_then :prev end
   def do_nothing_and_prev(*args); do_nothing_and_then :prev end
 
 
@@ -590,6 +600,20 @@ class ThreadViewMode < LineCursorMode
         undo_thread.apply_label :inbox
         Notmuch.save_thread undo_thread
         UpdateManager.relay self, :unarchived, undo_thread
+      end
+    end
+  end
+
+  def delete_and_then(op : Symbol)
+    dispatch op do
+      undo_thread = @thread	# save thread for the undo block, because @thread might change
+      @thread.apply_label :deleted
+      UpdateManager.relay self, :deleted, @thread
+      Notmuch.save_thread @thread
+      UndoManager.register "deleting 1 thread" do
+        undo_thread.remove_label :deleted
+        Notmuch.save_thread undo_thread
+        UpdateManager.relay self, :undeleted, undo_thread
       end
     end
   end

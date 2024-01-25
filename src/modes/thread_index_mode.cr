@@ -10,6 +10,7 @@ module Redwood
 class ThreadIndexMode < LineCursorMode
   mode_class toggle_archived, multi_toggle_archived,
 	     toggle_tagged, multi_toggle_tagged, apply_to_tagged,
+	     handle_deleted_update, handle_undeleted_update,
 	     undo
 
   register_keymap do |k|
@@ -68,6 +69,21 @@ class ThreadIndexMode < LineCursorMode
     t : MsgThread? = args[1]?
     if t && (ts = @ts) && (t = ts.find_thread(t))
       return t
+    end
+  end
+
+  def handle_deleted_update(*args)
+    t = get_update_thread(*args)
+    if t
+      hide_thread t
+    end
+    update
+  end
+
+  def handle_undeleted_update(*args)
+    t = get_update_thread(*args)
+    if t
+      add_or_unhide t
     end
   end
 
