@@ -18,7 +18,7 @@ class Logger
   def initialize(level = "info")
     singleton_pre_init
     if ENV.has_key?("CSUP_LOG_LEVEL")
-      level = ENV["SUP_LOG_LEVEL"]
+      level = ENV["CSUP_LOG_LEVEL"]
     end
     set_level(level)
     #@mutex = Mutex.new
@@ -116,19 +116,11 @@ class Logger
 
 end	# class Logger
 
-## include me to have top-level #debug, #info, etc. methods.
-#module LogsStuff
-#  Logger::LEVELS.each { |l| define_method(l) { |s, uplevel = 0| Logger.instance.send(l, s) } }
-#end
+end	# module Redwood
 
-{% for level in Logger::LEVELS %}
-  def Redwood.{{level.id}}(s : String)
-    Logger.{{level.id}}(s)
+# Define top-level debug, info, etc. methods
+{% for level in Redwood::Logger::LEVELS %}
+  def {{level.id}}(s : String)
+    Redwood::Logger.{{level.id}}(s)
   end
 {% end %}
-
-#def Redwood.debug(s)
-#  Logger.debug(s)
-#end
-
-end	# module Redwood

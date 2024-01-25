@@ -503,8 +503,7 @@ class MsgThread
   # the current top level message, which doesn't have body and html content.
   def reload
     return unless m = @msg
-    thread_id = Notmuch.thread_id_from_message_id(m.id)
-    ts = ThreadList.new(thread_id, offset: 0, limit: 1, body: true)
+    ts = ThreadList.new("id:#{m.id}", offset: 0, limit: 1, body: true)
     if ts
       if thread = ts.threads[0]?
 	@msg = thread.msg
@@ -617,7 +616,7 @@ class ThreadList
   property query = ""
 
   def initialize(@query, offset : Int32, limit : Int32, body = false)
-    #system("echo ThreadList.new: query #{@query}, offset #{offset}, limit #{limit} >>/tmp/csup.log")
+    debug "ThreadList.new: query #{@query}, offset #{offset}, limit #{limit}"
     if query
       run_notmuch_show(@query, offset: offset, limit: limit, body: body)
     end

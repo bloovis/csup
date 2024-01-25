@@ -17,16 +17,6 @@ end
 class StandardError < Exception
 end
 
-# These should be replaced by Logger functions.
-
-def warn(s : String)
-  puts "warning: #{s}"
-end
-
-def debug(s : String)
-  puts "debug: #{s}"
-end
-
 # String extensions
 
 class String

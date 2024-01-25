@@ -3,6 +3,7 @@ require "./pipe"
 require "./hook"
 require "./contact"
 require "./account"
+require "./logger"
 
 module Redwood
 
@@ -39,6 +40,7 @@ module Notmuch
     args << "--exclude=false" unless exclude
     args << query
     #STDERR.puts "notmuch #{args}"
+    debug "notmuch #{args}"
     Pipe.run("notmuch", args).lines
   end
 
@@ -71,7 +73,7 @@ module Notmuch
     if File.exists?(filename)
       return false
     end
-    puts "About to run notmuch show --part=#{partid} id:#{msgid}"
+    #STDERR.puts "About to run notmuch show --part=#{partid} id:#{msgid}"
     pipe = Pipe.new("notmuch", ["show", "--part=#{partid}", "id:#{msgid}"])
     pipe.start do |p|
       p.receive do |output|

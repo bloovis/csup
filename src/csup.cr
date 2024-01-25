@@ -44,11 +44,6 @@ module Redwood
   end
 
   def event_loop(keymap, &b)
-    lmode = Redwood::LogMode.new "system log"
-    lmode.on_kill { Logger.clear! }
-    Logger.add_sink lmode
-    Logger.force_message "Welcome to Sup! Log level is set to #{Logger.level}."
-
     # The initial draw_screen won't draw the buffer status, because
     # the status is set as a result of calling draw_screen.  Hence,
     # we need to call it again at the beginning of the event loop.
@@ -108,6 +103,15 @@ def main
   init_managers
 
   start_cursing
+
+  lmode = Redwood::LogMode.new "system log"
+  lmode.on_kill { Logger.clear! }
+  Logger.add_sink lmode
+  Logger.force_message "Welcome to Sup! Log level is set to #{Logger.level}."
+  if (level = Logger::LEVELS.index(Logger.level)) && level > 0
+    Logger.force_message "For more verbose logging, restart with CSUP_LOG_LEVEL=" +
+			 "#{Logger::LEVELS[level-1]}."
+  end
 
   mode = InboxMode.new
   buf = BufferManager.spawn("Inbox Mode", mode, Opts.new({:width => 80, :height => 25}))
