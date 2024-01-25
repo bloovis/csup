@@ -171,6 +171,7 @@ class BufferManager
   ## have to change this. but it's not clear that we will ever actually
   ## do that.
   def roll_buffers(*args)
+    #@name_map.each {|name, buf| STDERR.puts "roll: name #{name}"}
     bufs = rollable_buffers
     bufs.last.force_to_top = false
     raise_to_front bufs.first

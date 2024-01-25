@@ -54,6 +54,7 @@ class TextMode < ScrollMode
 
   def <<(line : String)
     @text << line.rstrip
+    #STDERR.puts "text mode << '#{line.rstrip}', caller #{caller[1]}"
     if buffer
       ensure_mode_validity
       buffer.mark_dirty

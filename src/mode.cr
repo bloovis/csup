@@ -78,6 +78,7 @@ class Mode
   # Define a getter for @buffer that always returns a non-nil value,
   # so that derived classes don't always have to check for nil.
   @buffer : Buffer?
+  @dummybuffer : Buffer?
 
   def buffer : Buffer
     b = @buffer
@@ -88,6 +89,7 @@ class Mode
       # tries to access its buffer before it has been assigned a buffer in spawn.
       b = Buffer.new(Ncurses.stdscr, self, Ncurses.cols, Ncurses.rows-1, Opts.new)
       @buffer = b
+      @dummybuffer = b
       return b
     end
   end

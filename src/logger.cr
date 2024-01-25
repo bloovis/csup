@@ -44,6 +44,7 @@ class Logger
   def add_sink(s : Sink, copy_current=true)
     #@mutex.synchronize do
       @sinks << s
+      #STDERR.puts "add_sink: adding sink #{s.class.name}"
       s << @buf.to_s if copy_current
     #end
   end

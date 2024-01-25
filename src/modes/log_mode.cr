@@ -34,11 +34,13 @@ class LogMode < TextMode
   end
 
   def <<(s : String)
-    if buffer.nil? && (bname = @autospawn_buffer_name)
+    #STDERR.puts "LogMode.<< '#{s}', caller #{caller[1]}"
+    if (buffer == @dummybuffer) && (bname = @autospawn_buffer_name)
+      #STDERR.puts "LogMode.<< : spawning #{bname}"
       BufferManager.spawn bname, self, Opts.new({:hidden => true, :system => true})
     end
 
-    s.split("\n").each { |l| super(l + "\n") } # insane. different << semantics.
+    s.each_line {|l| super(l)}
 
     if @follow
       follow_top = lines - buffer.content_height + 1
