@@ -24,6 +24,7 @@ class ContactManager
 	end
       end
     end
+    @modified = false
     singleton_post_init
   end
 
@@ -50,6 +51,7 @@ class ContactManager
       @a2p[aalias] = person
       @e2p[person.email] = person
     end
+    @modified = true
   end
   singleton_method update_alias, person, aalias
 
@@ -74,6 +76,7 @@ class ContactManager
   singleton_method is_aliased_contact?, person
 
   def save
+    return unless @modified
     File.open(@fn, "w") do |f|
       @p2a.to_a.sort_by { |t| {t[0].full_address, t[1]} }.each do |t|
         f.puts "#{t[1] || ""}: #{t[0].full_address}"
