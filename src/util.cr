@@ -228,3 +228,20 @@ class SparseArray(T) < Array(T?)
     end
   end
 end
+
+# Macros for defining boolean instance variables that can be accessed
+# using names ending with a '?'.
+
+macro bool_getter(*names)
+  {% for name in names %}
+    getter {{name.id}} : Bool
+    def {{name.id}}?; {{name.id}}; end
+  {% end %}
+end
+
+macro bool_property(*names)
+  {% for name in names %}
+    property {{name.id}} : Bool
+    def {{name.id}}?; {{name.id}}; end
+  {% end %}
+end

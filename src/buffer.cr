@@ -18,9 +18,8 @@ class Buffer
   getter mode : Mode
   getter w : Ncurses::Window
   property force_to_top : Bool
-  property hidden : Bool
-  getter system : Bool
-  getter dirty : Bool
+  bool_getter :system, :dirty
+  bool_property :hidden
 
   def initialize(@w, @mode, @width, @height, opts = Opts.new)
     @dirty = true
@@ -32,11 +31,6 @@ class Buffer
     @atime = Time.unix 0
     @system = opts.bool(:system) || false
   end
-
-  # For Sup compatibility
-  def hidden?; @hidden; end
-  def dirty?; @dirty; end
-  def system?; @system; end
 
   def content_height; @height - 1; end
   def content_width; @width; end
