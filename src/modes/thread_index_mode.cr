@@ -8,19 +8,21 @@ require "./thread_view_mode"
 module Redwood
 
 class ThreadIndexMode < LineCursorMode
-  mode_class toggle_archived, multi_toggle_archived,
+  mode_class load_threads, toggle_archived, multi_toggle_archived,
 	     toggle_tagged, multi_toggle_tagged, apply_to_tagged,
 	     handle_deleted_update, handle_undeleted_update,
 	     undo
 
+  MIN_FROM_WIDTH = 15
+  LOAD_MORE_THREAD_NUM = 20
+
   register_keymap do |k|
+    k.add :load_threads, "Load #{LOAD_MORE_THREAD_NUM} more threads", 'M'
     k.add :toggle_archived, "Toggle archived status", 'a'
     k.add :toggle_tagged, "Tag/untag selected thread", 't'
     k.add :apply_to_tagged, "Apply next command to all tagged threads", '+', '='
     k.add :undo, "Undo the previous action", 'u'
   end
-
-  MIN_FROM_WIDTH = 15
 
   @text = Array(Text).new # Array(String).new
   @lines = Hash(MsgThread, Int32).new
@@ -329,6 +331,17 @@ class ThreadIndexMode < LineCursorMode
   end
 
   # Commands
+
+  def load_threads(*args)
+    offset = @threads.size
+    limit = ThreadIndexMode::LOAD_MORE_THREAD_NUM
+    translated_query = Notmuch.translate_query(@query)
+    new_ts = ThreadList.new(translated_query, offset: offset, limit: limit)
+    if ts = @ts
+      ts.threads = ts.threads + new_ts.threads
+    end
+    update
+  end
 
   def undo(*args)
     UndoManager.undo
