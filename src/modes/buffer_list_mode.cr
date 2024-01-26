@@ -37,6 +37,7 @@ class BufferListMode < LineCursorMode
             reject { |name, buf| buf.mode == self || buf.hidden? }.
             sort_by { |name, buf| buf.atime }.
 	    reverse
+    return if @bufs.size == 0
     width = @bufs.max_of { |name, buf| buf.mode.name.length }
     @text = TextLines.new
     @bufs.each do |name, buf|
