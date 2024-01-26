@@ -361,6 +361,7 @@ class ThreadIndexMode < LineCursorMode
     update_text_for_line curpos
     UpdateManager.relay self, :read, t
     when_done.call
+    BufferManager.flash("")
   end
 
   ## these two methods are called by thread-view-modes when the user
