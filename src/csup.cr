@@ -12,6 +12,7 @@ require "./contact"
 require "./logger"
 require "./modes/inbox_mode"
 require "./modes/buffer_list_mode"
+require "./modes/search_results_mode"
 
 module Redwood
   BASE_DIR = File.join(ENV["HOME"], ".csup")
@@ -89,7 +90,7 @@ def finish
 end
 
 actions quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards,
-        list_buffers, redraw
+        list_buffers, redraw, search
 
 def quit_now
   #BufferManager.say "This is the global quit command."
@@ -131,6 +132,23 @@ def redraw
   BufferManager.completely_redraw_screen
 end
 
+def search
+  # FIXME: This is much simpler than in Sup: no completions, no SearchListMode.
+  #completions = LabelManager.all_labels.map { |l| "label:#{LabelManager.string_for l}" }
+  #completions = completions.each { |l| l.fix_encoding! }
+  #completions += Index::COMPL_PREFIXES
+  #query = BufferManager.ask_many_with_completions :search, "Search all messages (enter for saved searches): ", completions
+  query = BufferManager.ask :search, "Search all messages: "
+  STDERR.puts "about to spawn search results mode with '#{query}'"
+  unless query.nil?
+    if query.empty?
+      # bm.spawn_unless_exists("Saved searches") { SearchListMode.new }
+    else
+      SearchResultsMode.spawn_from_query query
+    end
+  end
+end
+
 def main
   init_managers
 
@@ -157,6 +175,7 @@ def main
     k.add :kill_buffer, "Kill the current buffer", 'x'
     k.add :list_buffers, "List all buffers", ';'
     k.add :redraw, "Redraw screen", "C-l"
+    k.add :search, "Search all messages", '\\', 'F'
   end
 
   # Interactive loop.

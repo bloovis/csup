@@ -310,9 +310,9 @@ class BufferManager
     draw_screen Opts.new({:sync => false, :status => status, :title => title})
 
     if aborted
-      return ret
-    else
       return nil
+    else
+      return ret
     end
   end
   singleton_method ask, domain, question, default

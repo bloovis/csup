@@ -37,7 +37,7 @@ class ThreadIndexMode < LineCursorMode
   @hidden_threads = Set(MsgThread).new
 
   def killable?
-    false	# change this to true when we have some derived classes!
+    true
   end
 
   def lines
@@ -53,12 +53,19 @@ class ThreadIndexMode < LineCursorMode
     translated_query = Notmuch.translate_query(@query)
     @tags = Tagger(MsgThread).new
     @tags.setmode(self)
-    @ts = ThreadList.new(translated_query, offset: 0, limit: buffer.content_height)
-
     @hidden_labels = LabelManager::HIDDEN_RESERVED_LABELS +
 		     Set.new(Config.strarray(:hidden_labels)) +
 		     Set.new(hidden_labels.map(&.to_s))
-    update
+    @ts = ThreadList.new(translated_query, offset: 0, limit: buffer.content_height)
+    if ts = @ts
+      num = ts.threads.size
+      if num == 0
+	BufferManager.flash "No matches."
+      else
+	BufferManager.flash "Found #{num.pluralize "thread"}."
+        update
+      end
+    end
     UpdateManager.register self
   end
 
