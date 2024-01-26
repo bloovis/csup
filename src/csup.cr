@@ -68,6 +68,26 @@ module Redwood
 
 extend self
 
+def finish
+  LabelManager.save if Redwood::LabelManager.instantiated?
+  ContactManager.save if Redwood::ContactManager.instantiated?
+  SearchManager.save if Redwood::SearchManager.instantiated?
+  Logger.remove_sink @@log_io
+
+  #managers.each { |x| x.deinstantiate! if x.instantiated? }
+  # Need to add SentManager, DraftManager, PollManager, CryptoManager, LayoutManager
+  {% for name in [HookManager, ContactManager, LabelManager, AccountManager,
+		  UpdateManager, UndoManager,
+		  SearchManager] %}
+    {{name.id}}.deinstantiate! if {{name.id}}.instantiated?
+  {% end %}
+
+  if log_io = @@log_io
+    log_io.close
+    @@log_io = nil
+  end
+end
+
 actions quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards,
         list_buffers, redraw
 
@@ -75,11 +95,13 @@ def quit_now
   #BufferManager.say "This is the global quit command."
   #puts "This is the global quit command."
   BufferManager.kill_all_buffers_safely
+  finish
+  Ncurses.end
+  Logger.remove_all_sinks!
   if log_io = @@log_io
     Logger.remove_sink(log_io)
     log_io.close
   end
-  Ncurses.end
   exit 0
 end
 

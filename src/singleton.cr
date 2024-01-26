@@ -18,6 +18,9 @@ macro singleton_class
     !@@instance.nil?
   end
 
+  def self.deinstantiate!
+    @@instance = nil
+  end
 end
 
 # Use this macro at the beginning of the initialize method.
