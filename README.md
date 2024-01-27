@@ -32,11 +32,12 @@ It's possible to simulate and possibly come close to the first three of these is
 using Crystal macros.  But it's not quite the same thing, and the reimplementations
 almost always differ in some respects from the original Ruby versions.
 
-As for the fourth ism, Sup appears to use parallel processing in Sup for two purposes:
+As for the fourth ism, Sup appears to use parallel processing for two purposes:
 
-1. Asynchronously filling in buffers with more data when the cursor gets
+1. Asynchronously filling in the buffer with more data when the cursor gets
 close to the bottom of the buffer.  This was probably implemented because
-in the early days when Sup was first written, computers were much slower
+in the early days when Sup was first written, computers (and the Ruby
+interpreter) were much slower
 and threading probably took a noticeably long time.
 
 2. Polling for new messages in the background.  This was probably implemented
