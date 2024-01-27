@@ -377,8 +377,14 @@ class ThreadIndexMode < LineCursorMode
   # Commands
 
   def load_more_threads(*args)
+    arg = args[0]?
+    if arg && arg.is_a?(Int32)
+      num = arg
+    else
+      num = ThreadIndexMode::LOAD_MORE_THREAD_NUM
+    end
     offset = 0
-    limit = @threads.size + ThreadIndexMode::LOAD_MORE_THREAD_NUM
+    limit = @threads.size + num
     if translated_query = @translated_query
       @ts = ThreadList.new(translated_query, offset: offset, limit: limit)
       update

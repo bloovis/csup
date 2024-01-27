@@ -10,11 +10,12 @@ module Redwood
 
 ## extends ScrollMode to have a line-based cursor.
 class LineCursorMode < ScrollMode
-  mode_class cursor_down, cursor_up, select_item
+  mode_class cursor_down, cursor_up, select_item, line_down, line_up,
+	     page_down, page_up, jump_to_start, jump_to_end
 
   register_keymap do |k|
     ## overwrite scrollmode binding on arrow keys for cursor movement
-    ## but j and k still scroll!
+    ## but C-e and C-y still scroll!
     k.add(:cursor_down, "Move cursor down one line", "Down", "j")
     k.add(:cursor_up, "Move cursor up one line", "Up", "k")
     # In sup, this was named `select`, but here we rename it to
@@ -26,18 +27,6 @@ class LineCursorMode < ScrollMode
 
   def initialize(opts = Opts.new)
     @cursor_top = @curpos = opts.delete_int(:skip_top_rows) || 0
-{% if false %}
-    @load_more_callbacks = []
-    @load_more_q = Queue.new
-    @load_more_thread = ::Thread.new do
-      while true
-        e = @load_more_q.pop
-        @load_more_callbacks.each { |c| c.call e }
-        sleep 0.5
-        @load_more_q.pop until @load_more_q.empty?
-      end
-    end
-{% end %}
     super(opts)
   end
 
@@ -51,16 +40,8 @@ class LineCursorMode < ScrollMode
     set_status
   end
 
-
-  ## callbacks when the cursor is asked to go beyond the bottom
-{% if false %}
-  def to_load_more &b
-    @load_more_callbacks << b
-  end
-{% end %}
-
   protected def draw_line(ln, opts = Opts.new)
-    #system("echo line_cursor_mode.draw_line: ln #{ln}, curpos #{curpos} >>/tmp/csup.log")
+    #STDERR.puts "line_cursor_mode.draw_line: ln #{ln}, curpos #{curpos}"
     if ln == @curpos
       super ln, Opts.new({:highlight => true,
 			  :debug => opts.bool(:debug) || false,
@@ -82,7 +63,7 @@ class LineCursorMode < ScrollMode
   protected def set_cursor_pos(p)
     return if @curpos == p || p.nil?
     @curpos = p.clamp @cursor_top, lines
-    #STDERR.puts "set_cursor_pos @curpos=#{@curpos}"
+    #STDERR.puts "LineCursorMode: set_cursor_pos @curpos=#{@curpos}"
     buffer.mark_dirty if buffer # not sure why the buffer is gone
     set_status
   end
@@ -99,21 +80,34 @@ class LineCursorMode < ScrollMode
     set_cursor_pos line
   end
 
+  # ThreadIndexMode subclasses can override this method to load more lines.
+  def load_more_threads(*args)
+  end
+
   protected def search_start_line; @curpos end
 
-  protected def line_down(*args) # overwrite scrollmode
+  def line_down(*args) # overwrite scrollmode
     super
     #call_load_more_callbacks([topline + buffer.content_height - lines, 10].max) if topline + buffer.content_height > lines
+    #STDERR.puts "LineCursorMode: line_down: topline #{topline}, content_height #{buffer.content_height}, lines #{lines}"
+    if topline + buffer.content_height > lines
+      load_more_threads([topline + buffer.content_height - lines, 10].max)
+    end
     set_cursor_pos topline if @curpos < topline
   end
 
-  protected def line_up(*args) # overwrite scrollmode
+  def line_up(*args) # overwrite scrollmode
     super
+    #STDERR.puts "LineCursorMode: line_up"
     set_cursor_pos botline - 1 if @curpos > botline - 1
   end
 
-  protected def cursor_down(*args)
+  def cursor_down(*args)
+    #STDERR.puts "LineCursorMode: cursor_down: @curpos #{@curpos}, lines #{lines}"
     #call_load_more_callbacks buffer.content_height if @curpos >= lines - [buffer.content_height/2,1].max
+    if @curpos + 1 >= lines
+      load_more_threads(buffer.content_height)
+    end
     return false unless @curpos < lines - 1
 
     if Config.bool(:continuous_scroll) && (@curpos == botline - 3 && @curpos < lines - 3)
@@ -141,7 +135,8 @@ class LineCursorMode < ScrollMode
     true
   end
 
-  protected def cursor_up(*args)
+  def cursor_up(*args)
+    #STDERR.puts "LineCursorMode: cursor_up"
     return false unless @curpos > @cursor_top
 
     if Config.bool(:continuous_scroll) && (@curpos == topline + 2)
@@ -169,7 +164,8 @@ class LineCursorMode < ScrollMode
     true
   end
 
-  protected def page_up # overwrite
+  def page_up(*args) # overwrite
+    #STDERR.puts "LineCursorMode: page_up"
     if topline <= @cursor_top
       set_cursor_pos @cursor_top
     else
@@ -180,7 +176,8 @@ class LineCursorMode < ScrollMode
   end
 
   ## more complicated than one might think. three behaviors.
-  protected def page_down
+  def page_down(*args)
+    #STDERR.puts "LineCursorMode: page_down"
     ## if we're on the last page, and it's not a full page, just move
     ## the cursor down to the bottom and assume we can't load anything
     ## else via the callbacks.
@@ -191,6 +188,7 @@ class LineCursorMode < ScrollMode
     ## more lines via the callbacks and then shift the page down
     elsif topline == lines - buffer.content_height
       #call_load_more_callbacks buffer.content_height
+      load_more_threads(buffer.content_height)
       super
 
     ## otherwise, just move down
@@ -201,12 +199,13 @@ class LineCursorMode < ScrollMode
     end
   end
 
-  protected def jump_to_start
+  def jump_to_start(*args)
     super
     set_cursor_pos @cursor_top
   end
 
-  protected def jump_to_end
+  def jump_to_end(*args)
+    #STDERR.puts "LineCursorMode: jump_to_end"
     super if topline < (lines - buffer.content_height)
     set_cursor_pos(lines - 1)
   end
@@ -220,11 +219,6 @@ class LineCursorMode < ScrollMode
     @status = l > 0 ? "line #{@curpos + 1} of #{l}" : ""
   end
 
-{% if false %}
-  def call_load_more_callbacks size
-    @load_more_q.push size if Config.bool(:load_more_threads_when_scrolling)
-  end
-{% end %}
+end	# LineCursorMode
 
-end
-end
+end	# Redwood
