@@ -15,6 +15,7 @@ lib LibNCurses
   fun COLOR_PAIR(LibC::Int) : LibC::Int
   fun attrset(LibC::Int) : LibC::Int
   fun clrtoeol : LibC::Int
+  fun timeout(LibC::Int) : LibC::Int
 end
 
 # Ruby ncurses class is called Ncurses (lower-case c)
@@ -90,6 +91,11 @@ module NCurses
   # Wrapper for `endwin`
   def endwin : LibC::Int
     LibNCurses.endwin
+  end
+
+  # Wrapper for `timeout`
+  def timeout(delay : LibC::Int) : LibC::Int
+    LibNCurses.timeout(delay)
   end
 
   A_NORMAL = 0
@@ -227,21 +233,32 @@ module NCurses
   #  alt-key;   M-<lowercase-key>
   #  ctrl-alt-key: C-M-<lowercase-key>
   #  function key: name of key ("F1", "End", "Insert", "PgDn", etc.)
-  def getkey(prefix = "") : String
-    result = LibNCurses.get_wch(out ch)
+  protected def do_getkey(prefix = "") : String
+    if (result = LibNCurses.get_wch(out ch)) == ERR
+      return "ERR"
+    end
     if result == Ncurses::KEY_CODE_YES
       return prefix + keyname(ch, true)
     else
       if ch == 0x1b
-	return getkey("M-")
+	return do_getkey("M-")
       elsif ch == 0x1c
-        return getkey("C-M")
+        return do_getkey("C-M")
       elsif ch == 0x1e
-        return getkey("C-")
+        return do_getkey("C-")
       else
 	return prefix + keyname(ch, false)
       end
     end
+  end
+
+  # Get a key, or return "ERR" if a timeout occurs.  `delay` specifies
+  # the timeout value in milliseconds, or -1 (default) to disable the timeout.
+  def getkey(delay = -1)
+    timeout(delay)
+    s = do_getkey
+    timeout(-1)
+    return s
   end
 
   class Window

@@ -50,9 +50,14 @@ module Redwood
     # the status is set as a result of calling draw_screen.  Hence,
     # we need to call it again at the beginning of the event loop.
     BufferManager.draw_screen
+
+    # Get the poll interval in seconds, and convert it to milliseconds.
+    poll_interval = Config.int(:poll_interval) * 1000
     while true
       BufferManager.draw_screen
-      ch = Ncurses.getkey
+      # Get a key with five minute timeout.  If the timeout occurs,
+      # ch will equal "ERR" and the poll command will run.
+      ch = Ncurses.getkey(poll_interval)
       BufferManager.erase_flash
       unless BufferManager.handle_input(ch)
 	action = BufferManager.resolve_input_with_keymap(ch, keymap)
@@ -75,14 +80,18 @@ class PollMode < Mode
   end
 
   def poll
-    # Run the before-poll hook and print any
+    # Run the before-poll hook, and display a flash showing whether it
+    # succeeded, along with whatever string it printed.
     result = ""
     success = HookManager.run("before-poll") do |pipe|
       pipe.receive do |f|
-	result = f.gets_to_end.split[0]
+	result = f.gets_to_end
       end
     end
-    if !success
+    #STDERR.puts "before-poll: success #{success}, result #{result}"
+    if success
+      BufferManager.flash result
+    else
       if result.size > 0
 	BufferManager.flash "before-poll hook failed: #{result}"
       else
@@ -90,8 +99,10 @@ class PollMode < Mode
       end
     end
 
-    # Get a list of threads that are new since that last time we polled,
-    # and relay the list to any waiting thread index modes.
+    # Ask notmuch to poll for new messages.  Then create
+    # a notmuch search term that will result in a list
+    # of threads that are new/updated since the last poll.
+    # Relay the search term to any waiting thread index modes.
     Notmuch.poll
     nowmod = Notmuch.lastmod
     #STDERR.puts "nowmod #{nowmod}, lastmod #{@notmuch_lastmod}"
@@ -178,7 +189,7 @@ def search
   #completions += Index::COMPL_PREFIXES
   #query = BufferManager.ask_many_with_completions :search, "Search all messages (enter for saved searches): ", completions
   query = BufferManager.ask :search, "Search all messages: "
-  STDERR.puts "about to spawn search results mode with '#{query}'"
+  #STDERR.puts "about to spawn search results mode with '#{query}'"
   unless query.nil?
     if query.empty?
       # bm.spawn_unless_exists("Saved searches") { SearchListMode.new }
@@ -223,7 +234,7 @@ def main
     k.add :list_buffers, "List all buffers", ';'
     k.add :redraw, "Redraw screen", "C-l"
     k.add :search, "Search all messages", '\\', 'F'
-    k.add :poll, "Poll for new messages", 'P'
+    k.add :poll, "Poll for new messages", 'P', "ERR"
   end
 
   # Interactive loop.

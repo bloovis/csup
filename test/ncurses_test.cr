@@ -2,13 +2,21 @@ require "../lib/ncurses/src/ncurses"
 
 require "../src/supcurses"
 
+# Get a key, or return "ERR" if a timeout occurs.  `delay` specifies
+# the timeout value in milliseconds, or -1 (default) to disable the timeout.
+#def getkey_timeout(delay = -1)
+#  Ncurses.timeout(delay)
+#  s = Ncurses.getkey
+#  Ncurses.timeout(-1)
+#  return s
+#end
+
 Ncurses.start
 Ncurses.cbreak
 Ncurses.no_echo
 Ncurses.keypad(true)	# Handle function keys and arrows
 Ncurses.raw
 Ncurses.nonl	# don't translate Enter to C-J on input
-
 Ncurses.start_color
 Ncurses.use_default_colors
 Ncurses.print "COLORS = #{LibNCurses.colors}\n"
@@ -41,8 +49,10 @@ w.mvaddstr(40, 0, "Test of attrset and mvaddstr.  This text should be blinking."
 w.attrset(Ncurses::A_NORMAL)
 w.noutrefresh
 Ncurses.print "\nPress any key to continue: "
-Ncurses.getkey
+#ch = getkey_timeout
+ch = Ncurses.getkey
 Ncurses.clear
+Ncurses.print "Got #{ch}\n"
 
 #while true
 #  result = LibNCurses.get_wch(out ch)
@@ -51,12 +61,15 @@ Ncurses.clear
 #  break if ch.chr == 'q'
 #end
 
+timeout = 5000	# 5 seconds
 while true
-  Ncurses.print "Press any key, or q to exit: "
-  ch = Ncurses.getkey
+  Ncurses.print "Press any key, or t to disable timeout, or q to exit: "
+  ch = Ncurses.getkey(timeout)
+  #ch = getkey_timeout(timeout)
   Ncurses.clear
   Ncurses.print "Got #{ch}\n"
   break if ch == "q"
+  timeout = -1 if ch == "t"
 end
 
 Ncurses.end
