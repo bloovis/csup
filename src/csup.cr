@@ -67,6 +67,44 @@ module Redwood
 
 {% if flag?(:MAIN) %}
 
+# Dummy poll mode that exists only for the ability to call UpdateManager.relay
+# after polling.
+class PollMode < Mode
+  def initialize
+    @notmuch_lastmod = Notmuch.lastmod
+  end
+
+  def poll
+    # Run the before-poll hook and print any
+    result = ""
+    success = HookManager.run("before-poll") do |pipe|
+      pipe.receive do |f|
+	result = f.gets_to_end.split[0]
+      end
+    end
+    if !success
+      if result.size > 0
+	BufferManager.flash "before-poll hook failed: #{result}"
+      else
+	BufferManager.flash "before-pool hook failed"
+      end
+    end
+
+    # Get a list of threads that are new since that last time we polled,
+    # and relay the list to any waiting thread index modes.
+    Notmuch.poll
+    nowmod = Notmuch.lastmod
+    #STDERR.puts "nowmod #{nowmod}, lastmod #{@notmuch_lastmod}"
+    return if nowmod == @notmuch_lastmod
+    search_terms = "lastmod:#{@notmuch_lastmod}..#{nowmod}"
+    @notmuch_lastmod = nowmod
+    UpdateManager.relay self, :poll, search_terms
+  end
+end
+
+# Functions required by main.  We have to use `extend self` to overcome
+# namespace problems with the `actions` macro.
+
 extend self
 
 def finish
@@ -89,8 +127,9 @@ def finish
   end
 end
 
+# Commands
 actions quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards,
-        list_buffers, redraw, search
+        list_buffers, redraw, search, poll
 
 def quit_now
   #BufferManager.say "This is the global quit command."
@@ -149,11 +188,19 @@ def search
   end
 end
 
+def poll
+  if poll_mode = @@poll_mode
+    poll_mode.poll
+  end
+end
+
+# Main program
 def main
   init_managers
 
   start_cursing
 
+  @@poll_mode = PollMode.new
   lmode = Redwood::LogMode.new "system log"
   lmode.on_kill { Logger.clear! }
   Logger.add_sink lmode
@@ -176,6 +223,7 @@ def main
     k.add :list_buffers, "List all buffers", ';'
     k.add :redraw, "Redraw screen", "C-l"
     k.add :search, "Search all messages", '\\', 'F'
+    k.add :poll, "Poll for new messages", 'P'
   end
 
   # Interactive loop.

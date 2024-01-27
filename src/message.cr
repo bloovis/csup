@@ -489,6 +489,7 @@ class MsgThread
     set_msg_threads_and_size
   end
 
+  # Set the thread for each message in the tree, and update the thread size.
   def set_msg_threads_and_size
     return unless m = @msg
     @size = 0
@@ -512,6 +513,12 @@ class MsgThread
 	#end
       end
     end
+    set_msg_threads_and_size
+  end
+
+  # Replace the top level message with the specified message.
+  def set_msg(m : Message)
+    @msg = m
     set_msg_threads_and_size
   end
 

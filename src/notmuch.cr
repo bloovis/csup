@@ -15,7 +15,7 @@ module Notmuch
 
   # low-level
 
-  def lastmod
+  def lastmod : Int32
     Pipe.run("notmuch", ["count", "--lastmod"]).split.last.to_i
   end
 
