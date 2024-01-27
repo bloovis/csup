@@ -23,7 +23,9 @@ class Opts
     @entries.merge!(h)
   end
 
-  # Methods for retrieving entries as specific types.
+  # For each possible entry type (other than JSON::Any):
+  # - define a get_{type} method that retrieves an entry of that type
+  # - define a delete_{type} method that deletes an entry of that type
   macro get(name, type)
     def {{name}}(key : Symbol) : {{type}}?
       if @entries.has_key?(key)
