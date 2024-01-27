@@ -8,16 +8,16 @@ require "./thread_view_mode"
 module Redwood
 
 class ThreadIndexMode < LineCursorMode
-  mode_class load_threads, toggle_archived, multi_toggle_archived,
+  mode_class load_more_threads, toggle_archived, multi_toggle_archived,
 	     toggle_tagged, multi_toggle_tagged, apply_to_tagged,
-	     handle_deleted_update, handle_undeleted_update,
+	     handle_deleted_update, handle_undeleted_update, handle_poll_update,
 	     undo
 
   MIN_FROM_WIDTH = 15
   LOAD_MORE_THREAD_NUM = 20
 
   register_keymap do |k|
-    k.add :load_threads, "Load #{LOAD_MORE_THREAD_NUM} more threads", 'M'
+    k.add :load_more_threads, "Load #{LOAD_MORE_THREAD_NUM} more threads", 'M'
     k.add :toggle_archived, "Toggle archived status", 'a'
     k.add :toggle_tagged, "Tag/untag selected thread", 't'
     k.add :apply_to_tagged, "Apply next command to all tagged threads", '+', '='
@@ -28,6 +28,7 @@ class ThreadIndexMode < LineCursorMode
   @lines = Hash(MsgThread, Int32).new
   @threads = Array(MsgThread).new
   @query = ""
+  @translated_query = ""
   @ts : ThreadList?
   @size_widgets = Array(String).new
   @date_widgets = Array(String).new
@@ -51,6 +52,7 @@ class ThreadIndexMode < LineCursorMode
   def initialize(@query : String, hidden_labels = [] of Symbol)
     super()
     translated_query = Notmuch.translate_query(@query)
+    @translated_query = translated_query
     @tags = Tagger(MsgThread).new
     @tags.setmode(self)
     @hidden_labels = LabelManager::HIDDEN_RESERVED_LABELS +
@@ -75,9 +77,11 @@ class ThreadIndexMode < LineCursorMode
   # both refer to the same Notmuch thread.  So we have to find a matching thread
   # based on the sent thread's top message's ID.
   def get_update_thread(*args) : MsgThread?
-    t : MsgThread? = args[1]?
-    if t && (ts = @ts) && (t = ts.find_thread(t))
-      return t
+    t = args[1]?
+    if t && t.is_a?(MsgThread)
+      if (ts = @ts) && (t = ts.find_thread(t))
+        return t
+      end
     end
   end
 
@@ -93,6 +97,39 @@ class ThreadIndexMode < LineCursorMode
     t = get_update_thread(*args)
     if t
       add_or_unhide t
+    end
+  end
+
+  # This is called after a notmuch poll.  It is passed a notmuch search term
+  # that looks like "lastmod:X..Y", which, when added to the existing query,
+  # should result in a list of threads that are new/changed since the last poll.
+  def handle_poll_update(*args)
+    #STDERR.puts "handle_poll_update started"
+    arg = args[1]?
+    if arg && arg.is_a?(String) && (ts = @ts)
+      # arg is a search term like "(lastmod:X..Y)"
+      #STDERR.puts "handle_poll_update: search terms #{arg}, translated query #{@translated_query}"
+
+      # Get the list of updated threads.
+      query = "(#{@translated_query}) and (#{arg})"
+      new_ts = ThreadList.new(query, offset: 0, limit: 100)
+
+      # If any of the updated threads are already in the existing thread list,
+      # replace their top-level messages.  Otherwise add the updated thread
+      # to the existing thread list.
+      new_ts.threads.each do |thread|
+        if t = ts.find_thread(thread)
+	  if msg = thread.msg
+	    t.set_msg(msg)
+	  end
+	else
+	  ts.threads << thread
+	end
+      end
+
+      n = new_ts.threads.size
+      BufferManager.flash "#{n.pluralize "thread"} updated"
+      update
     end
   end
 
@@ -339,15 +376,13 @@ class ThreadIndexMode < LineCursorMode
 
   # Commands
 
-  def load_threads(*args)
-    offset = @threads.size
-    limit = ThreadIndexMode::LOAD_MORE_THREAD_NUM
-    translated_query = Notmuch.translate_query(@query)
-    new_ts = ThreadList.new(translated_query, offset: offset, limit: limit)
-    if ts = @ts
-      ts.threads = ts.threads + new_ts.threads
+  def load_more_threads(*args)
+    offset = 0
+    limit = @threads.size + ThreadIndexMode::LOAD_MORE_THREAD_NUM
+    if translated_query = @translated_query
+      @ts = ThreadList.new(translated_query, offset: offset, limit: limit)
+      update
     end
-    update
   end
 
   def undo(*args)
