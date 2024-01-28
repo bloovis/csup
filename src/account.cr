@@ -9,14 +9,24 @@ class Account < Person
   property sendmail : String
   property signature : String
   property gpgkey : String
+  property smtp_server : String
+  property smtp_port : Int32
+  property smtp_password : String
 
   def initialize(h : Config::Account)
-    raise ArgumentError.new("no name for account") unless h["name"]
-    raise ArgumentError.new("no email for account") unless h["email"]
+    raise ArgumentError.new("no name for account") unless h["name"]?
+    raise ArgumentError.new("no email for account") unless h["email"]?
     super h["name"], h["email"]
-    @sendmail = h["sendmail"]
-    @signature = h["signature"]
-    @gpgkey = h["gpgkey"]
+    @sendmail = h["sendmail"]? || ""		# not used, but here for Sup compatibility
+    @signature = h["signature"]? || ""
+    @gpgkey = h["gpgkey"]? || ""
+    @smtp_server = h["smtp_server"]? || ""
+    if port = h["smtp_port"]?
+      @smtp_port = port.to_i
+    else
+      @smtp_port = 0
+    end
+    @smtp_password = h["smtp_password"]? || ""
   end
 
   # Default sendmail command for bouncing mail,
