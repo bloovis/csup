@@ -206,10 +206,10 @@ class BufferManager
 	end
 	m.handle_input(c)
       else
-	puts "Buffer has no mode!"
+	STDERR.puts "Buffer has no mode!"
       end
     else
-      puts "BufferManager.handle_input: no focus_buf!"
+      STDERR.puts "BufferManager.handle_input: no focus_buf!"
     end
   end
   singleton_method handle_input, c

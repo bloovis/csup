@@ -5,7 +5,7 @@ require "file_utils"
 
 class Object
   def send(action : String | Symbol)
-    puts "Object can't send #{action}!"
+    STDERR.puts "Object can't send #{action}!"
   end
 end
 

@@ -13,6 +13,7 @@ require "./logger"
 require "./modes/inbox_mode"
 require "./modes/buffer_list_mode"
 require "./modes/search_results_mode"
+require "./modes/search_list_mode"
 
 module Redwood
   BASE_DIR = File.join(ENV["HOME"], ".csup")
@@ -192,7 +193,7 @@ def search
   #STDERR.puts "about to spawn search results mode with '#{query}'"
   unless query.nil?
     if query.empty?
-      # bm.spawn_unless_exists("Saved searches") { SearchListMode.new }
+      BufferManager.spawn_unless_exists("Saved searches") { SearchListMode.new }
     else
       SearchResultsMode.spawn_from_query query
     end

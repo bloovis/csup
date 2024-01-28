@@ -35,7 +35,7 @@ class UpdateManager
   singleton_method register, o
 
   def unregister(o)
-    puts "UpdateManager.unregister: classname #{o.class.name}"
+    #STDERR.puts "UpdateManager.unregister: classname #{o.class.name}"
     @targets.delete(o)
   end
   singleton_method unregister, o

@@ -173,7 +173,7 @@ class Config
     begin
       File.open(@filename, "w") { |f| @entries.to_yaml(f) }
     rescue
-      puts "Unable to save config to #{@filename}!"
+      STDERR.puts "Unable to save config to #{@filename}!"
     end
   end
 
