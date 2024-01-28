@@ -13,13 +13,18 @@ date_rfc2822 = "<#{Time::Format::RFC_2822.format(now)}>"
 
 from = answer("Enter From: address")
 to = answer("Enter To: address")
+subject = answer("Enter subject")
+if subject == ""
+  subject = "No Subject"
+end
 attachment = answer("Enter filename of attachment")
 
 # Create email message
+puts "Creating email: from #{from}, to #{to}, subject #{subject}, id #{message_id}, date #{date_rfc2822}"
 email = EMail::Message.new
 email.from    from
 email.to      to
-email.subject "Subject of the mail"
+email.subject subject
 email.message_id(message_id)
 email.date(now)
 #email.custom_header("In-reply-to", in_reply_to)
@@ -43,10 +48,18 @@ email.to_s(STDOUT)
 print "\n\n"
 mx = answer("Enter smtp server")
 port = answer("Enter smtp port").to_i
-domain = answer("Enter domain")
+
+# Get the domain from the "from" address, and if that fails, use "localhost".
+if from =~ /.*@(.*)$/
+  domain = $1
+else
+  domain = "localhost"
+end
+
 user = answer("Enter user name")
 password = answer("Enter password")
 
+puts "Sending: user #{user}, password #{password}, #{mx} mx, port #{port}, domain #{domain}"
 config = EMail::Client::Config.new(mx, port, helo_domain: domain)
 config.use_auth(user, password)
 config.use_tls(EMail::Client::TLSMode::SMTPS)
