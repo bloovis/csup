@@ -483,19 +483,10 @@ class MsgThread
     #STDERR.puts "MsgThread #{json}"
     msglist = json.as_a	# There always seems to be only one message in the array
     m = Message.new(msglist[0])
-    @msg = m
     @dirty_labels = false
-    @subj = m.subj if m
-    set_msg_threads_and_size
-  end
-
-  # Set the thread for each message in the tree, and update the thread size.
-  def set_msg_threads_and_size
-    return unless m = @msg
-    @size = 0
-    m.walktree do |msg, depth|
-      msg.thread = self
-      @size += 1
+    if m
+      @subj = m.subj
+      set_msg(m)
     end
   end
 
@@ -506,20 +497,22 @@ class MsgThread
     return unless m = @msg
     ts = ThreadList.new("id:#{m.id}", offset: 0, limit: 1, body: true)
     if ts
-      if thread = ts.threads[0]?
-	@msg = thread.msg
-	#if m = @msg
-	#  STDERR.puts "new message snippet = #{m.snippet}"
-	#end
+      if (thread = ts.threads[0]?) && (m = thread.msg)
+	set_msg(m)
       end
     end
-    set_msg_threads_and_size
   end
 
   # Replace the top level message with the specified message.
+  # Then set the thread for each message in the tree, and update
+  # the thread size.
   def set_msg(m : Message)
     @msg = m
-    set_msg_threads_and_size
+    @size = 0
+    m.walktree do |msg, depth|
+      msg.thread = self
+      @size += 1
+    end
   end
 
   def to_s : String	# for creating debug messages

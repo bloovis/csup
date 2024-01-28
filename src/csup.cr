@@ -189,7 +189,7 @@ def search
   #completions = completions.each { |l| l.fix_encoding! }
   #completions += Index::COMPL_PREFIXES
   #query = BufferManager.ask_many_with_completions :search, "Search all messages (enter for saved searches): ", completions
-  query = BufferManager.ask :search, "Search all messages: "
+  query = BufferManager.ask :search, "Search all messages (enter for saved searches): "
   #STDERR.puts "about to spawn search results mode with '#{query}'"
   unless query.nil?
     if query.empty?
