@@ -26,11 +26,14 @@ test "example #4 from RFC-2047",
      "=?ISO-8859-1?Q?Andr=E9?= Pirard <PIRARD@vm1.ulg.ac.be>",
      "André Pirard <PIRARD@vm1.ulg.ac.be>"
 
-# The following example was taken from:
+# The following examples were taken from:
 # https://shallowsky.com/blog/programming/decoding-email-headers.html
-test "spammer example",
+test "spammer example #1",
      "Subject: =?utf-8?B?U3RvcCBPdmVycGF5aW5nIGZvciBQcmludGVyIEluaw==?=",
      "Subject: Stop Overpaying for Printer Ink"
+test "spammer example #2",
+     "=?windows-1252?Q?Earn_your_degree_=97_on_your_time?=",
+     "Earn your degree — on your time"
 
 # The following examples were taken from:
 # https://search.r-project.org/CRAN/refmans/mRpostman/html/decode_mime_header.html
