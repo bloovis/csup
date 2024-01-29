@@ -35,6 +35,7 @@ time_test : test/time_test.cr src/time.cr
 string_test : test/string_test.cr src/unicode.cr src/util.cr
 label_test : test/label_test.cr src/label.cr
 person_test : test/person_test.cr src/person.cr
+
 notmuch_save_part : test/notmuch_save_part.cr src/notmuch.cr
 notmuch_view_part : test/notmuch_view_part.cr src/notmuch.cr
 
@@ -45,6 +46,7 @@ thread_index_mode_test : test/thread_index_mode_test.cr src/modes/thread_index_m
 			 src/modes/thread_view_mode.cr
 inbox_mode_test : test/inbox_mode_test.cr src/modes/thread_index_mode.cr src/buffer.cr \
 			 src/modes/thread_view_mode.cr src/modes/inbox_mode.cr
+hs_test : test/hs_test.cr src/horizontal_selector.cr src/modes/scroll_mode.cr
 
 test : src/test.cr src/notmuch.cr
 	crystal build --no-color --error-trace src/test.cr

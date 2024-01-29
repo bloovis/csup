@@ -4,6 +4,7 @@ require "../mode"
 require "../config"
 require "../supcurses"
 require "../opts"
+require "../widget"
 
 module Redwood
 
@@ -12,11 +13,6 @@ class ScrollMode < Mode
 	     page_up, half_page_down, half_page_up, jump_to_start,
 	     jump_to_end, jump_to_left, search_in_buffer,
 	     continue_search_in_buffer
-
-  alias Widget = Tuple(Symbol, String)       # {color, text}
-  alias WidgetArray = Array(Widget)
-  alias Text = WidgetArray | String
-  alias TextLines = Array(Text)
 
   ## we define topline and botline as the top and bottom lines of any
   ## content in the currentview.

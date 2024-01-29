@@ -423,8 +423,9 @@ class BufferManager
   singleton_method ask_for_filename, domain, question, default, allow_directory
 
   def resolve_input_with_keymap(c : String, keymap : Keymap) : Symbol | Nil
-    #puts "resolve_input_with_keymap: c #{c}, keymap #{keymap.object_id}"
+    #STDERR.puts "resolve_input_with_keymap: c #{c}, keymap #{keymap.object_id}"
     action, text = keymap.action_for c
+    #STDERR.puts "resolve_input_with_keymap: action for c is #{action}"
     return nil if action.nil? || text.nil?
     while action.is_a? Keymap # multi-key commands, prompt
       key = BufferManager.ask_getch(text || "")

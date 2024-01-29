@@ -149,7 +149,9 @@ class Mode
 
   def resolve_input (c : String) : Symbol | Nil
     ancestors.each do |classname|
+      #STDERR.puts "Checking if #{classname} has a keymap"
       next unless Redwood.keymaps.has_key?(classname)
+      #STDERR.puts "Yes, #{classname} has a keymap"
       action = BufferManager.resolve_input_with_keymap(c, Redwood.keymaps[classname])
       return action if action
     end

@@ -15,7 +15,7 @@ class StupidMode < ScrollMode
   end
 
   def [](n) : Text
-    l = ColoredLine.new
+    l = WidgetArray.new
     l << {:text_color, "This is " }	# This part should be normal color
     l << {:to_me_color, "line #{n+1}."}	# This part should be green
     l
@@ -26,7 +26,7 @@ class StupidMode < ScrollMode
     puts "Initializing StupidMode object #{object_id}"
   end
 
-  def help
+  def help(*args)
     BufferManager.flash "This is the help command."
     #puts "This is the help command."
   end
