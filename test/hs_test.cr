@@ -39,7 +39,7 @@ class StupidMode < ScrollMode
 
   def initialize(opts = Opts.new)
     super(opts)
-    #puts "Initializing StupidMode object #{object_id}"
+    #STDERR.puts "Initializing StupidMode object #{object_id}"
     @selector = HorizontalSelector.new(
 	"Stupid:",
 	["1", "2", "3"],
@@ -49,14 +49,14 @@ class StupidMode < ScrollMode
 
   def left(*args)
     @selector.roll_left
-    STDERR.puts "left: selector val = #{@selector.val}"
+    #STDERR.puts "left: selector val = #{@selector.val}"
     update
     buffer.mark_dirty
   end
 
   def right(*args)
     @selector.roll_right
-    STDERR.puts "right: selector val = #{@selector.val}"
+    #STDERR.puts "right: selector val = #{@selector.val}"
     update
     buffer.mark_dirty
   end

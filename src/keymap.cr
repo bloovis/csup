@@ -22,6 +22,9 @@ class Keymap
       raise ArgumentError.new("key '#{k}' already defined (as #{@map[k].first})") if @map.includes? k
       @map[k] = entry
     end
+    if keys.size == 0
+      raise "Key list for action #{action} is empty!"
+    end
     #puts "Added keys #{keynames}, description #{description}, action #{action}, keymap #{self.object_id}, action map #{@map}"
   end
 
