@@ -35,7 +35,7 @@ class HorizontalSelector
   def line(width=nil) : WidgetArray
     label =
       if width
-        sprintf (" " * width) + @label
+        (" " * width) + @label
       else
         "#{@label} "
       end
