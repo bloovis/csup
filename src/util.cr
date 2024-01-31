@@ -229,6 +229,14 @@ class SparseArray(T) < Array(T?)
   end
 end
 
+# Define File.mtime for Sup compatibility
+
+class File
+  def self.mtime(fname : String) : Time
+    File.info(fname).modification_time
+  end
+end
+
 # Macros for defining boolean instance variables that can be accessed
 # using names ending with a '?'.
 

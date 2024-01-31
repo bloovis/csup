@@ -147,6 +147,8 @@ class AccountManager
   end
   singleton_method full_address_for, email
 
+  singleton_method default_account
+
 end	# AccountManager
 
 end	# Redwood

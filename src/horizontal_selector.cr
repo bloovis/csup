@@ -22,12 +22,15 @@ class HorizontalSelector
   end
 
   def set_to(val)
-    raise UnknownValue.new(val.inspect) unless can_set_to? val
-    @selection = @vals.index(val)
+    if i = @vals.index(val)
+      @selection = i
+    else
+      raise UnknownValue.new(val.inspect)
+    end
   end
 
   def can_set_to?(val)
-    !@vals.index?(val).nil?
+    !@vals.index(val).nil?
   end
 
   def val; @vals[@selection] end

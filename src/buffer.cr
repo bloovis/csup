@@ -277,6 +277,7 @@ class BufferManager
     return ask(domain, question, default) || ""
 {% end %}
   end
+  singleton_method ask_many_emails_with_completions, domain, question, completions, default
 
   # Ask for contact names, return an array of email addresses, one for each contact.
   # If a name doesn't have a contact, it is assumed to be an email address and
@@ -292,9 +293,8 @@ class BufferManager
 
     completions = (recent + contacts).flatten.uniq
     completions += HookManager.run("extra-contact-addresses") || []
-{% else %}
-    completions = Array(String).new
 {% end %}
+    completions = Array(String).new
 
     email_list = Array(String).new
     answer = BufferManager.ask_many_emails_with_completions(domain, question, completions, default)
@@ -307,6 +307,18 @@ class BufferManager
     end
     return email_list
   end
+  singleton_method ask_for_contacts, domain, question, default
+
+  def ask_for_account(domain : Symbol, question : String) : String
+    #completions = AccountManager.user_emails
+    completions = Array(String).new
+    answer = BufferManager.ask_many_emails_with_completions domain, question, completions, ""
+    if answer == "" && (acct = AccountManager.default_account)
+      answer = acct.email
+    end
+    return answer
+  end
+  singleton_method ask_for_account, domain, question
 
   ## for simplicitly, we always place the question at the very bottom of the
   ## screen.
@@ -734,6 +746,27 @@ class BufferManager
     @focus_buf
   end
   singleton_method focus_buf
+
+  def shell_out(command : String, is_gui=false)
+    debug "shell out #{command}"
+    success = false
+    if is_gui
+      # no need to save and restore ncurses state
+      success = system command
+    else
+      @shelled = true
+      #Ncurses.sync do
+        Ncurses.endwin
+        success = system command
+        Ncurses.stdscr.keypad true
+        Ncurses.refresh
+        Ncurses.curs_set 0
+      #end
+      @shelled = false
+    end
+    success
+  end
+  singleton_method shell_out, command, is_gui
 
 end
 

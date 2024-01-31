@@ -7,16 +7,32 @@ module Redwood
 class ComposeMode < EditMessageMode
   def initialize(opts = Opts.new)
     header = Hash(String, String).new
-    header["From"] = (opts.str(:from) || AccountManager.default_account).full_address
+    unless from = opts.str(:from)
+      if acct = AccountManager.default_account
+	from = acct.full_address
+      end
+    end
+    return unless from
+    header["From"] = from
 
-    # FIXME: These multi-address options should be String arrays, not Person arrays!
-    header["To"] = opts.strarray(:to).join(", ") if opts.member?(:to)
-    header["Cc"] = opts.strarray(:cc).join(", ") if opts.member?(:cc)
-    header["Bcc"] = opts.strarray(:bcc).join(", ") if opts.member?(:bcc)
-
-    header["Subject"] = opts.str(:subj) if opts.member?(:subj)
-    header["References"] = opts.strarray(:refs).map { |r| "<#{r}>" }.join(" ") if opts.member?(:refs)
-    header["In-Reply-To"] = opts.strarray(:replytos).map { |r| "<#{r}>" }.join(" ") if opts.member?(:replytos)
+    if to = opts.strarray(:to)
+      header["To"] = to.join(", ")
+    end
+    if cc = opts.strarray(:cc)
+      header["Cc"] = cc.join(", ")
+    end
+    if bcc = opts.strarray(:bcc)
+      header["Bcc"] = bcc.join(", ")
+    end
+    if subj = opts.str(:subj)
+      header["Subject"] = subj
+    end
+    if refs = opts.strarray(:refs)
+      header["References"] = refs.map { |r| "<#{r}>" }.join(" ")
+    end
+    if replytos = opts.strarray(:replytos)
+      header["In-Reply-To"] = replytos.map { |r| "<#{r}>" }.join(" ")
+    end
 
     newopts = Opts.new
     newopts[:header] = header
@@ -35,40 +51,44 @@ class ComposeMode < EditMessageMode
 
     unless from = opts.str(:from)
       if Config.bool(:ask_for_from)
-        return unless from = BufferManager.ask_for_account(:account, "From (default #{AccountManager.default_account.email}): ")
+	if acct = AccountManager.default_account
+	  default_email = acct.email
+	  question = "From (default #{default_email}): "
+	else
+	  question = "From: "
+	end
+       from = BufferManager.ask_for_account(:account, question)
       end
     end
+    return unless from
     newopts[:to] = from
 
     unless to = opts.strarray(:to)
       if Config.bool(:ask_for_to)
 	# FIXME - must convert list of Persons to their email addresses, and opts[:to_default]
 	# must be an email address, not a person (see ThreadViewMode.compose).
-        if people = BufferManager.ask_for_contacts(:people, "To: ", opts.str(:to_default) || "")
-	  to = people.map {|p| p.full_address}
-	else
-	  return
-	end
+        to = BufferManager.ask_for_contacts(:people, "To: ", opts.str(:to_default) || "")
       end
     end
+    return unless to
     newopts[:to] = to
 
     if Config.bool(:ask_for_cc)
       # opts[:ccc] is never used.
       return unless cc = BufferManager.ask_for_contacts(:people, "Cc: ")
     end
-    newopts[:cc] = cc
+    newopts[:cc] = cc if cc
 
     if Config.bool(:ask_for_bcc)
       # opts[:bcc] is never used.
       return unless bcc = BufferManager.ask_for_contacts(:people, "Bcc: ")
     end
-    newopts[:bcc] = bcc
+    newopts[:bcc] = bcc if bcc
 
     if Config.bool(:ask_for_subject)
       return unless subj = (opts.str(:subj) || BufferManager.ask(:subject, "Subject: "))
     end
-    newopts[:subj] = subj
+    newopts[:subj] = subj if subj
 
     mode = ComposeMode.new(newopts)
     BufferManager.spawn "New Message", mode

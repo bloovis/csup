@@ -69,7 +69,7 @@ class ContactManager
 
   # Return the email for given alias, or nil if not found.
   def email_for(aalias)
-    if p = @a2p[person]?
+    if p = @a2p[aalias]?
       return p.full_address
     else
       return nil
