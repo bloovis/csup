@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Csup calls this hook before calling `notmuch new` to poll for new messages.
+# This would be a good place to put some code to fetch mail, e.g. using fetchmail.
+# Output a single line of text giving the status of hook.
+echo "Fetchmail succeeded"
