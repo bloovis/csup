@@ -258,6 +258,55 @@ class BufferManager
   end
   singleton_method kill_buffer, buf
 
+  def ask_many_emails_with_completions(domain : Symbol, question : String,
+			               completions : Array(String),
+				       default=nil) : String
+{% if false %}
+    # FIXME - use this code someday when completions work
+    ask domain, question, default do |partial|
+      prefix, target = partial.split_on_commas_with_remainder
+      target ||= prefix.pop || ""
+      target.fix_encoding!
+
+      prefix = prefix.join(", ") + (prefix.empty? ? "" : ", ")
+      prefix.fix_encoding!
+
+      completions.select { |x| x =~ /^#{Regexp::escape target}/iu }.sort_by { |c| [ContactManager.contact_for(c) ? 0 : 1, c] }.map { |x| [prefix + x, x] }
+    end
+{% else %}
+    return ask(domain, question, default) || ""
+{% end %}
+  end
+
+  # Ask for contact names, return an array of email addresses, one for each contact.
+  # If a name doesn't have a contact, it is assumed to be an email address and
+  # is returned unchanged.  Default, if present, is a string of comma-separated
+  # email addresses to use if the user enters nothing.
+  def ask_for_contacts(domain : Symbol, question : String, default = "") : Array(String)
+    default += " " unless default == ""
+
+{% if false %}
+    # Enable this code when completions are implemented.
+    recent = Notmuch.load_contacts(AccountManager.user_emails, 10).map { |c| [c.full_address, c.email] }
+    contacts = ContactManager.contacts.map { |c| [ContactManager.alias_for(c), c.full_address, c.email] }
+
+    completions = (recent + contacts).flatten.uniq
+    completions += HookManager.run("extra-contact-addresses") || []
+{% else %}
+    completions = Array(String).new
+{% end %}
+
+    email_list = Array(String).new
+    answer = BufferManager.ask_many_emails_with_completions(domain, question, completions, default)
+    if answer && answer.size > 0
+      answer.split_on_commas.each do |x|
+        if email = (ContactManager.email_for(x) || x)
+	  email_list << email
+	end
+      end
+    end
+    return email_list
+  end
 
   ## for simplicitly, we always place the question at the very bottom of the
   ## screen.

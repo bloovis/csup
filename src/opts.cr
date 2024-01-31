@@ -24,7 +24,8 @@ class Opts
   end
 
   # For each possible entry type (other than JSON::Any):
-  # - define a method that retrieves an entry of a specific type
+  # - define a method that retrieves an entry of a specific type, or nil if there
+  #   is no entry with the specified key.
   # - define a delete_ method that deletes an entry of specific type
   macro get(name, type)
     def {{name}}(key : Symbol) : {{type}}?

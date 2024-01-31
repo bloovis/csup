@@ -55,15 +55,27 @@ class ContactManager
   end
   singleton_method update_alias, person, aalias
 
+  # Return the Person for the given alias, or nil if not found.
   def contact_for(aalias)
     @a2p[aalias]?
   end
   singleton_method contact_for, aalias
 
+  # Return the alias for given Person, or nil if not found.
   def alias_for(person)
     @p2a[person]?
   end
   singleton_method alias_for, person
+
+  # Return the email for given alias, or nil if not found.
+  def email_for(aalias)
+    if p = @a2p[person]?
+      return p.full_address
+    else
+      return nil
+    end
+  end
+  singleton_method email_for, aalias
 
   def person_for(email)
     @e2p[email]?
