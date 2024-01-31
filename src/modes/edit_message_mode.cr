@@ -2,12 +2,14 @@ require "./line_cursor_mode"
 require "../horizontal_selector"
 require "../shellwords"
 require "../rfc2047"
+require "../opts"
 
 module Redwood
 
 class EditMessageMode < LineCursorMode
-  mode_class send_message #, edit_message_or_field, edit_to, edit_cc,
-	     #edit_subject, default_edit_message, alternate_edit_message,
+  mode_class send_message, default_edit_message #,
+	     #edit_message_or_field, edit_to, edit_cc,
+	     #edit_subject,  alternate_edit_message,
 	     #save_as_draft, attach_file, delete_attachment,
 	     #move_cursor_right, move_cursor_left
 
@@ -16,8 +18,6 @@ class EditMessageMode < LineCursorMode
   FORCE_HEADERS = %w(From To Cc Bcc Subject)
   MULTI_HEADERS = %w(To Cc Bcc)
   NON_EDITABLE_HEADERS = %w(Message-Id Date)
-
-  alias HeaderHash = Hash(String, String | Array(String))
 
   property body = Array(String).new
   property header = HeaderHash.new
@@ -30,17 +30,17 @@ class EditMessageMode < LineCursorMode
 
   register_keymap do |k|
     k.add :send_message, "Send message", 'y'
-    k.add :edit_message_or_field, "Edit selected field", 'e'
-    k.add :edit_to, "Edit To:", 't'
-    k.add :edit_cc, "Edit Cc:", 'c'
-    k.add :edit_subject, "Edit Subject", 's'
-    k.add :default_edit_message, "Edit message (default)", :enter
-    k.add :alternate_edit_message, "Edit message (alternate, asynchronously)", 'E'
-    k.add :save_as_draft, "Save as draft", 'P'
-    k.add :attach_file, "Attach a file", 'a'
-    k.add :delete_attachment, "Delete an attachment", 'd'
-    k.add :move_cursor_right, "Move selector to the right", :right, 'l'
-    k.add :move_cursor_left, "Move selector to the left", :left, 'h'
+    #k.add :edit_message_or_field, "Edit selected field", 'e'
+    #k.add :edit_to, "Edit To:", 't'
+    #k.add :edit_cc, "Edit Cc:", 'c'
+    #k.add :edit_subject, "Edit Subject", 's'
+    k.add :default_edit_message, "Edit message (default)", "C-m"
+    #k.add :alternate_edit_message, "Edit message (alternate, asynchronously)", 'E'
+    #k.add :save_as_draft, "Save as draft", 'P'
+    #k.add :attach_file, "Attach a file", 'a'
+    #k.add :delete_attachment, "Delete an attachment", 'd'
+    #k.add :move_cursor_right, "Move selector to the right", "Right", 'l'
+    #k.add :move_cursor_left, "Move selector to the left", "Left", 'h'
   end
 
   def initialize(opts = Opts.new)
@@ -136,7 +136,10 @@ class EditMessageMode < LineCursorMode
     @text = TextLines.new
     header, @header_lines = format_headers(purge_hash(@header, NON_EDITABLE_HEADERS)) # + [""] <-- what is this?
     #@text = header + [""] + @body
-    header.each {|l| @text << l}
+    header.each do |l|
+      STDERR.puts "regen_text: adding line '#{l}'"
+      @text << l
+    end
     @text << ""
     @body.each {|l| @text << l}
     #@text += sig_lines unless @sig_edited
@@ -231,6 +234,7 @@ class EditMessageMode < LineCursorMode
     (FORCE_HEADERS + (header.keys - FORCE_HEADERS)).each do |h|
       lines = make_lines "#{h}:", header[h]
       lines.each do |l|
+        STDERR.puts "format_headers: adding line #{l} to headers"
         header_lines << h
 	headers << l
       end
@@ -240,6 +244,7 @@ class EditMessageMode < LineCursorMode
 
   def make_lines(header : String, things : String | Array(String)) : Array(String)
     if things.is_a?(String)
+      STDERR.puts "make_lines: string for #{header} = #{things}"
       return [header + " " + things]
     else
       if things.size == 0
@@ -248,6 +253,7 @@ class EditMessageMode < LineCursorMode
 	lines = Array(String).new
         things.each_with_index do |name, i|
           #raise "an array: #{name.inspect} (things #{things.inspect})" if Array === name
+          STDERR.puts "make_lines: header #{header}, name[#{i}] = #{name}"
           if i == 0
             line =  header + " " + name
           else
@@ -261,8 +267,8 @@ class EditMessageMode < LineCursorMode
     end
   end
 
-  def default_edit_message
-    # FIXME: can we support async edit?  Maybe not.
+  def default_edit_message(*args)
+    # FIXME: will we every support async edit?  Maybe not.
     #if $config[:always_edit_async]
     #  return edit_message_async
     #else
@@ -271,6 +277,31 @@ class EditMessageMode < LineCursorMode
   end
 
   def handle_new_text(header, body); end
+
+  def lines; @text.length + selector_lines end
+
+  def [](i : Int32) : Text
+    if @editing && i == 0
+      return [{:editing_notification_color, " [read-only] Message being edited in an external editor"}]
+    end
+    if @selectors.size == 0
+      return decorate_editing_line @text[i]
+    elsif i < @selectors.size
+      return @selectors[i].line @selector_label_width
+    elsif i == @selectors.size
+      return ""
+    else
+      return decorate_editing_line @text[i - @selectors.length - DECORATION_LINES]
+    end
+  end
+
+  def decorate_editing_line(line) : Text
+    if @editing && line.is_a?(String)
+      [{:editing_frozen_text_color, line}]
+    else
+      line
+    end
+  end
 
   def selector_lines
     lines = (@selectors.empty? ? 0 : DECORATION_LINES + @selectors.size)
@@ -311,7 +342,11 @@ class EditMessageMode < LineCursorMode
     sig = sig_lines.join("\n")
     file = File.tempfile("csup.#{self.class.name.gsub(/.*::/, "").camel_to_hyphy}.eml")
     @file = file
-    file.puts format_headers(purge_hash(@header, NON_EDITABLE_HEADERS)).first
+    #STDERR.puts "About to call format_headers with header #{@header}"
+    headers = format_headers(purge_hash(@header, NON_EDITABLE_HEADERS))[0]
+    #STDERR.puts "format_headers returned headers #{headers}"
+    headers.each {|l| file.puts l}
+    file.puts
     file.puts
 
     text = @body.join("\n")
@@ -363,6 +398,8 @@ class EditMessageMode < LineCursorMode
     if File.exists?(filepath) && File.mtime(filepath) > mtime && success
       @edited = true
     else
+      STDERR.puts "start_edit: file #{filepath} wasn't changed"
+      File.delete?(filepath)
       BufferManager.completely_redraw_screen
       return @edited
     end

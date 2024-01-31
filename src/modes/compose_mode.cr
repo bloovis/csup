@@ -6,7 +6,7 @@ module Redwood
 
 class ComposeMode < EditMessageMode
   def initialize(opts = Opts.new)
-    header = Hash(String, String).new
+    header = HeaderHash.new
     unless from = opts.str(:from)
       if acct = AccountManager.default_account
 	from = acct.full_address
@@ -16,13 +16,13 @@ class ComposeMode < EditMessageMode
     header["From"] = from
 
     if to = opts.strarray(:to)
-      header["To"] = to.join(", ")
+      header["To"] = to
     end
     if cc = opts.strarray(:cc)
-      header["Cc"] = cc.join(", ")
+      header["Cc"] = cc
     end
     if bcc = opts.strarray(:bcc)
-      header["Bcc"] = bcc.join(", ")
+      header["Bcc"] = bcc
     end
     if subj = opts.str(:subj)
       header["Subject"] = subj
@@ -47,17 +47,18 @@ class ComposeMode < EditMessageMode
   end
 
   def self.spawn_nicely(opts = Opts.new)
+    STDERR.puts "ComposeMode.spawn_nicely"
     newopts = Opts.new
 
     unless from = opts.str(:from)
-      if Config.bool(:ask_for_from)
-	if acct = AccountManager.default_account
-	  default_email = acct.email
-	  question = "From (default #{default_email}): "
-	else
-	  question = "From: "
-	end
-       from = BufferManager.ask_for_account(:account, question)
+      if acct = AccountManager.default_account
+	from = acct.email
+	question = "From (default #{from}): "
+      else
+	question = "From: "
+      end
+      if from.nil? && Config.bool(:ask_for_from)
+        return unless from = BufferManager.ask_for_account(:account, question)
       end
     end
     return unless from
@@ -74,21 +75,21 @@ class ComposeMode < EditMessageMode
     newopts[:to] = to
 
     if Config.bool(:ask_for_cc)
-      # opts[:ccc] is never used.
-      return unless cc = BufferManager.ask_for_contacts(:people, "Cc: ")
+      # opts[:cc] is never used.
+      cc = BufferManager.ask_for_contacts(:people, "Cc: ")
     end
-    newopts[:cc] = cc if cc
+    newopts[:cc] = cc || [""]
 
     if Config.bool(:ask_for_bcc)
       # opts[:bcc] is never used.
       return unless bcc = BufferManager.ask_for_contacts(:people, "Bcc: ")
     end
-    newopts[:bcc] = bcc if bcc
+    newopts[:bcc] = bcc || [""]
 
     if Config.bool(:ask_for_subject)
       return unless subj = (opts.str(:subj) || BufferManager.ask(:subject, "Subject: "))
     end
-    newopts[:subj] = subj if subj
+    newopts[:subj] = subj || ""
 
     mode = ComposeMode.new(newopts)
     BufferManager.spawn "New Message", mode

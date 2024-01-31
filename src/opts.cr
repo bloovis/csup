@@ -4,8 +4,11 @@ require "json"
 
 module Redwood
 
+alias HeaderHash = Hash(String, String | Array(String))
+
 class Opts
-  alias Value = String | Int32 | Bool | Symbol | Array(String) | Hash(String, String) | JSON::Any
+  alias Value = String | Int32 | Bool | Symbol | Array(String) |
+		HeaderHash | JSON::Any
 
   def initialize(h = nil)
     @entries = Hash(Symbol, Value).new
@@ -53,7 +56,7 @@ class Opts
   get(bool, Bool)
   get(sym, Symbol)
   get(strarray, Array(String))
-  get(hash, Hash(String,String))
+  get(hash, HeaderHash)
 
 end	# Opts
 

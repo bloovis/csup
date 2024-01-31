@@ -139,9 +139,9 @@ def finish
   end
 end
 
-# Commands
+# Commands.  Every command must be listed in the actions macro below.
 actions quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards,
-        list_buffers, redraw, search, poll
+        list_buffers, redraw, search, poll, compose
 
 def quit_now
   #BufferManager.say "This is the global quit command."
@@ -206,6 +206,10 @@ def poll
   end
 end
 
+def compose
+  ComposeMode.spawn_nicely
+end
+
 # Main program
 def main
   init_managers
@@ -236,6 +240,7 @@ def main
     k.add :redraw, "Redraw screen", "C-l"
     k.add :search, "Search all messages", '\\', 'F'
     k.add :poll, "Poll for new messages", 'P', "ERR"
+    k.add :compose, "Compose new message", 'm', 'c'
   end
 
   # Interactive loop.
