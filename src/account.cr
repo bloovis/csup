@@ -11,6 +11,7 @@ class Account < Person
   property gpgkey : String
   property smtp_server : String
   property smtp_port : Int32
+  property smtp_user : String
   property smtp_password : String
 
   def initialize(h : Config::Account)
@@ -26,6 +27,7 @@ class Account < Person
     else
       @smtp_port = 0
     end
+    @smtp_user = h["smtp_user"]? || ""
     @smtp_password = h["smtp_password"]? || ""
   end
 
