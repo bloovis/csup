@@ -113,7 +113,15 @@ class ThreadIndexMode < LineCursorMode
       # Get the list of updated threads.
       query = "(#{@translated_query}) and (#{arg})"
       new_ts = ThreadList.new(query, offset: 0, limit: 100)
+      n = new_ts.threads.size
 
+      # Run through the old thread list, and add to the new list any thread
+      # that is not already in the new list.
+      ts.threads.each do |thread|
+        new_ts.threads << thread unless new_ts.find_thread(thread)
+      end
+
+{% if false %}
       # If any of the updated threads are already in the existing thread list,
       # replace their top-level messages.  Otherwise add the updated thread
       # to the existing thread list.
@@ -126,8 +134,10 @@ class ThreadIndexMode < LineCursorMode
 	  ts.threads << thread
 	end
       end
+{% end %}
 
-      n = new_ts.threads.size
+      # Replace this thread list with the new one.
+      @ts = new_ts
       BufferManager.flash "#{n.pluralize "thread"} updated"
       update
     end

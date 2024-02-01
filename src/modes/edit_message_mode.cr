@@ -556,7 +556,8 @@ class EditMessageMode < LineCursorMode
     config.use_tls(EMail::Client::TLSMode::STARTTLS)
     client = EMail::Client.new(config)
 
-    # Finally sent the email.
+    # Finally send the email.
+    BufferManager.flash "Sending..."
     begin
       client.start do
 	send(m)
