@@ -18,12 +18,12 @@ class EditMessageMode < LineCursorMode
 
   # HeaderHash, defined in ScrollMode, is a representation
   # of email headers that is "cooked", where headers that can
-  # have multiple values (To:, CC, and Cc:) are a arrays of strings,
+  # have multiple values (To:, CC, and Cc:) are arrays of strings,
   # not strings.
   #
   # By contrast, RawHeaderHash, defined here, is a representation
-  # of email headers that is NOT "cooked", wherre To:, Cc:, and Bcc:
-  # appear as that would in a real message, i.e., as a strings
+  # of email headers that is NOT "cooked", where To:, Cc:, and Bcc:
+  # appear as they would in a real message, i.e., as a strings
   # consisting of multiple comma-separated addresses.
   #
   # It gets confusing in the original Sup code, because these
@@ -43,6 +43,7 @@ class EditMessageMode < LineCursorMode
   property text = TextLines.new
   property account_user = ""
   property email_log_set = false
+  property temp_files = Array(String).new
 
   property account_selector : HorizontalSelector
   bool_getter edited
@@ -320,7 +321,8 @@ class EditMessageMode < LineCursorMode
     #if $config[:always_edit_async]
     #  return edit_message_async
     #else
-      return edit_message
+      edited = edit_message
+      return edited
     #end
   end
 
@@ -402,10 +404,17 @@ class EditMessageMode < LineCursorMode
 {% end %}
     ok = !edited? || BufferManager.ask_yes_or_no("Discard message?")
     #STDERR.puts "EditMessageMode: killable? = #{ok}"
-    if ok && (file = @file)
-      File.delete?(file.path)
-    end
     return ok
+  end
+
+  # Remove all temporary files.  BufferManager calls when it's deleting the mode's buffer.
+  def cleanup
+    @temp_files.each do |path|
+      #STDERR.puts "deleting temp file #{path}"
+      File.delete?(path)
+    end
+    @temp_files = Array(String).new
+    super
   end
 
   def save_message_to_file
@@ -413,6 +422,8 @@ class EditMessageMode < LineCursorMode
     sig = sig_lines.join("\n")
     file = File.tempfile("csup.#{self.class.name.gsub(/.*::/, "").camel_to_hyphy}.eml")
     @file = file
+    @temp_files << file.path
+    #STDERR.puts "created temp file #{file.path}"
     #STDERR.puts "About to call format_headers with header #{@header}"
     headers = format_headers(purge_hash(@header, NON_EDITABLE_HEADERS))[0]
     #STDERR.puts "format_headers returned headers #{headers}"
@@ -481,10 +492,10 @@ class EditMessageMode < LineCursorMode
     @editing = false
 
     if File.exists?(filepath) && File.mtime(filepath) > mtime && success
+      #STDERR.puts "start_edit: file #{filepath} was changed"
       @edited = true
     else
       #STDERR.puts "start_edit: file #{filepath} wasn't changed"
-      File.delete?(filepath)
       BufferManager.completely_redraw_screen
       return @edited
     end
@@ -532,11 +543,8 @@ class EditMessageMode < LineCursorMode
     end
 
     # Set the EMail logger to point to our own csup log.
-    unless @email_log_set
-      if log_io = Redwood.log_io
-        EMail::Client.log_io = log_io
-        @email_log_set = true
-      end
+    if log_io = Redwood.log_io
+      EMail::Client.log_io = log_io
     end
 
     # Build the email.
@@ -581,7 +589,7 @@ class EditMessageMode < LineCursorMode
     if s =~ /^\s*([^<]+)\s*<(.*)>$/
       name = $1.strip
       addr = $2.strip
-      STDERR.puts "EMail::Address.new #{addr}, #{name}"
+      #STDERR.puts "EMail::Address.new #{addr}, #{name}"
       return EMail::Address.new(addr, name)
     elsif s =~ /^\s*$/
       return nil
@@ -602,7 +610,7 @@ class EditMessageMode < LineCursorMode
 	end
       when "To"
         to = v.as(Array(String))
-	STDERR.puts "setting To #{to}"
+	#STDERR.puts "setting To #{to}"
 	to.each do |s|
 	  if addr = fix_email(s)
 	    email.to addr
@@ -610,7 +618,7 @@ class EditMessageMode < LineCursorMode
 	end
       when "Cc"
 	cc = v.as(Array(String))
-	STDERR.puts "setting Cc #{cc}"
+	#STDERR.puts "setting Cc #{cc}"
 	cc.each do |s|
 	  if addr = fix_email(s)
 	    email.cc addr
@@ -618,7 +626,7 @@ class EditMessageMode < LineCursorMode
 	end
       when "Bcc"
 	bcc = v.as(Array(String))
-	STDERR.puts "setting Bcc #{bcc}"
+	#STDERR.puts "setting Bcc #{bcc}"
 	bcc.each do |s|
 	  if addr = fix_email(s)
 	    email.bcc addr

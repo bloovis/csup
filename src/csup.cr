@@ -120,6 +120,7 @@ end
 
 extend self
 
+# Accessor used by EditMessageMode to redirect EMail::Client log messages.
 def log_io
   @@log_io
 end
@@ -131,10 +132,11 @@ def finish
   Logger.remove_sink @@log_io
 
   #managers.each { |x| x.deinstantiate! if x.instantiated? }
-  # Need to add SentManager, DraftManager, PollManager, CryptoManager, LayoutManager
+  # Need to add DraftManager, PollManager, CryptoManager, LayoutManager
+  # if they ever get implemented.
   {% for name in [HookManager, ContactManager, LabelManager, AccountManager,
 		  UpdateManager, UndoManager,
-		  SearchManager] %}
+		  SearchManager, SentManager] %}
     {{name.id}}.deinstantiate! if {{name.id}}.instantiated?
   {% end %}
 
@@ -225,7 +227,7 @@ def main
   lmode = Redwood::LogMode.new "system log"
   lmode.on_kill { Logger.clear! }
   Logger.add_sink lmode
-  Logger.force_message "Welcome to Sup! Log level is set to #{Logger.level}."
+  Logger.force_message "Welcome to Csup! Log level is set to #{Logger.level}."
   if (level = Logger::LEVELS.index(Logger.level)) && level > 0
     Logger.force_message "For more verbose logging, restart with CSUP_LOG_LEVEL=" +
 			 "#{Logger::LEVELS[level-1]}."
