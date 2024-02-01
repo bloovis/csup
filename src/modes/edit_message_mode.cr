@@ -7,11 +7,11 @@ require "../opts"
 module Redwood
 
 class EditMessageMode < LineCursorMode
-  mode_class send_message, default_edit_message #,
+  mode_class send_message, default_edit_message,
+	     move_cursor_right, move_cursor_left
 	     #edit_message_or_field, edit_to, edit_cc,
 	     #edit_subject,  alternate_edit_message,
 	     #save_as_draft, attach_file, delete_attachment,
-	     #move_cursor_right, move_cursor_left
 
   DECORATION_LINES = 1
 
@@ -39,8 +39,8 @@ class EditMessageMode < LineCursorMode
     #k.add :save_as_draft, "Save as draft", 'P'
     #k.add :attach_file, "Attach a file", 'a'
     #k.add :delete_attachment, "Delete an attachment", 'd'
-    #k.add :move_cursor_right, "Move selector to the right", "Right", 'l'
-    #k.add :move_cursor_left, "Move selector to the left", "Left", 'h'
+    k.add :move_cursor_right, "Move selector to the right", "Right", 'l'
+    k.add :move_cursor_left, "Move selector to the left", "Left", 'h'
   end
 
   def initialize(opts = Opts.new)
@@ -93,7 +93,7 @@ class EditMessageMode < LineCursorMode
       @account_user = @header["From"].as(String)
 
       # FIXME: when we have more than one selector, enable this line.
-      #add_selector selector
+      add_selector selector
     end
 
 {% if false %}
@@ -117,6 +117,31 @@ class EditMessageMode < LineCursorMode
     newh = h.clone
     a.each {|key| newh.delete(key) }
     return newh
+  end
+
+  def move_cursor_left(*args)
+    if @curpos < @selectors.length
+      @selectors[@curpos].roll_left
+      buffer.mark_dirty
+      update if @account_selector
+    else
+      col_left
+    end
+  end
+
+  def move_cursor_right(*args)
+    if @curpos < @selectors.length
+      @selectors[@curpos].roll_right
+      buffer.mark_dirty
+      update if @account_selector
+    else
+      col_right
+    end
+  end
+
+  def add_selector(s : HorizontalSelector)
+    @selectors << s
+    @selector_label_width = [@selector_label_width, s.label.size].max
   end
 
   def update
