@@ -3,6 +3,8 @@ require "../horizontal_selector"
 require "../shellwords"
 require "../rfc2047"
 require "../opts"
+require "../../lib/email/src/email"
+require "../sent"
 
 module Redwood
 
@@ -12,6 +14,23 @@ class EditMessageMode < LineCursorMode
 	     #edit_message_or_field, edit_to, edit_cc,
 	     #edit_subject,  alternate_edit_message,
 	     #save_as_draft, attach_file, delete_attachment,
+
+
+  # HeaderHash, defined in ScrollMode, is a representation
+  # of email headers that is "cooked", where headers that can
+  # have multiple values (To:, CC, and Cc:) are a arrays of strings,
+  # not strings.
+  #
+  # By contrast, RawHeaderHash, defined here, is a representation
+  # of email headers that is NOT "cooked", wherre To:, Cc:, and Bcc:
+  # appear as that would in a real message, i.e., as a strings
+  # consisting of multiple comma-separated addresses.
+  #
+  # It gets confusing in the original Sup code, because these
+  # two kinds of hashes get mixed up, and it's not always clear
+  # which is which.  By using these alias class names, I hope to
+  # clear up some of this confusion.
+  alias RawHeaderHash = Hash(String, String)
 
   DECORATION_LINES = 1
 
@@ -23,6 +42,7 @@ class EditMessageMode < LineCursorMode
   property header = HeaderHash.new
   property text = TextLines.new
   property account_user = ""
+  property email_log_set = false
 
   property account_selector : HorizontalSelector
   bool_getter edited
@@ -49,13 +69,9 @@ class EditMessageMode < LineCursorMode
 
     @body = opts.delete_strarray(:body) || Array(String).new
 
-    if opts.member?(:attachments)
-      # In Sup, attachments was a hash of filename => RMail attachment.
-      # In Csup, attachments is just an array of filenames.
-      @attachments = opts.strarray(:attachments)
-    else
-      @attachments = Array(String).new
-    end
+    # In Sup, attachments was a hash of filename => RMail attachment.
+    # In Csup, attachments is just an array of filenames.
+    @attachments = opts.strarray(:attachments) || Array(String).new
 
     hostname = `hostname`
 
@@ -92,7 +108,6 @@ class EditMessageMode < LineCursorMode
       # @account_user and @account_selector.
       @account_user = @header["From"].as(String)
 
-      # FIXME: when we have more than one selector, enable this line.
       add_selector selector
     end
 
@@ -113,7 +128,7 @@ class EditMessageMode < LineCursorMode
 
   # Return a new hash whose entries are those in h, but excluding any entries
   # whose keys in the array a.  This is used to delete non-editable headers from @headers.
-  def purge_hash(h, a)
+  def purge_hash(h, a : Array(String))
     newh = h.clone
     a.each {|key| newh.delete(key) }
     return newh
@@ -184,8 +199,8 @@ class EditMessageMode < LineCursorMode
     end
   end
 
-  def parse_raw_email_header(f : File) : Hash(String, String)
-    header = Hash(String, String).new
+  def parse_raw_email_header(f : File) : RawHeaderHash
+    header = RawHeaderHash.new
     last = nil
 
     while(line = f.gets)
@@ -220,6 +235,9 @@ class EditMessageMode < LineCursorMode
     header
   end
 
+  # Read an email file and break it into two parts: a "cooked" representation
+  # of its headers (i.e., a HeaderHash), and the body of the the email
+  # as an array of strings (one for each line).
   def parse_file(fn : String) : Tuple(HeaderHash, Array(String))
     header = HeaderHash.new
     body = Array(String).new
@@ -236,6 +254,10 @@ class EditMessageMode < LineCursorMode
     return {header, body}
   end
 
+  # Parse a "raw" email header and "cook" it into something that
+  # can be stored in a HeaderHash. "Cooking" means changing a header
+  # that can have multiple addresses (To:, Cc:, Bcc:) into an
+  # array of email addresses.  All other headers remain unchanged.
   def parse_header(k : String, v : String) : String | Array(String)
     if MULTI_HEADERS.includes?(k)
       result = Array(String).new
@@ -292,7 +314,8 @@ class EditMessageMode < LineCursorMode
     end
   end
 
-  def default_edit_message(*args)
+  # Edit an email message.  Return true if the user changed it.
+  def default_edit_message(*args) : Bool
     # FIXME: will we every support async edit?  Maybe not.
     #if $config[:always_edit_async]
     #  return edit_message_async
@@ -332,6 +355,7 @@ class EditMessageMode < LineCursorMode
     lines = (@selectors.empty? ? 0 : DECORATION_LINES + @selectors.size)
   end
 
+  # Edit an email message.  Return true if the user changed it.
   def edit_message
     # Probably only need this if async editing isn't supported.
     #return false if warn_editing
@@ -345,13 +369,13 @@ class EditMessageMode < LineCursorMode
       save_message_to_file
     rescue e
       BufferManager.flash "Can't save message to file: #{e.message}"
-      return
+      return false
     end
 
     # prepare command line arguments
     editor = Config.str(:editor) || ENV["EDITOR"] || "/usr/bin/vi"
 
-    return unless file = @file
+    return false unless file = @file
     filepath = file.path
     pos = [@curpos - selector_lines, @header_lines.size].max + 1
     ENV["LINE"] = pos.to_s
@@ -402,6 +426,19 @@ class EditMessageMode < LineCursorMode
     file.close
   end
 
+  def mentions_attachments?
+    #if HookManager.enabled? "mentions-attachments"
+    #  HookManager.run "mentions-attachments", :header => @header, :body => @body
+    #else
+      @body.any? {  |l| l =~ /^[^>]/ && l =~ /\battach(ment|ed|ing|)\b/i }
+    #end
+  end
+
+  def top_posting?
+    # The + "\n" ensures that the last line terminates with a \n.
+    @body.join("\n") + "\n" =~ /(\S+)\s*Excerpts from.*\n(>.*\n)+\s*\Z/
+  end
+
   def sig_lines : Array(String)
     lines = Array(String).new
 
@@ -434,6 +471,7 @@ class EditMessageMode < LineCursorMode
     return lines
   end
 
+  # Run the editor on the email message file.  Return true if the use changed the file.
   def start_edit(command : String, filepath : String, is_gui : Bool, old_from : String)
     mtime = File.mtime filepath
 
@@ -470,7 +508,143 @@ class EditMessageMode < LineCursorMode
   end
 
   def send_message(*args)
-    BufferManager.flash("send not implemented!")
+    #return false if warn_editing
+    return false if !edited? && !BufferManager.ask_yes_or_no("Message unedited. Really send?")
+    return false if Config.bool(:confirm_no_attachments) &&
+                 mentions_attachments? && @attachments.size == 0 &&
+		 !BufferManager.ask_yes_or_no("You haven't added any attachments. Really send?")#" stupid ruby-mode
+    return false if Config.bool(:confirm_top_posting) &&
+		 top_posting? &&
+		 !BufferManager.ask_yes_or_no("You're top-posting. That makes you a bad person. Really send?") #" stupid ruby-mode
+
+    if @header["From"] =~ /<?(\S+@(\S+?))>?$/
+      acct = AccountManager.account_for($1)
+    else
+      acct = AccountManager.default_account
+    end
+    unless acct
+      BufferManager.flash "No account for sending.  Unable to send!"
+      return
+    end
+    if acct.smtp_server == ""
+      BufferManager.flash "Account does not define smtp_server.  Unable to send!"
+      return
+    end
+
+    # Set the EMail logger to point to our own csup log.
+    unless @email_log_set
+      if log_io = Redwood.log_io
+        EMail::Client.log_io = log_io
+        @email_log_set = true
+      end
+    end
+
+    # Build the email.
+    date = Time.now
+    begin
+      m = build_message date
+    rescue e
+      warn "Problem building email: #{e.message}"
+      BufferManager.flash "Problem building email: #{e.message}"
+      return false
+    end
+
+    # Set up the SMTP client.
+    config = EMail::Client::Config.new(acct.smtp_server, acct.smtp_port, helo_domain: "localhost")
+    config.use_auth(acct.smtp_user, acct.smtp_password)
+    config.use_tls(EMail::Client::TLSMode::SMTPS)
+    config.use_tls(EMail::Client::TLSMode::STARTTLS)
+    client = EMail::Client.new(config)
+
+    # Finally sent the email.
+    begin
+      client.start do
+	send(m)
+      end
+    rescue e
+      warn "Problem sending mail: #{e.message}"
+      BufferManager.flash "Problem sending mail: #{e.message}"
+      return false
+    end
+
+    SentManager.write_sent_message {|f| m.to_s(f) }
+    BufferManager.kill_buffer buffer
+    BufferManager.flash "Message sent!"
+    true
+  end
+
+  # If the email address is in format "name <addr>", return an EMail::Address object.
+  # Otherwise return the email address unchanged, as a string.  If the address
+  # is a blank space, return nil.
+  def fix_email(s : String) : String | EMail::Address | Nil
+    if s =~ /^\s*([^<]+)\s*<(.*)>$/
+      name = $1.strip
+      addr = $2.strip
+      STDERR.puts "EMail::Address.new #{addr}, #{name}"
+      return EMail::Address.new(addr, name)
+    elsif s =~ /^\s*$/
+      return nil
+    else
+      return s
+    end
+  end
+
+  def build_message(date : Time) : EMail::Message
+    email = EMail::Message.new
+    @header.each do |k, v|
+      case k
+      when "From"
+        from = v.as(String)
+	# If From is in format "name <addr>", split out the two parts.
+	if addr = fix_email(from)
+	  email.from addr
+	end
+      when "To"
+        to = v.as(Array(String))
+	STDERR.puts "setting To #{to}"
+	to.each do |s|
+	  if addr = fix_email(s)
+	    email.to addr
+	  end
+	end
+      when "Cc"
+	cc = v.as(Array(String))
+	STDERR.puts "setting Cc #{cc}"
+	cc.each do |s|
+	  if addr = fix_email(s)
+	    email.cc addr
+	  end
+	end
+      when "Bcc"
+	bcc = v.as(Array(String))
+	STDERR.puts "setting Bcc #{bcc}"
+	bcc.each do |s|
+	  if addr = fix_email(s)
+	    email.bcc addr
+	  end
+	end
+      when "Subject"
+	email.subject(v.as(String))
+      when "Date"
+        # Ignore the date header, use current time instead.
+	email.date(date)
+      when "Message-id"
+        # Ignore the Message-id header, use the correct one.
+	email.message_id(@message_id)
+      else
+	if v.is_a?(String)
+	  email.custom_header(k, v)
+	else
+	  a = v.as(Array(String))
+	  email.custom_header(k, a.join(","))
+	end
+      end
+    end
+
+    # Add the body.
+    email.message @body.join("\n")
+
+    return email
   end
 end	# EditMessage Mode
 

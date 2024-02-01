@@ -37,6 +37,7 @@ module Redwood
     hm = HookManager.new(File.join(basedir, "hooks"))
     am = AccountManager.new(Config.accounts)
     lm = LabelManager.new(File.join(basedir, "labels.txt"))
+    sentm = SentManager.new(Config.str(:sent_folder) || "sent")
 
     log_io = File.open(File.join(basedir, "log"), "a")
     if log_io
@@ -118,6 +119,10 @@ end
 # namespace problems with the `actions` macro.
 
 extend self
+
+def log_io
+  @@log_io
+end
 
 def finish
   LabelManager.save if Redwood::LabelManager.instantiated?

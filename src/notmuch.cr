@@ -222,6 +222,36 @@ module Notmuch
     return subs
   end
 
+  # Run "notmuch insert" to store a message in the specified
+  # folder (which can be nil).  Supply a block that takes
+  # an IO object; the block should write the message contents
+  # to the IO.  Return true if successful, or false otherwise.
+
+  def insert(folder, &block : IO -> _) : Bool	# supply a block that takes an IO
+    cmd = "notmuch"
+    args = ["insert"]
+    if folder
+      args << "--create-folder"
+      args << "--folder=#{folder}"
+    end
+    pipe = Pipe.new(cmd, args)
+    unless pipe.success
+      debug "Unable to run #{cmd} #{args.join(" ")}"
+      return false
+    end
+    exit_status = pipe.start do |p|
+      p.transmit do |f|
+	block.call(f)
+      end
+    end
+    if exit_status != 0
+      debug "notmuch insert returned exit status #{exit_status}"
+      return false
+    end
+    Redwood.poll
+    return true
+  end
+
 end	# module Notmuch
 
 end	# module Redwood
