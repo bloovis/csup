@@ -47,7 +47,7 @@ class ComposeMode < EditMessageMode
   end
 
   def self.spawn_nicely(opts = Opts.new)
-    STDERR.puts "ComposeMode.spawn_nicely"
+    #STDERR.puts "ComposeMode.spawn_nicely"
     newopts = Opts.new
 
     unless from = opts.str(:from)

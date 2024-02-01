@@ -162,7 +162,7 @@ class EditMessageMode < LineCursorMode
     header, @header_lines = format_headers(purge_hash(@header, NON_EDITABLE_HEADERS)) # + [""] <-- what is this?
     #@text = header + [""] + @body
     header.each do |l|
-      STDERR.puts "regen_text: adding line '#{l}'"
+      #STDERR.puts "regen_text: adding line '#{l}'"
       @text << l
     end
     @text << ""
@@ -259,7 +259,7 @@ class EditMessageMode < LineCursorMode
     (FORCE_HEADERS + (header.keys - FORCE_HEADERS)).each do |h|
       lines = make_lines "#{h}:", header[h]
       lines.each do |l|
-        STDERR.puts "format_headers: adding line #{l} to headers"
+        #STDERR.puts "format_headers: adding line #{l} to headers"
         header_lines << h
 	headers << l
       end
@@ -269,7 +269,7 @@ class EditMessageMode < LineCursorMode
 
   def make_lines(header : String, things : String | Array(String)) : Array(String)
     if things.is_a?(String)
-      STDERR.puts "make_lines: string for #{header} = #{things}"
+      #STDERR.puts "make_lines: string for #{header} = #{things}"
       return [header + " " + things]
     else
       if things.size == 0
@@ -278,7 +278,7 @@ class EditMessageMode < LineCursorMode
 	lines = Array(String).new
         things.each_with_index do |name, i|
           #raise "an array: #{name.inspect} (things #{things.inspect})" if Array === name
-          STDERR.puts "make_lines: header #{header}, name[#{i}] = #{name}"
+          #STDERR.puts "make_lines: header #{header}, name[#{i}] = #{name}"
           if i == 0
             line =  header + " " + name
           else
@@ -445,7 +445,7 @@ class EditMessageMode < LineCursorMode
     if File.exists?(filepath) && File.mtime(filepath) > mtime && success
       @edited = true
     else
-      STDERR.puts "start_edit: file #{filepath} wasn't changed"
+      #STDERR.puts "start_edit: file #{filepath} wasn't changed"
       File.delete?(filepath)
       BufferManager.completely_redraw_screen
       return @edited
