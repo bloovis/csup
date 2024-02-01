@@ -362,6 +362,28 @@ class EditMessageMode < LineCursorMode
     start_edit command, filepath, false, old_from	# false was is_gui
   end
 
+  def killable?
+{% if false %}
+    return false if warn_editing
+    if !@async_mode.nil?
+      return false if !@async_mode.killable?
+      if File.mtime(@file.path) > @mtime
+        @edited = true
+        header, @body = parse_file @file.path
+        @header = header - NON_EDITABLE_HEADERS
+        handle_new_text @header, @body
+        update
+      end
+    end
+{% end %}
+    ok = !edited? || BufferManager.ask_yes_or_no("Discard message?")
+    #STDERR.puts "EditMessageMode: killable? = #{ok}"
+    if ok && (file = @file)
+      File.delete?(file.path)
+    end
+    return ok
+  end
+
   def save_message_to_file
     #raise 'cannot save message to another file while editing' if @editing
     sig = sig_lines.join("\n")
@@ -371,7 +393,7 @@ class EditMessageMode < LineCursorMode
     headers = format_headers(purge_hash(@header, NON_EDITABLE_HEADERS))[0]
     #STDERR.puts "format_headers returned headers #{headers}"
     headers.each {|l| file.puts l}
-    file.puts
+    #file.puts
     file.puts
 
     text = @body.join("\n")

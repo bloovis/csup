@@ -146,7 +146,7 @@ actions quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards,
 def quit_now
   #BufferManager.say "This is the global quit command."
   #puts "This is the global quit command."
-  BufferManager.kill_all_buffers_safely
+  return unless BufferManager.kill_all_buffers_safely
   finish
   Ncurses.end
   Logger.remove_all_sinks!
