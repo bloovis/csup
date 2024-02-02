@@ -314,7 +314,7 @@ class ThreadViewMode < LineCursorMode
 
       lines = TextLines.new
       lines << from_line
-      header_lines = headers.map {|k,v| prefix + "   #{k}: #{v}"}
+      header_lines = headers.map {|k,v| "   #{k}: #{v}"}
       (addressee_lines + header_lines).each do |l|
         lines << [{color, prefix + "  " + l}]
       end
