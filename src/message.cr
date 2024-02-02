@@ -54,6 +54,7 @@ class Message
   property have_snippet = false
   property snippet = ""
   property dirty_labels = false
+  property recipient_email = ""
 
   # If a JSON result from "notmuch show" is provided in `data`, parse it
   # to fill in the message fields.  Otherwise use some empty default values, and
@@ -89,6 +90,7 @@ class Message
     @to = Person.from_address_list(@headers["To"]?)
     @cc = Person.from_address_list(@headers["Cc"]?)
     @bcc = Person.from_address_list(@headers["Bcc"]?)
+    @recipient_email = @headers["X-Original-To"]? || @headers["Delivered-To"]? || ""
     @date = Time.unix(@timestamp)
 
     walktree do |msg, i|

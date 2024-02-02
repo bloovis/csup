@@ -52,6 +52,7 @@ class MessageMode < LineCursorMode
     @text << "#{prefix}  timestamp: #{msg.timestamp} (#{Time.unix(msg.timestamp)})"
     @text << "#{prefix}  labels: #{msg.labels.join(",")}"
     @text << "#{prefix}  date_relative: #{msg.date_relative}"
+    @text << "#{prefix}  recipient_email: #{msg.recipient_email}"
 
     @text << "#{prefix}  headers:"
     msg.headers.each do |k,v|
@@ -162,6 +163,7 @@ def main
 	msg.to.each {|p| puts "#{prefix} > To: #{p.email}"}
 	msg.cc.each {|p| puts "#{prefix} > Cc: #{p.email}"}
 	msg.bcc.each {|p| puts "#{prefix} > Bcc: #{p.email}"}
+	puts "#{prefix} > Recipient: #{msg.recipient_email}"
 	plain = msg.find_part {|p| p.content_type == "text/plain" && p.content.size > 0}
 	if plain
 	  puts "#{prefix} Plain text content:\n---\n" + plain.content + "\n---\n"

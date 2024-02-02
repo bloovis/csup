@@ -21,6 +21,7 @@ module Redwood
   extend self
 
   @@log_io : IO?
+  @@poll_mode : PollMode?
 
   def init_managers
     basedir = BASE_DIR
@@ -72,58 +73,66 @@ module Redwood
     end
   end
 
-{% if flag?(:MAIN) %}
+  # Accessor used by EditMessageMode to redirect EMail::Client log messages.
+  def log_io
+    @@log_io
+  end
 
-# Dummy poll mode that exists only for the ability to call UpdateManager.relay
-# after polling.
-class PollMode < Mode
-  def initialize
-    @notmuch_lastmod = Notmuch.lastmod
+  # Dummy poll mode that exists only for the ability to call UpdateManager.relay
+  # after polling.
+  class PollMode < Mode
+    def initialize
+      @notmuch_lastmod = Notmuch.lastmod
+    end
+
+    def poll
+      # Run the before-poll hook, and display a flash showing whether it
+      # succeeded, along with whatever string it printed.
+      result = ""
+      success = HookManager.run("before-poll") do |pipe|
+	pipe.receive do |f|
+	  result = f.gets_to_end
+	end
+      end
+      #STDERR.puts "before-poll: success #{success}, result #{result}"
+      if success
+	BufferManager.flash result
+      else
+	if result.size > 0
+	  BufferManager.flash "before-poll hook failed: #{result}"
+	else
+	  BufferManager.flash "before-pool hook failed"
+	end
+      end
+
+      # Ask notmuch to poll for new messages.  Then create
+      # a notmuch search term that will result in a list
+      # of threads that are new/updated since the last poll.
+      # Relay the search term to any waiting thread index modes.
+      Notmuch.poll
+      nowmod = Notmuch.lastmod
+      #STDERR.puts "nowmod #{nowmod}, lastmod #{@notmuch_lastmod}"
+      return if nowmod == @notmuch_lastmod
+      search_terms = "lastmod:#{@notmuch_lastmod}..#{nowmod}"
+      @notmuch_lastmod = nowmod
+      UpdateManager.relay self, :poll, search_terms
+    end
   end
 
   def poll
-    # Run the before-poll hook, and display a flash showing whether it
-    # succeeded, along with whatever string it printed.
-    result = ""
-    success = HookManager.run("before-poll") do |pipe|
-      pipe.receive do |f|
-	result = f.gets_to_end
-      end
-    end
-    #STDERR.puts "before-poll: success #{success}, result #{result}"
-    if success
-      BufferManager.flash result
-    else
-      if result.size > 0
-	BufferManager.flash "before-poll hook failed: #{result}"
-      else
-	BufferManager.flash "before-pool hook failed"
-      end
-    end
-
-    # Ask notmuch to poll for new messages.  Then create
-    # a notmuch search term that will result in a list
-    # of threads that are new/updated since the last poll.
-    # Relay the search term to any waiting thread index modes.
-    Notmuch.poll
-    nowmod = Notmuch.lastmod
-    #STDERR.puts "nowmod #{nowmod}, lastmod #{@notmuch_lastmod}"
-    return if nowmod == @notmuch_lastmod
-    search_terms = "lastmod:#{@notmuch_lastmod}..#{nowmod}"
-    @notmuch_lastmod = nowmod
-    UpdateManager.relay self, :poll, search_terms
+   unless poll_mode = @@poll_mode
+     poll_mode = PollMode.new
+     @@poll_mode = poll_mode
+   end
+   poll_mode.poll
   end
-end
+
+{% if flag?(:MAIN) %}
 
 # Functions required by main.  We have to use `extend self` to overcome
 # namespace problems with the `actions` macro.
 
 extend self
-
-# Accessor used by EditMessageMode to redirect EMail::Client log messages.
-def log_io
-  @@log_io
-end
 
 def finish
   LabelManager.save if Redwood::LabelManager.instantiated?
@@ -204,12 +213,6 @@ def search
     else
       SearchResultsMode.spawn_from_query query
     end
-  end
-end
-
-def poll
-  if poll_mode = @@poll_mode
-    poll_mode.poll
   end
 end
 
