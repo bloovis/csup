@@ -62,7 +62,7 @@ class ComposeMode < EditMessageMode
       end
     end
     return unless from
-    newopts[:to] = from
+    newopts[:from] = from
 
     unless to = opts.strarray(:to)
       if Config.bool(:ask_for_to)
