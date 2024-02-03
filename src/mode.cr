@@ -81,10 +81,14 @@ class Mode
   @dummybuffer : Buffer?
 
   def buffer : Buffer
-    b = @buffer
-    if b
+    if b = @buffer
+      return b
+    elsif b = @dummybuffer
+      #STDERR.puts "Mode.buffer: reusing dummybuffer, caller #{caller[1]}"
       return b
     else
+      #STDERR.puts "Mode.buffer: creating dummybuffer, caller #{caller[1]}"
+
       # Return a dummy buffer.  This should only happen if a mode's initialize method
       # tries to access its buffer before it has been assigned a buffer in spawn.
       b = Buffer.new(Ncurses.stdscr, self, Ncurses.cols, Ncurses.rows-1, Opts.new)
