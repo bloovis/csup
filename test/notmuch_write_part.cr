@@ -10,7 +10,7 @@ print "Enter output filename: "
 filename = (gets || "").strip
 
 f = File.open(filename, "w")
-success = Notmuch.write_part(msgid, partid, f)
+success = Notmuch.write_part(msgid, partid) {|part| IO.copy(part, f)}
 f.close
 puts "Success = #{success}"
 

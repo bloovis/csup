@@ -86,13 +86,15 @@ module Notmuch
     return true
   end
 
-  # Write a message part to the specified IO.
-  def write_part(msgid : String, partid : Int32, f : IO) : Bool
+  # Read the specified message part into a pipe, and yield the pipe to
+  # the passed-in block.  The block should do an IO.copy to save the
+  # message part. This will be used to attach a file to an EMail::Message.
+  def write_part(msgid : String, partid : Int32) : Bool
     #STDERR.puts "About to run notmuch show --part=#{partid} id:#{msgid}"
     pipe = Pipe.new("notmuch", ["show", "--part=#{partid}", "id:#{msgid}"])
     pipe.start do |p|
       p.receive do |output|
-	IO.copy(output, f)
+	yield output
       end
     end
     return true
