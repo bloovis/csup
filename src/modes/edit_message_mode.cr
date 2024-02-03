@@ -15,6 +15,7 @@ class Attachment
   property part : Int32?
 
   property filename = ""
+  property basename = ""
   property content_type = ""
   property size = 0
 
@@ -30,14 +31,18 @@ class Attachment
       unless File.exists?(@filename)
         raise "Attachment file #{@filename} does not exist!"
       end
-      @content_type = `mimetype -b #{@filename}`
+      @content_type = `mimetype -b #{@filename}`.strip
       @size = File.size(@filename)
+      @basename = Path[@filename].basename
+      STDERR.puts "Created file attachment: #{@filename}, base name #{@basename}, size #{@size}, content type #{@content_type}"
     when "part"
       @message_id = splits[1]
       @part = splits[2].to_i
       @filename = splits[3]
+      @basename = @filename
       @content_type = splits[4]
       @size = splits[5].to_i
+      STDERR.puts "Created part attachment: mid #{@message_id}, part #{@part}, #{@filename}, size #{@size}, content type #{@content_type}"
     else
       raise "Invalid attachment descriptor type '#{splits[0]}'"
     end
@@ -49,17 +54,19 @@ class Attachment
         email.attach(f, @filename, @content_type)
       end
     else
-      email.attach(@filename, @filename, @content_type)
+      basename = Path[@filename].basename
+      STDERR.puts "Attaching file #{@filename}, base name #{basename}, content type #{@content_type}"
+      email.attach(@filename, basename, @content_type)
     end
   end
 end
 
 class EditMessageMode < LineCursorMode
   mode_class send_message, default_edit_message,
-	     move_cursor_right, move_cursor_left
+	     move_cursor_right, move_cursor_left, attach_file
 	     #edit_message_or_field, edit_to, edit_cc,
 	     #edit_subject,  alternate_edit_message,
-	     #save_as_draft, attach_file, delete_attachment,
+	     #save_as_draft, delete_attachment,
 
 
   # HeaderHash, defined in ScrollMode, is a representation
@@ -90,6 +97,7 @@ class EditMessageMode < LineCursorMode
   property account_user = ""
   property email_log_set = false
   property temp_files = Array(String).new
+  property attachments = Array(Attachment).new
 
   property account_selector : HorizontalSelector
   bool_getter edited
@@ -104,7 +112,7 @@ class EditMessageMode < LineCursorMode
     k.add :default_edit_message, "Edit message (default)", "C-m"
     #k.add :alternate_edit_message, "Edit message (alternate, asynchronously)", 'E'
     #k.add :save_as_draft, "Save as draft", 'P'
-    #k.add :attach_file, "Attach a file", 'a'
+    k.add :attach_file, "Attach a file", 'a'
     #k.add :delete_attachment, "Delete an attachment", 'd'
     k.add :move_cursor_right, "Move selector to the right", "Right", 'l'
     k.add :move_cursor_left, "Move selector to the left", "Left", 'h'
@@ -116,9 +124,14 @@ class EditMessageMode < LineCursorMode
 
     @body = opts.delete_strarray(:body) || Array(String).new
 
-    # In Sup, attachments was a hash of filename => RMail attachment.
-    # In Csup, attachments is just an array of filenames.
-    @attachments = opts.strarray(:attachments) || Array(String).new
+    # In Sup, the attachments option was a hash of filename => RMail attachment.
+    # In Csup, the attachments option an array of attachment descriptor strings,
+    # which we use to create Attachment objects (see above).
+    if atts = opts.strarray(:attachments)
+      atts.each do |a|
+	@attachments << Attachment.new(a)
+      end
+    end
 
     hostname = `hostname`
 
@@ -239,9 +252,8 @@ class EditMessageMode < LineCursorMode
     if (attachments = @attachments) && (attachments.size > 0)
       @text << ""
       @attachment_lines_offset = @text.size
-      #@text += (0 ... attachments.size).map { |i| [[:attachment_color, "+ Attachment: #{@attachment_names[i]} (#{@attachments[i].body.size.to_human_size})"]] }
       attachments.each do |a|
-        @text << [{:attachment_color, "+ Attachment: #{a} (#{File.size(a).to_human_size})"}]
+        @text << [{:attachment_color, "+ Attachment: #{a.basename} (#{a.size.to_human_size})"}]
       end
     end
   end
@@ -528,6 +540,19 @@ class EditMessageMode < LineCursorMode
     return lines
   end
 
+  def attach_file(*args)
+    fn = BufferManager.ask_for_filename :attachment, "File name (enter for browser): "
+    return unless fn
+    begin
+      Dir[fn].each do |f|
+        @attachments << Attachment.new("file|#{f}")
+      end
+      update
+    rescue e
+      BufferManager.flash "Can't read #{fn}: #{e.message}"
+    end
+  end
+
   # Run the editor on the email message file.  Return true if the use changed the file.
   def start_edit(command : String, filepath : String, is_gui : Bool, old_from : String)
     mtime = File.mtime filepath
@@ -698,6 +723,9 @@ class EditMessageMode < LineCursorMode
 
     # Add the body.
     email.message @body.join("\n")
+
+    # Add the attachments.
+    @attachments.each {|a| a.attach_to_email(email)}
 
     return email
   end

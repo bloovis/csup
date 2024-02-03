@@ -442,7 +442,13 @@ class BufferManager
 
   def ask_for_filename(domain : Symbol, question : String, default=nil, allow_directory=false) : String?
 {% if true %}
-    return ask(domain, question, default)
+    answer = ask(domain, question, default)
+    if answer
+      # Strip single quotes to allow filenames to be dragged and dropped
+      # from file browsers like Mate Caja.  Also strip leading and trailing spaces.
+      answer = answer.lstrip("' ").rstrip("' ")
+    end
+    return answer
 {% else %}
     answer = ask domain, question, default do |s|
       if s =~ /(~([^\s\/]*))/ # twiddle directory expansion
@@ -478,7 +484,7 @@ class BufferManager
           File.expand_path answer
         end
     end
-    retur answer
+    return answer
 {% end %}
   end
   singleton_method ask_for_filename, domain, question, default, allow_directory
