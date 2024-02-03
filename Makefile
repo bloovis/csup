@@ -9,7 +9,7 @@ tests : colormap_test keymap_test ncurses_test email_test logger_test \
         undo_test update_test tagger_test hook_test config_test \
 	contact_test account_test opts_test notmuch_test message_test \
 	search_test time_test string_test label_test person_test \
-	notmuch_save_part notmuch_view_part \
+	notmuch_save_part notmuch_view_part notmuch_write_part \
 	scroll_mode_test line_cursor_mode_test thread_index_mode_test \
 	inbox_mode_test
 
@@ -38,6 +38,7 @@ person_test : test/person_test.cr src/person.cr
 
 notmuch_save_part : test/notmuch_save_part.cr src/notmuch.cr
 notmuch_view_part : test/notmuch_view_part.cr src/notmuch.cr
+notmuch_write_part : test/notmuch_write_part.cr src/notmuch.cr
 
 # Mode tests
 scroll_mode_test : test/scroll_mode_test.cr src/modes/scroll_mode.cr src/buffer.cr

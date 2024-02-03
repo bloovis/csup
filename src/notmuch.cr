@@ -69,6 +69,7 @@ module Notmuch
     Pipe.run("notmuch", ["tag", "--remove-all", "--batch"], input: input)
   end
 
+  # Save a message part to a file.
   def save_part(msgid : String, partid : Int32, filename : String) : Bool
     if File.exists?(filename)
       return false
@@ -80,6 +81,18 @@ module Notmuch
         File.open(filename, "w") do |f|
 	  IO.copy(output, f)
 	end
+      end
+    end
+    return true
+  end
+
+  # Write a message part to the specified IO.
+  def write_part(msgid : String, partid : Int32, f : IO) : Bool
+    #STDERR.puts "About to run notmuch show --part=#{partid} id:#{msgid}"
+    pipe = Pipe.new("notmuch", ["show", "--part=#{partid}", "id:#{msgid}"])
+    pipe.start do |p|
+      p.receive do |output|
+	IO.copy(output, f)
       end
     end
     return true
