@@ -8,6 +8,52 @@ require "../sent"
 
 module Redwood
 
+class Attachment
+  # part and message_id are defined if this attachment
+  # is a notmuch part.  Otherwise this is a filename attachment.
+  property message_id : String?
+  property part : Int32?
+
+  property filename = ""
+  property content_type = ""
+  property size = 0
+
+  # s is a string describing the attachment.  It consists
+  # of '|'- separated components.  There are two types:
+  # - notmuch part: part|<message id>|<part no>|<filename>|<content type>|<size>
+  # - file: file|<filename>
+  def initialize(s : String)
+    splits = s.split("|")
+    case splits[0]
+    when "file"
+      @filename = splits[1]
+      unless File.exists?(@filename)
+        raise "Attachment file #{@filename} does not exist!"
+      end
+      @content_type = `mimetype -b #{@filename}`
+      @size = File.size(@filename)
+    when "part"
+      @message_id = splits[1]
+      @part = splits[2].to_i
+      @filename = splits[3]
+      @content_type = splits[4]
+      @size = splits[5].to_i
+    else
+      raise "Invalid attachment descriptor type '#{splits[0]}'"
+    end
+  end
+
+  def attach_to_email(email : EMail::Message)
+    if (msgid = @message_id) && (part = @part)
+      Notmuch.write_part(msgid, part) do |f|
+        email.attach(f, @filename, @content_type)
+      end
+    else
+      email.attach(@filename, @filename, @content_type)
+    end
+  end
+end
+
 class EditMessageMode < LineCursorMode
   mode_class send_message, default_edit_message,
 	     move_cursor_right, move_cursor_left
