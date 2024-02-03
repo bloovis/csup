@@ -14,6 +14,13 @@ module Redwood
 # A message is actually a tree of messages: it can have multiple children.
 class Message
 
+  # Tables used to translate header names to their correct names.
+  @@header_names = [
+    "Message-ID", "Delivered-To", "X-Original-To", "List-Post", "Reply-To",
+    "In-Reply-To"
+  ]
+  @@fixed_header_names = Hash(String, String).new
+
   class Part
     property id : Int32
     property content_type : String
@@ -54,7 +61,10 @@ class Message
   property have_snippet = false
   property snippet = ""
   property dirty_labels = false
-  property recipient_email = ""
+
+  property recipient_email : String?
+  property replyto : String?
+  property list_address : String?
 
   # If a JSON result from "notmuch show" is provided in `data`, parse it
   # to fill in the message fields.  Otherwise use some empty default values, and
@@ -90,7 +100,10 @@ class Message
     @to = Person.from_address_list(@headers["To"]?)
     @cc = Person.from_address_list(@headers["Cc"]?)
     @bcc = Person.from_address_list(@headers["Bcc"]?)
-    @recipient_email = @headers["X-Original-To"]? || @headers["Delivered-To"]? || ""
+    @replyto = @headers["Reply-To"]?
+    @recipient_email = @headers["X-Original-To"]? || @headers["Delivered-To"]?
+    @list_address = @headers["List-Post"]?
+
     @date = Time.unix(@timestamp)
 
     walktree do |msg, i|
@@ -106,6 +119,15 @@ class Message
   end
 
   def add_header(name, value)
+    if @@fixed_header_names.size == 0
+      # First time initialization of table
+      @@header_names.each {|h| @@fixed_header_names[h.downcase] = h}
+    end
+    if h = @@fixed_header_names[name.downcase]?
+      name = h
+    else
+      name = name.capitalize
+    end
     @headers[name] = value
   end
 
@@ -137,6 +159,7 @@ class Message
   end
 
   def is_draft?; has_label?(:draft) end
+  def is_list_message?; !@list_address.nil?; end
 
   def sync_back_labels
     Message.sync_back_labels [self]
