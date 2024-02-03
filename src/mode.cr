@@ -62,7 +62,9 @@ class Mode
     def ancestors
       [CLASSNAME] + super
     end
+    {% if names.size > 0 %}
     Redwood.actions({{*names}})
+    {% end %}
   end
 
   # Need these dummies to allow the subclassed versions defined
