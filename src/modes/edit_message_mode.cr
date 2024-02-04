@@ -152,8 +152,8 @@ class EditMessageMode < LineCursorMode
       # blank string to avoid lots of compile-time nil errors.
       selector =
         HorizontalSelector.new "Account:", # label
-			       AccountManager.user_emails + [""], # vals
-			       AccountManager.user_emails + ["Customized"] #labels
+				AccountManager.user_emails + [""], # vals
+				AccountManager.user_emails + ["Customized"] #labels
 
       @account_selector = selector
       if @header["From"] =~ /<?(\S+@(\S+?))>?$/
@@ -600,7 +600,7 @@ class EditMessageMode < LineCursorMode
     @edited
   end
 
-  def send_message(*args)
+  def send_message(*args) : Bool
     #return false if warn_editing
     return false if !edited? && !BufferManager.ask_yes_or_no("Message unedited. Really send?")
     return false if Config.bool(:confirm_no_attachments) &&
@@ -617,11 +617,11 @@ class EditMessageMode < LineCursorMode
     end
     unless acct
       BufferManager.flash "No account for sending.  Unable to send!"
-      return
+      return false
     end
     if acct.smtp_server == ""
       BufferManager.flash "Account does not define smtp_server.  Unable to send!"
-      return
+      return false
     end
 
     # Set the EMail logger to point to our own csup log.
@@ -661,7 +661,7 @@ class EditMessageMode < LineCursorMode
     SentManager.write_sent_message {|f| m.to_s(f) }
     BufferManager.kill_buffer buffer
     BufferManager.flash "Message sent!"
-    true
+    return true
   end
 
   # If the email address is in format "name <addr>", return an EMail::Address object.

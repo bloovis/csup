@@ -1,6 +1,7 @@
 require "./line_cursor_mode"
 require "./text_mode"
 require "./compose_mode"
+require "./reply_mode"
 
 module Redwood
 
@@ -9,7 +10,7 @@ class ThreadViewMode < LineCursorMode
 	     align_current_message, toggle_detailed_header,
 	     jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
-	     compose,
+	     compose, reply_cmd,
 	     archive_and_kill, delete_and_kill, do_nothing_and_kill,
 	     archive_and_next, delete_and_next, do_nothing_and_next,
 	     archive_and_prev, delete_and_prev, do_nothing_and_prev
@@ -44,7 +45,7 @@ class ThreadViewMode < LineCursorMode
     k.add :jump_to_prev_and_open, "Jump to previous message and open", "C-p"
     k.add :align_current_message, "Align current message in buffer", 'z'
     k.add :compose, "Compose message to person", 'm'
-
+    k.add :reply_cmd, "Reply to a message", 'r'
     k.add :archive_and_next, "Archive this thread, kill buffer, and view next", 'a'
     k.add :delete_and_next, "Delete this thread, kill buffer, and view next", 'd'
 
@@ -130,6 +131,16 @@ class ThreadViewMode < LineCursorMode
   def buffer=(b : Buffer)
     super
     regen_text
+  end
+
+  def reply_cmd(*args)
+    reply("none")
+  end
+
+  def reply(type_arg : String)
+    return unless m = @message_lines[curpos]
+    mode = ReplyMode.new(m, type_arg)
+    BufferManager.spawn "Reply to #{m.subj}", mode
   end
 
   def toggle_detailed_header(*args)

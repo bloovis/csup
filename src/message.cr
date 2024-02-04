@@ -32,6 +32,11 @@ class Message
     end
   end
 
+  ## some utility methods
+  RE_PATTERN = /^((re|re[\[\(]\d[\]\)]):\s*)+/i
+  def self.subj_is_reply?(s); s =~ RE_PATTERN; end
+  def self.reify_subj(s); subj_is_reply?(s) ? s : "Re: " + s; end
+
   QUOTE_PATTERN = /^\s{0,4}[>|\}]/
   BLOCK_QUOTE_PATTERN = /^-----\s*Original Message\s*----+$/
   SIG_PATTERN = /(^(- )*-- ?$)|(^\s*----------+\s*$)|(^\s*_________+\s*$)|(^\s*--~--~-)|(^\s*--\+\+\*\*==)/
@@ -61,9 +66,10 @@ class Message
   property have_snippet = false
   property snippet = ""
   property dirty_labels = false
+  property refs = Array(String).new
 
   property recipient_email : String?
-  property replyto : String?
+  property replyto : Person?
   property list_address : String?
 
   # If a JSON result from "notmuch show" is provided in `data`, parse it
@@ -100,7 +106,11 @@ class Message
     @to = Person.from_address_list(@headers["To"]?)
     @cc = Person.from_address_list(@headers["Cc"]?)
     @bcc = Person.from_address_list(@headers["Bcc"]?)
-    @replyto = @headers["Reply-To"]?
+
+    @refs = (@headers["References"]? || "").scan(/<(.+?)>/).map { |x| x[1] }
+    if replyto = @headers["Reply-To"]?
+      @replyto = Person.from_address(replyto)
+    end
     @recipient_email = @headers["X-Original-To"]? || @headers["Delivered-To"]?
     @list_address = @headers["List-Post"]?
 
@@ -169,6 +179,10 @@ class Message
     dirtymessages = messages.select{|m| m && m.dirty_labels?}
     Notmuch.tag_batch(dirtymessages.map{|m| {"id:#{m.id}", m.labels.to_a}})
     dirtymessages.each(&.clear_dirty_labels)
+  end
+
+  def quotable_body_lines : Array(String)
+    chunks.select { |c| c.quotable? }.map { |c| c.lines }.flatten
   end
 
   # Code for constructing parts

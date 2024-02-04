@@ -18,6 +18,7 @@ class Opts
     end
   end
 
+  # The following two methods make Opts behave a little more like a Hash.
   def []=(key : Symbol, value)
     @entries[key] = value
   end
