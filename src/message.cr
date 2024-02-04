@@ -14,13 +14,6 @@ module Redwood
 # A message is actually a tree of messages: it can have multiple children.
 class Message
 
-  # Tables used to translate header names to their correct names.
-  @@header_names = [
-    "Message-ID", "Delivered-To", "X-Original-To", "List-Post", "Reply-To",
-    "In-Reply-To"
-  ]
-  @@fixed_header_names = Hash(String, String).new
-
   class Part
     property id : Int32
     property content_type : String
@@ -128,17 +121,17 @@ class Message
     child.parent = self
   end
 
-  def add_header(name, value)
-    if @@fixed_header_names.size == 0
-      # First time initialization of table
-      @@header_names.each {|h| @@fixed_header_names[h.downcase] = h}
-    end
-    if h = @@fixed_header_names[name.downcase]?
-      name = h
-    else
-      name = name.capitalize
-    end
-    @headers[name] = value
+  # Convert a header name into a customary (quasi-standardized) form, where each
+  # of the dash-separated parts is capitalized, except for ID, which is all uppercase.
+  def fix_header_name(name : String) : String
+    name.split("-").map do |x|
+      n = x.capitalize
+      n == "Id" ? "ID" : n
+    end.join("-")
+  end
+
+  def add_header(name : String, value : String)
+    @headers[fix_header_name(name)] = value
   end
 
   def add_tag(name : String)

@@ -89,7 +89,7 @@ class EditMessageMode < LineCursorMode
 
   FORCE_HEADERS = %w(From To Cc Bcc Subject)
   MULTI_HEADERS = %w(To Cc Bcc)
-  NON_EDITABLE_HEADERS = %w(Message-Id Date)
+  NON_EDITABLE_HEADERS = %w(Message-ID Date)
 
   property body = Array(String).new
   property header = HeaderHash.new
@@ -725,8 +725,8 @@ class EditMessageMode < LineCursorMode
 	email.subject(v.as(String))
       when "Date"
         # Ignore the date header, use current time instead.
-      when "Message-Id"
-        # Ignore the Message-Id header, use the correct one.
+      when "Message-ID"
+        # Ignore the Message-ID header, use the correct one.
         #STDERR.puts "ignoring message-id header"
 	#email.message_id(@message_id)
       else
