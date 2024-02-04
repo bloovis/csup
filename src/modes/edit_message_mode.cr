@@ -644,6 +644,7 @@ class EditMessageMode < LineCursorMode
     config.use_auth(acct.smtp_user, acct.smtp_password)
     config.use_tls(EMail::Client::TLSMode::SMTPS)
     config.use_tls(EMail::Client::TLSMode::STARTTLS)
+    config.client_name = "Csup"
     client = EMail::Client.new(config)
 
     # Finally send the email.
