@@ -688,8 +688,6 @@ class EditMessageMode < LineCursorMode
 
   def build_message(date : Time) : EMail::Message
     email = EMail::Message.new
-    STDERR.puts "setting email message id to #{@message_id}"
-    email.message_id(@message_id)
     @header.each do |k, v|
       case k
       when "From"
@@ -726,21 +724,26 @@ class EditMessageMode < LineCursorMode
 	email.subject(v.as(String))
       when "Date"
         # Ignore the date header, use current time instead.
-      when "Message-id"
-        # Ignore the Message-id header, use the correct one.
-	email.message_id(@message_id)
+      when "Message-Id"
+        # Ignore the Message-Id header, use the correct one.
+        #STDERR.puts "ignoring message-id header"
+	#email.message_id(@message_id)
       else
 	if v.is_a?(String)
+	  #STDERR.puts "Setting custom header string #{k}=#{v}"
 	  email.custom_header(k, v)
 	else
 	  a = v.as(Array(String))
+	  #STDERR.puts "Setting custom header array #{k}=#{a}"
 	  email.custom_header(k, a.join(","))
 	end
       end
     end
 
-    # Set the date.
+    # Set the date and message_id.  Note that this doesn't actually work, because
+    # EMail::Client.send overrides both of these settings when it calls mail_validate!.
     email.date(date)
+    email.message_id(@message_id)
 
     # Add the body.
     email.message @body.join("\n")
