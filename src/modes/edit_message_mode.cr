@@ -134,7 +134,7 @@ class EditMessageMode < LineCursorMode
       end
     end
 
-    hostname = `hostname`
+    hostname = `hostname`.strip
 
     message_id = "#{Time.now.to_i}-csup-#{rand 10000}@#{hostname}"
     @message_id = "<#{message_id}>"
@@ -648,13 +648,19 @@ class EditMessageMode < LineCursorMode
 
     # Finally send the email.
     BufferManager.flash "Sending..."
+    success = false
     begin
       client.start do
-	send(m)
+	success = send(m)
       end
     rescue e
-      warn "Problem sending mail: #{e.message}"
+      warn "Exception sending mail: #{e.message}"
       BufferManager.flash "Problem sending mail: #{e.message}"
+      return false
+    end
+    unless success
+      warn "Failure sending mail.  See log file for details."
+      BufferManager.flash "Failure sending mail.  See log file for details."
       return false
     end
 
@@ -682,6 +688,8 @@ class EditMessageMode < LineCursorMode
 
   def build_message(date : Time) : EMail::Message
     email = EMail::Message.new
+    STDERR.puts "setting email message id to #{@message_id}"
+    email.message_id(@message_id)
     @header.each do |k, v|
       case k
       when "From"
@@ -718,7 +726,6 @@ class EditMessageMode < LineCursorMode
 	email.subject(v.as(String))
       when "Date"
         # Ignore the date header, use current time instead.
-	email.date(date)
       when "Message-id"
         # Ignore the Message-id header, use the correct one.
 	email.message_id(@message_id)
@@ -731,6 +738,9 @@ class EditMessageMode < LineCursorMode
 	end
       end
     end
+
+    # Set the date.
+    email.date(date)
 
     # Add the body.
     email.message @body.join("\n")
