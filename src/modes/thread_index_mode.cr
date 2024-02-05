@@ -8,8 +8,10 @@ require "./thread_view_mode"
 module Redwood
 
 class ThreadIndexMode < LineCursorMode
-  mode_class load_more_threads, toggle_archived, multi_toggle_archived,
+  mode_class load_more_threads,
 	     toggle_tagged, multi_toggle_tagged, apply_to_tagged,
+	     toggle_archived, multi_toggle_archived,
+	     toggle_deleted, multi_toggle_deleted,
 	     handle_deleted_update, handle_undeleted_update, handle_poll_update,
 	     undo
 
@@ -18,9 +20,10 @@ class ThreadIndexMode < LineCursorMode
 
   register_keymap do |k|
     k.add :load_more_threads, "Load #{LOAD_MORE_THREAD_NUM} more threads", 'M'
-    k.add :toggle_archived, "Toggle archived status", 'a'
     k.add :toggle_tagged, "Tag/untag selected thread", 't'
     k.add :apply_to_tagged, "Apply next command to all tagged threads", '+', '='
+    k.add :toggle_archived, "Toggle archived status", 'a'
+    k.add :toggle_deleted, "Delete/undelete thread", 'd'
     k.add :undo, "Undo the previous action", 'u'
   end
 
@@ -461,6 +464,8 @@ class ThreadIndexMode < LineCursorMode
     end
   end
 
+  # Toggle archived commands
+
   ## returns an undo lambda
   def actually_toggle_archived(t : MsgThread) : Proc(Nil)
     thread = t
@@ -473,6 +478,7 @@ class ThreadIndexMode < LineCursorMode
         thread.apply_label :inbox
         update_text_for_line pos
         UpdateManager.relay self, :unarchived, thread
+	nil
       end
     else
       t.apply_label :inbox
@@ -482,6 +488,7 @@ class ThreadIndexMode < LineCursorMode
         thread.remove_label :inbox
         update_text_for_line pos
         UpdateManager.relay self, :unarchived, thread
+	nil
       end
     end
   end
@@ -499,6 +506,8 @@ class ThreadIndexMode < LineCursorMode
     regen_text
     threads.each { |t| Notmuch.save_thread t }
   end
+
+  # Toggle tag commands
 
   def multi_toggle_tagged(*args)
     @tags.drop_all_tags
@@ -525,6 +534,69 @@ class ThreadIndexMode < LineCursorMode
       Notmuch.save_thread t
     end
     update_text_for_line curpos
+    Notmuch.save_thread t
+  end
+
+  # Toggle deleted commands
+
+  def multi_toggle_deleted(*args)
+    threads = @tags.all
+    undos = threads.map { |t| actually_toggle_deleted t } # should be deleted!
+    STDERR.puts "multi_toggle_deleted: #{threads.size.pluralize "thread"}, #{undos.size.pluralize "undo"}"
+#    UndoManager.register "deleting/undeleting #{threads.size.pluralize "thread"}",
+#                         undos, lambda { regen_text }, lambda { threads.each { |t| Notmuch.save_thread t } }
+    UndoManager.register "deleting/undeleting #{threads.size.pluralize "thread"}" do
+      STDERR.puts "Undo block in multi_toggle_deleted"
+      undos.each {|u| u.call }
+      regen_text
+      threads.each { |t| Notmuch.save_thread t }
+    end
+    regen_text
+    threads.each { |t| Notmuch.save_thread t }
+  end
+
+  ## returns an undo lambda
+  def actually_toggle_deleted(t : MsgThread) : Proc(Nil)
+    thread = t
+    if t.has_label? :deleted
+      t.remove_label :deleted
+      add_or_unhide t
+      UpdateManager.relay self, :undeleted, t
+      return -> do
+        STDERR.puts "undo lambda applying :deleted"
+        thread.apply_label :deleted
+        hide_thread thread
+        UpdateManager.relay self, :deleted, thread
+	nil
+      end
+    else
+      t.apply_label :deleted
+      hide_thread t
+      UpdateManager.relay self, :deleted, t
+      return -> do
+        STDERR.puts "undo lambda removing :deleted"
+        t.remove_label :deleted
+        add_or_unhide thread
+        UpdateManager.relay self, :undeleted, thread
+	nil
+      end
+    end
+  end
+
+  def toggle_deleted(*args)
+    return unless t = cursor_thread
+    thread = t
+    undo = actually_toggle_deleted t
+    if m = t.msg
+      mid = m.id[0,10]+"..."
+    else
+      mid = "<unknown>"
+    end
+    UndoManager.register("deleting/undeleting thread for message #{mid}", undo) do
+      regen_text
+      Notmuch.save_thread thread
+    end
+    regen_text
     Notmuch.save_thread t
   end
 
