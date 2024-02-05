@@ -11,6 +11,7 @@ class ThreadIndexMode < LineCursorMode
   mode_class load_more_threads,
 	     toggle_tagged, multi_toggle_tagged, apply_to_tagged,
 	     toggle_archived, multi_toggle_archived,
+	     toggle_starred, multi_toggle_starred,
 	     toggle_deleted, multi_toggle_deleted,
 	     handle_deleted_update, handle_undeleted_update, handle_poll_update,
 	     undo
@@ -22,6 +23,7 @@ class ThreadIndexMode < LineCursorMode
     k.add :load_more_threads, "Load #{LOAD_MORE_THREAD_NUM} more threads", 'M'
     k.add :toggle_tagged, "Tag/untag selected thread", 't'
     k.add :apply_to_tagged, "Apply next command to all tagged threads", '+', '='
+    k.add :toggle_starred, "Star or unstar all messages in thread", '*'
     k.add :toggle_archived, "Toggle archived status", 'a'
     k.add :toggle_deleted, "Delete/undelete thread", 'd'
     k.add :undo, "Undo the previous action", 'u'
@@ -468,6 +470,57 @@ class ThreadIndexMode < LineCursorMode
     #STDERR.puts "ThreadIndexMode.cleanup"
     UpdateManager.unregister self
     super
+  end
+
+  # Toggle starred commands
+
+  ## returns an undo lambda
+  def actually_toggle_starred(t : MsgThread) : Proc(Nil)
+    thread = t
+    if t.has_label? :starred # if ANY message has a star
+      t.remove_label :starred # remove from all
+      UpdateManager.relay self, :unstarred, t
+      return -> do
+        if msg = t.msg
+	  msg.add_label :starred
+	end
+        UpdateManager.relay self, :starred, t
+        regen_text
+	nil
+      end
+    else
+      if msg = t.msg
+	msg.add_label :starred # add only to first
+      end
+      UpdateManager.relay self, :starred, t
+      return -> do
+        t.remove_label :starred
+        UpdateManager.relay self, :unstarred, t
+        regen_text
+	nil
+      end
+    end
+  end
+
+  def toggle_starred(*args)
+    return unless t = cursor_thread
+    undo = actually_toggle_starred t
+    UndoManager.register("toggling thread starred status", undo) { Notmuch.save_thread t}
+    update_text_for_line curpos
+    cursor_down
+    Notmuch.save_thread t
+  end
+
+  def multi_toggle_starred(*args)
+    threads = @tags.all
+    undos = threads.map {|t| actually_toggle_starred t}
+    UndoManager.register("toggling #{threads.size.pluralize "thread"} starred status") do
+      undos.each {|u| u.call}
+      regen_text
+      threads.each { |t| Notmuch.save_thread t }
+    end
+    regen_text
+    threads.each { |t| Notmuch.save_thread t }
   end
 
   # Toggle archived commands
