@@ -233,6 +233,12 @@ module Notmuch
       end
     end
 
+    # If the user didnt't explicitly request spam, deleted, or killed tags,
+    # filter out messages with those tags.
+    %w(spam deleted killed).each do |tag|
+       subs += " (not tag:#{tag})" if !subs.includes?("tag:#{tag}")
+    end
+
     #debug "translated query: #{subs.inspect}"
     return subs
   end
