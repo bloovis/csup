@@ -245,6 +245,7 @@ class BufferManager
   def kill_buffer(buf)
     raise ArgumentError.new("buffer not on stack: #{buf}: #{buf.title.inspect}") unless @buffers.member? buf
 
+    #STDERR.puts "kill_buffer: calling #{buf.mode.name}.cleanup"
     buf.mode.cleanup
     @buffers.delete buf
     @name_map.delete buf.title

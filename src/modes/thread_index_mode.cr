@@ -464,6 +464,12 @@ class ThreadIndexMode < LineCursorMode
     end
   end
 
+  def cleanup
+    #STDERR.puts "ThreadIndexMode.cleanup"
+    UpdateManager.unregister self
+    super
+  end
+
   # Toggle archived commands
 
   ## returns an undo lambda
@@ -507,20 +513,6 @@ class ThreadIndexMode < LineCursorMode
     threads.each { |t| Notmuch.save_thread t }
   end
 
-  # Toggle tag commands
-
-  def multi_toggle_tagged(*args)
-    @tags.drop_all_tags
-    regen_text
-  end
-
-  def toggle_tagged(*args)
-    return unless t = cursor_thread
-    @tags.toggle_tag_for t
-    update_text_for_line curpos
-    cursor_down
-  end
-
   def toggle_archived(*args)
     return unless t = cursor_thread
     undo = actually_toggle_archived t
@@ -537,23 +529,21 @@ class ThreadIndexMode < LineCursorMode
     Notmuch.save_thread t
   end
 
-  # Toggle deleted commands
+  # Toggle tag commands
 
-  def multi_toggle_deleted(*args)
-    threads = @tags.all
-    undos = threads.map { |t| actually_toggle_deleted t } # should be deleted!
-    STDERR.puts "multi_toggle_deleted: #{threads.size.pluralize "thread"}, #{undos.size.pluralize "undo"}"
-#    UndoManager.register "deleting/undeleting #{threads.size.pluralize "thread"}",
-#                         undos, lambda { regen_text }, lambda { threads.each { |t| Notmuch.save_thread t } }
-    UndoManager.register "deleting/undeleting #{threads.size.pluralize "thread"}" do
-      STDERR.puts "Undo block in multi_toggle_deleted"
-      undos.each {|u| u.call }
-      regen_text
-      threads.each { |t| Notmuch.save_thread t }
-    end
+  def multi_toggle_tagged(*args)
+    @tags.drop_all_tags
     regen_text
-    threads.each { |t| Notmuch.save_thread t }
   end
+
+  def toggle_tagged(*args)
+    return unless t = cursor_thread
+    @tags.toggle_tag_for t
+    update_text_for_line curpos
+    cursor_down
+  end
+
+  # Toggle deleted commands
 
   ## returns an undo lambda
   def actually_toggle_deleted(t : MsgThread) : Proc(Nil)
@@ -563,7 +553,7 @@ class ThreadIndexMode < LineCursorMode
       add_or_unhide t
       UpdateManager.relay self, :undeleted, t
       return -> do
-        STDERR.puts "undo lambda applying :deleted"
+        #STDERR.puts "undo lambda applying :deleted"
         thread.apply_label :deleted
         hide_thread thread
         UpdateManager.relay self, :deleted, thread
@@ -574,7 +564,7 @@ class ThreadIndexMode < LineCursorMode
       hide_thread t
       UpdateManager.relay self, :deleted, t
       return -> do
-        STDERR.puts "undo lambda removing :deleted"
+        #STDERR.puts "undo lambda removing :deleted"
         t.remove_label :deleted
         add_or_unhide thread
         UpdateManager.relay self, :undeleted, thread
@@ -583,21 +573,26 @@ class ThreadIndexMode < LineCursorMode
     end
   end
 
-  def toggle_deleted(*args)
-    return unless t = cursor_thread
-    thread = t
-    undo = actually_toggle_deleted t
-    if m = t.msg
-      mid = m.id[0,10]+"..."
-    else
-      mid = "<unknown>"
-    end
-    UndoManager.register("deleting/undeleting thread for message #{mid}", undo) do
+  def do_multi_toggle_deleted(threads : Array(MsgThread))
+    undos = threads.map { |t| actually_toggle_deleted t }
+    #STDERR.puts "multi_toggle_deleted: #{threads.size.pluralize "thread"}, #{undos.size.pluralize "undo"}"
+    UndoManager.register "deleting/undeleting #{threads.size.pluralize "thread"}" do
+      #STDERR.puts "Undo block in multi_toggle_deleted"
+      undos.each {|u| u.call }
       regen_text
-      Notmuch.save_thread thread
+      threads.each { |t| Notmuch.save_thread t }
     end
     regen_text
-    Notmuch.save_thread t
+    threads.each { |t| Notmuch.save_thread t }
+  end
+
+  def multi_toggle_deleted(*args)
+    do_multi_toggle_deleted(@tags.all)
+  end
+
+  def toggle_deleted(*args)
+    return unless t = cursor_thread
+    do_multi_toggle_deleted([t])
   end
 
   def apply_to_tagged(*args); @tags.apply_to_tagged; end

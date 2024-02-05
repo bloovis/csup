@@ -31,6 +31,7 @@ class LineCursorMode < ScrollMode
   end
 
   def cleanup
+    #STDERR.puts "LineCursorMode.cleanup"
     #@load_more_thread.kill
     super
   end

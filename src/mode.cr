@@ -150,6 +150,7 @@ class Mode
   def status; ""; end
   def resize(rows, cols); end
   def cleanup
+    #STDERR.puts "Mode.cleanup"
     @buffer = nil
   end
 

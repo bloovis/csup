@@ -30,6 +30,7 @@ class SearchListMode < LineCursorMode
   end
 
   def cleanup
+    #STDERR.puts "SearchListMode cleanup"
     UpdateManager.unregister self
     super
   end
