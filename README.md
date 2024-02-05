@@ -1,61 +1,56 @@
-# Csup - a Crystal rewrite of Sup
+# Csup - a Crystal rewrite of the Sup mail client that uses notmuch
 
-**This is a work in progress!  It's nowhere close to finished!  You have been warned!**
+**This is a work in progress!  It's not finished!  You have been warned!**
 
-I have been a user of the Sup mail client for around 14 years,
-and about five years ago I switched to using (and enhancing) a fork of Sup
-that uses [notmuch](https://notmuchmail.org/) as its backend for storing, searching,
-and tagging email.  You can find my version of this Sup variant, which I call
-Sup-notmuch, [here](https://www.bloovis.com/cgit/sup-notmuch/).
+This is rewrite in Crystal of the Sup mail client, which I call Csup.  It uses notmuch
+as the mail store and search engine.  I based this work on an
+existing notmuch-enabled variant of Sup, which I call Sup-notmuch.
+You can find my version of this Sup variant
+[here](https://www.bloovis.com/cgit/sup-notmuch/).
 
-For a while now I've been toying with the idea of rewriting
-Sup-notmuch in [Crystal](https://crystal-lang.org/), a compiled language inspired by Ruby.  There
-is no good reason for going to all this trouble: Sup already works
-very well and is fast enough despite being written in Ruby.  The Crystal
-version will be simpler to deploy than Sup, being a single compiled binary.
-Its memory usage will be greatly reduced (experiments show a 50 MB reduction),
-and its performance should be better.  But the main reason for doing this is that I thought
-it would be an interesting exercise and a good learning experience.
+As of this writing (2024-02-05), Csup has basic functionality
+for viewing message threads, and composing and replying to emails.
+Other features from Sup that have been implemented so far include:
 
-Sup is filled with Ruby-isms that exploit all the power of  that
-very dynamic and expressive language.  But many of these isms
-are not available in Crystal, due to its being a compiled language
-that performs type-checking at compile time.  Some of these isms include:
+* log mode
+* help mode
+* saved searches
+* user-configured colors, accounts, and contacts
+* buffer list mode
 
-1. the construction of symbols at run time
-2. the construction of method names at run time and subsequent calls to those methods
-3. methods that take an optional block and can test for the existence of the block
-using `block_given?`.
-4. parallel processing using threads, requiring frequent use of mutexes
+Major features yet to be implemented include:
 
-It's possible to simulate and possibly come close to the first three of these isms,
-using Crystal macros.  But it's not quite the same thing, and the reimplementations
-almost always differ in some respects from the original Ruby versions.
+* editing labels
+* file browser mode
+* completions for prompts
+* contact list mode
+* label list mode
 
-As for the fourth ism, Sup appears to use parallel processing for two purposes:
+I embarked on this rewrite mainly as learning exercise, but
+I also wanted to simplify the way Sup-notmuch creates message threads.
+It was using notmuch to determine the parent/child tree structure,
+but then it was reading the message files directly to parse
+their contents.  This seemed wasteful to me, because notmuch
+is able to parse the messages and break them up into their parts.
+So in Csup, I use notmuch for determining the message tree
+structure, and for obtaining the contents of the various parts.
+Csup never has to examine the message files directly.
 
-1. Asynchronously filling in the buffer with more data when the cursor gets
-close to the bottom of the buffer.  This was probably implemented because
-in the early days when Sup was first written, computers (and the Ruby
-interpreter) were much slower
-and threading probably took a noticeably long time.
+I chose to simplify some aspects of Sup in this port.  In
+particular, Sup uses parallel processing to load buffer data in the
+background.  This results in code that uses mutexes and has a very
+confusing control flow in some areas.  Crystal supports concurrency using
+cooperative multi-tasking, but does not support parallel processing.
+So I eliminated all forms of asychronous execution, but a user will
+notice very little difference from the way Sup operates.
 
-2. Polling for new messages in the background.  This was probably implemented
-for the same reason as #1.
+Csup has a built-in SMTP client for sending email,
+so it does not depend on external programs like `sendmail`
+for this purpose.
 
-Crystal supports concurrency using fibers and channels, to implement
-cooperative multitasking.  But it does not implement parallel processing.
-So in Csup, filling in buffers and polling are done synchronously.
-There are commands for performing both actions, as in Sup.  But Csup
-will also perform these actions in a synchronous way:
+The result is a mail client that looks and behaves almost identically
+to Sup but is a bit faster and uses much less memory.  It is also
+easier to deploy, being a single compiled binary.
 
-1. In a thread index view, if the user attempts to move the cursor down past
-the end of the buffer, Csup will load new threads.
-
-2. In the main command loop, if the user does not type a character after
-the number of seconds specified in the `:poll_interval` config option, Csup
-will run the poll command.
-
-Experiments on a ThinkPad T450s with an SSD have shown that these
-synchronous actions are fast enough to seem nearly instantaneous, so
-that the parallel processing of Sup is not missed.
+Eventually I'll provide installation and configuration information
+for Csup.  Stay tuned!
