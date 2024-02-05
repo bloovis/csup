@@ -107,7 +107,7 @@ class Mode
   def self.register_keymap
     classname = self.name
     #puts "register_keymap for class #{classname}, keymaps #{Redwood.keymaps.object_id}"
-    if  Redwood.keymaps.has_key?(classname)
+    if Redwood.keymaps.has_key?(classname)
       #puts "#{classname} already has a keymap"
       k = Redwood.keymaps[classname]
     else
@@ -172,6 +172,23 @@ class Mode
     else
       return false
     end
+  end
+
+  def help_text : String
+    used_keys = Set(String).new
+    ancestors.map do |classname|
+      next unless km = Redwood.keymaps[classname]?
+      title = "Keybindings from #{Mode.make_name classname}"
+      s = <<-EOS
+#{title}
+#{"-" * title.display_length}
+
+#{km.help_text used_keys}
+
+EOS
+      used_keys = used_keys + km.keysyms
+      s
+    end.compact.join("\n")
   end
 
 ### helper functions

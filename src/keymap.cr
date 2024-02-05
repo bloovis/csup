@@ -5,6 +5,7 @@ class Keymap
   alias Entry = Tuple(Action, String, Array(String)) # action, help, keynames
 
   property map = Hash(String, Entry).new	# keyname => entry
+  property order = Array(Entry).new
 
   def initialize(&)
     yield self
@@ -18,6 +19,7 @@ class Keymap
     keys = [] of String
     keynames.each {|k| keys << k.to_s}
     entry = Entry.new(action, help, keys)
+    @order << entry
     keys.each do |k|
       raise ArgumentError.new("key '#{k}' already defined (as #{@map[k].first})") if @map.includes? k
       @map[k] = entry
@@ -72,6 +74,42 @@ class Keymap
     else
       {nil, nil}
     end
+  end
+
+  def keysyms : Set(String)
+    s = Set(String).new
+    @map.each do |k, entry|
+      keys = entry[2]
+      keys.each {|k| s.add(k)}
+    end
+    return s
+  end
+
+  alias KeyHelp = Tuple(String, String)	# {keynames, helpstring}
+
+  def help_lines(except_for = Set(String).new, prefix="") : Array(KeyHelp)
+    lines = Array(KeyHelp).new
+    @order.each do |entry|
+      action = entry[0]
+      help = entry[1]
+      keys = entry[2]
+      valid_keys = keys.select { |k| !except_for.includes?(k) }
+      next if valid_keys.size == 0
+      case action
+      when Symbol
+        keynames = valid_keys.map { |k| prefix + k }.join(", ")
+        lines << {keynames, help}
+      when Keymap
+        lines += action.help_lines(Set(String).new, prefix + keys.first)
+      end
+    end		# .compact -- why was this here?
+    return lines
+  end
+
+  def help_text(except_for=Set(String).new) : String
+    lines = help_lines except_for
+    llen = lines.max_of { |kh| kh[0].size }
+    lines.map { |a, b| sprintf " %#{llen}s : %s", a, b }.join("\n")
   end
 
 end 	# class Keymap

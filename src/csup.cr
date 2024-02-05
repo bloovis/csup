@@ -14,6 +14,7 @@ require "./modes/inbox_mode"
 require "./modes/buffer_list_mode"
 require "./modes/search_results_mode"
 require "./modes/search_list_mode"
+require "./modes/help_mode"
 
 module Redwood
   BASE_DIR = File.join(ENV["HOME"], ".csup")
@@ -22,6 +23,7 @@ module Redwood
 
   @@log_io : IO?
   @@poll_mode : PollMode?
+  @@global_keymap : Keymap?
 
   def init_managers
     basedir = BASE_DIR
@@ -157,7 +159,7 @@ end
 
 # Commands.  Every command must be listed in the actions macro below.
 actions quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards,
-        list_buffers, redraw, search, poll, compose
+        list_buffers, redraw, search, poll, compose, help
 
 def quit_now
   #BufferManager.say "This is the global quit command."
@@ -220,6 +222,16 @@ def compose
   ComposeMode.spawn_nicely
 end
 
+def help
+  STDERR.puts "help command"
+  return unless global_keymap = @@global_keymap
+  return unless focus_buf = BufferManager.focus_buf
+  return unless curmode = focus_buf.mode
+  BufferManager.spawn_unless_exists("<help for #{curmode.name}>") do
+    HelpMode.new(curmode, global_keymap)
+  end
+end
+
 # Main program
 def main
   init_managers
@@ -243,6 +255,7 @@ def main
   global_keymap = Keymap.new do |k|
     k.add :quit_ask, "Quit Sup, but ask first", 'q'
     k.add :quit_now, "Quit Sup immediately", 'Q'
+    k.add :help, "Show help", '?'
     k.add :roll_buffers, "Switch to next buffer", 'b'
     k.add :roll_buffers_backwards, "Switch to previous buffer", 'B'
     k.add :kill_buffer, "Kill the current buffer", 'x'
@@ -252,6 +265,7 @@ def main
     k.add :poll, "Poll for new messages", 'P', "ERR"
     k.add :compose, "Compose new message", 'm', 'c'
   end
+  @@global_keymap = global_keymap
 
   # Interactive loop.
   begin
