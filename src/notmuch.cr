@@ -148,6 +148,7 @@ module Notmuch
     end
     STDERR.puts "Notmuch.save_thread: saving thread for message #{mid}, tags #{tags}"
 {% end %}
+    #STDERR.puts "save_thread: labels = #{t.labels}"
     Message.sync_back_labels t.messages
   end
 

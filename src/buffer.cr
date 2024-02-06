@@ -280,6 +280,63 @@ class BufferManager
   end
   singleton_method ask_many_emails_with_completions, domain, question, completions, default
 
+  def ask_many_with_completions(domain : Symbol, question : String,
+				completions : Array(String),
+				default=nil) : Array(String)?
+{% if false %}
+    ask domain, question, default do |partial|
+      prefix, target =
+        case partial
+        when /^\s*$/
+          ["", ""]
+        when /^(.*\s+)?(.*?)$/
+          [$1 || "", $2]
+        else
+          raise "william screwed up completion: #{partial.inspect}"
+        end
+
+      prefix.fix_encoding!
+      target.fix_encoding!
+      completions.select { |x| x =~ /^#{Regexp::escape target}/iu }.map { |x| [prefix + x, x] }
+    end
+{% else %}
+    if s = ask(domain, question, default)
+      return s.split
+    else
+      return nil
+    end
+{% end %}
+  end
+  singleton_method ask_many_with_completions, domain, question, completions, default
+
+  ## returns a set of labels
+  def ask_for_labels(domain : Symbol, question : String,
+		     default_labels : Set(String),
+		     forbidden_labels = Set(String).new) : Set(String)?
+    default_labels = default_labels - forbidden_labels - LabelManager::RESERVED_LABELS
+    default = default_labels.to_a.sort.join(" ")
+    default += " " unless default.empty?
+    #STDERR.puts "default = #{default}"
+
+    # here I would prefer to give more control and allow all_labels instead of
+    # user_defined_labels only
+    applyable_labels = (LabelManager.user_defined_labels - forbidden_labels).
+			to_a.sort_by { |s| s.downcase }
+
+    answer = ask_many_with_completions domain, question, applyable_labels, default
+    return nil unless answer
+
+    user_labels = answer.to_set
+    user_labels.each do |l|
+      if forbidden_labels.includes?(l) || LabelManager::RESERVED_LABELS.includes?(l)
+        BufferManager.flash "'#{l}' is a reserved label!"
+        return user_labels
+      end
+    end
+    return user_labels
+  end
+  singleton_method ask_for_labels, domain, question, default_labels, forbidden_labels
+
   # Ask for contact names, return an array of email addresses, one for each contact.
   # If a name doesn't have a contact, it is assumed to be an email address and
   # is returned unchanged.  Default, if present, is a string of comma-separated
@@ -327,6 +384,7 @@ class BufferManager
   # then domain parameter, but allow it for compatibility with existing code.
   # FIXME: should take an optional block!
   def ask(domain : Symbol, question : String, default=nil) : String?
+    #STDERR.puts "ask: domain #{domain}, question '#{question}', default '#{default}'"
     raise "impossible!" if @asking
     raise "Question too long" if Ncurses.cols <= question.size
     @asking = true
@@ -341,10 +399,13 @@ class BufferManager
     Ncurses.curs_set 1
     Ncurses.refresh
 
-    ret = ""
+    ret = default || ""
     done = false
     aborted = false
     until done
+      Ncurses.mvaddstr(row, leftcol, ret + (" " * (fillcols - ret.size)))
+      Ncurses.move(row, leftcol + ret.size)
+      Ncurses.refresh
       c = Ncurses.getkey
       next if c == ""
       case c
@@ -362,9 +423,6 @@ class BufferManager
 	  ret += c
 	end
       end
-      Ncurses.mvaddstr(row, leftcol, ret + (" " * fillcols))
-      Ncurses.move(row, leftcol + ret.size)
-      Ncurses.refresh
     end
 
     @asking = false

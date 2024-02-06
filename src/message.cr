@@ -161,6 +161,12 @@ class Message
     @dirty_labels = true
   end
 
+  def labels=(l : Set(String))
+    return if @labels == l
+    @labels = l
+    @dirty_labels = true
+  end
+
   def is_draft?; has_label?(:draft) end
   def is_list_message?; !@list_address.nil?; end
 
@@ -583,6 +589,10 @@ class MsgThread
     l = Set(String).new
     each {|m, d, p| l = l + m.labels}
     return l
+  end
+
+  def labels=(l : Set(String))
+    each {|m, d, p| m.labels = l}
   end
 
   def date

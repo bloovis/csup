@@ -10,6 +10,7 @@ module Redwood
 class ThreadIndexMode < LineCursorMode
   mode_class load_more_threads,
 	     toggle_tagged, multi_toggle_tagged, apply_to_tagged,
+	     edit_labels, multi_edit_labels,
 	     toggle_archived, multi_toggle_archived,
 	     toggle_starred, multi_toggle_starred,
 	     toggle_deleted, multi_toggle_deleted,
@@ -21,11 +22,12 @@ class ThreadIndexMode < LineCursorMode
 
   register_keymap do |k|
     k.add :load_more_threads, "Load #{LOAD_MORE_THREAD_NUM} more threads", 'M'
-    k.add :toggle_tagged, "Tag/untag selected thread", 't'
     k.add :apply_to_tagged, "Apply next command to all tagged threads", '+', '='
     k.add :toggle_starred, "Star or unstar all messages in thread", '*'
     k.add :toggle_archived, "Toggle archived status", 'a'
     k.add :toggle_deleted, "Delete/undelete thread", 'd'
+    k.add :edit_labels, "Edit or add labels for a thread", 'l'
+    k.add :toggle_tagged, "Tag/untag selected thread", 't'
     k.add :undo, "Undo the previous action", 'u'
   end
 
@@ -649,6 +651,89 @@ class ThreadIndexMode < LineCursorMode
   end
 
   def apply_to_tagged(*args); @tags.apply_to_tagged; end
+
+  def edit_labels(*args)
+    return unless thread = cursor_thread
+    speciall = @hidden_labels + LabelManager::RESERVED_LABELS
+
+    old_labels = thread.labels
+    pos = curpos
+
+    # Split the thread's label set into two sets of strings:
+    # - keepl = special labels to keep
+    # - modifyl = labels that can be modified
+    keepl_array, modifyl_array = thread.labels.partition { |t| speciall.includes? t }
+    keepl = keepl_array.to_set
+    modifyl = modifyl_array.to_set
+    #STDERR.puts "modifyl = #{modifyl}"
+
+    user_labels = BufferManager.ask_for_labels(:label, "Labels for thread: ",
+					       modifyl,
+					       @hidden_labels)
+    return unless user_labels
+
+    thread.labels = keepl + user_labels
+    user_labels.each { |l| LabelManager << l }
+    update_text_for_line curpos
+
+    UndoManager.register "labeling thread" do
+      thread.labels = old_labels
+      update_text_for_line pos
+      UpdateManager.relay self, :labeled, thread
+      Notmuch.save_thread thread
+    end
+
+    UpdateManager.relay self, :labeled, thread
+    #STDERR.puts "edit_labels: calling save_thread"
+    Notmuch.save_thread thread
+  end
+
+  def multi_edit_labels(*args)
+    threads = @tags.all
+    result = BufferManager.ask_for_labels(:labels, "Add/remove labels (use -label to remove): ",
+					  Set(String).new,
+					  @hidden_labels)
+    return unless result
+    user_labels = Set(String).new
+    deleted_labels = Set(String).new
+    result.each do |label|
+      if label =~ /^-/
+	deleted_labels.add(label[1..])
+      else
+	user_labels.add(label)
+      end
+    end
+    hl = user_labels.select {|l| @hidden_labels.includes? l }.to_set
+    unless hl.size == 0
+      BufferManager.flash "'#{hl}' is a reserved label!"
+      return
+    end
+
+    old_labels = Set(String).new
+    threads.each { |t| old_labels += t.labels }
+
+    threads.each do |t|
+      deleted_labels.each {|l| t.remove_label l}
+      user_labels.each do |l|
+	t.apply_label l
+	LabelManager << l
+      end
+      UpdateManager.relay self, :labeled, t
+    end
+
+    regen_text
+
+    UndoManager.register "labeling #{threads.size.pluralize "thread"}" do
+      threads.each do |t|
+        t.labels = old_labels
+        UpdateManager.relay self, :labeled, t
+        Notmuch.save_thread t
+      end
+      regen_text
+    end
+
+    threads.each { |t| Notmuch.save_thread t }
+  end
 
 end
 
