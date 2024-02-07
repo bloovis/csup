@@ -26,6 +26,7 @@ email.from    from
 email.to      to
 email.subject subject
 email.message_id(message_id)
+#email.custom_header("Message-Id", message_id)	# this produces an exception
 email.date(now)
 #email.custom_header("In-reply-to", in_reply_to)
 

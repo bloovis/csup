@@ -12,8 +12,10 @@ dependencies:
 #  quoted_printable:
 #    github: arcage/crystal-quotedprintable
 #    version: 0.1.3
+#  email:
+#    github: arcage/crystal-email
   email:
-    github: arcage/crystal-email
+    github: bloovis/crystal-email
   ncurses:
     github: SamualLB/ncurses
   uniwidth:

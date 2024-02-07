@@ -652,7 +652,7 @@ class EditMessageMode < LineCursorMode
     success = false
     begin
       client.start do
-	success = send(m)
+	success = send(m, override_message_id: false)
       end
     rescue e
       warn "Exception sending mail: #{e.message}"
@@ -741,8 +741,11 @@ class EditMessageMode < LineCursorMode
       end
     end
 
-    # Set the date and message_id.  Note that this doesn't actually work, because
-    # EMail::Client.send overrides both of these settings when it calls mail_validate!.
+    # Set the date and message_id.  Note that setting the date doesn't actually work, because
+    # EMail::Client.send overrides it when it calls mail_validate!.  However my fork
+    # of the email shard adds an extra parameter to send to prevent overriding
+    # message_id, which is very important for handling draft messages correctly.
+    # See the call to send above.
     email.date(date)
     email.message_id(@message_id)
 
