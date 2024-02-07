@@ -85,11 +85,16 @@ class ThreadIndexMode < LineCursorMode
   # based on the sent thread's top message's ID.
   def get_update_thread(*args) : MsgThread?
     t = args[1]?
+    #STDERR.puts "get_update_thread: t = #{t} (#{t.class.name})"
     if t && t.is_a?(MsgThread)
+      #STDERR.puts "get_update_thread: ts = #{@ts}"
       if (ts = @ts) && (t = ts.find_thread(t))
+	#STDERR.puts "get_update_thread: found thread #{t}"
         return t
       end
     end
+    #STDERR.puts "get_update_thread: couldn't find thread #{t}"
+    nil
   end
 
   def handle_deleted_update(*args)
@@ -102,9 +107,8 @@ class ThreadIndexMode < LineCursorMode
 
   def handle_undeleted_update(*args)
     t = get_update_thread(*args)
-    if t
-      add_or_unhide t
-    end
+    #STDERR.puts "ThreadIndexMode: handle_undeleted_update t = #{t}"
+    add_or_unhide t
   end
 
   # This is called after a notmuch poll.  It is passed a notmuch search term
@@ -119,7 +123,7 @@ class ThreadIndexMode < LineCursorMode
 
       # Get the list of updated threads.
       query = "(#{@translated_query}) and (#{arg})"
-      new_ts = ThreadList.new(query, offset: 0, limit: 100)
+      new_ts = ThreadList.new(query, offset: 0, limit: 100)	# FIXME: what should 100 really be?
       n = new_ts.threads.size
 
       # Run through the old thread list, and add to the new list any thread
@@ -156,6 +160,13 @@ class ThreadIndexMode < LineCursorMode
     old_cursor_thread = cursor_thread
     threadlist = @ts
     return unless threadlist
+    #STDERR.puts "ThreadIndexMode.update: nthreads = #{threadlist.threads.size}"
+    if threadlist.threads.size == 0
+      # The thread list is now empty
+      @text = Array(Text).new
+      @threads = Array(MsgThread).new
+      return
+    end
 
     @threads = threadlist.threads.select {|t|!@hidden_threads.includes?(t)}
 
@@ -350,11 +361,21 @@ class ThreadIndexMode < LineCursorMode
     ]
   end
 
-  def add_or_unhide(t : MsgThread)
+  def add_or_unhide(t : MsgThread?)
     if t
-      @hidden_threads.delete t
-      update
+      if @hidden_threads.includes?(t)
+	@hidden_threads.delete t
+      else
+	if m = t.msg
+	  id = m.id
+	else
+	  id = "<unknown>"
+	end
+	#STDERR.puts "add_or_unhide: couldn't find thread #{t} with message #{id} in hidden threads"
+      end
     end
+    load_more_threads(0)	# reload the whole thread set
+    update
   end
 
   def size_widget_for_thread(t : MsgThread)
@@ -400,9 +421,15 @@ class ThreadIndexMode < LineCursorMode
     else
       num = ThreadIndexMode::LOAD_MORE_THREAD_NUM
     end
+
+    # It's too complicated to try to figure out the correct non-zero offset,
+    # then merge the new thread list into the old one.  Just start at 0
+    # and rebuild the entire thread list.
     offset = 0
-    limit = @threads.size + num
+    limit = [@threads.size + num, buffer.content_height].max
+
     if translated_query = @translated_query
+      #STDERR.puts "load_more_threads: query #{translated_query}, offset #{offset}, limit #{limit}"
       @ts = ThreadList.new(translated_query, offset: offset, limit: limit)
       update
     end
@@ -558,7 +585,7 @@ class ThreadIndexMode < LineCursorMode
     threads = @tags.all
     undos = threads.map { |t| actually_toggle_archived t }
     #STDERR.puts "multi_toggle_archived: #{threads.size.pluralize "thread"}, #{undos.size.pluralize "undo"}"
-    UndoManager.register("deleting/undeleting #{threads.size.pluralize "thread"}") do
+    UndoManager.register("archiving/unarchiving #{threads.size.pluralize "thread"}") do
       #STDERR.puts "Undo block in multi_toggle_archived"
       undos.each {|u| u.call }
       regen_text
@@ -576,7 +603,7 @@ class ThreadIndexMode < LineCursorMode
     else
       mid = "<unknown>"
     end
-    UndoManager.register("deleting/undeleting thread for message #{mid}", undo) do
+    UndoManager.register("archiving/unarchiving thread for message #{mid}", undo) do
       update_text_for_line curpos
       Notmuch.save_thread t
     end
@@ -605,23 +632,30 @@ class ThreadIndexMode < LineCursorMode
     thread = t
     if t.has_label? :deleted
       t.remove_label :deleted
+      Notmuch.save_thread t
       add_or_unhide t
+      #STDERR.puts "actually_toggle_deleted: undelete thread #{t}"
       UpdateManager.relay self, :undeleted, t
       return -> do
         #STDERR.puts "undo lambda applying :deleted"
         thread.apply_label :deleted
+	Notmuch.save_thread thread
         hide_thread thread
+	load_more_threads(0)
         UpdateManager.relay self, :deleted, thread
 	nil
       end
     else
       t.apply_label :deleted
+      Notmuch.save_thread t
       hide_thread t
       UpdateManager.relay self, :deleted, t
       return -> do
         #STDERR.puts "undo lambda removing :deleted"
-        t.remove_label :deleted
+        thread.remove_label :deleted
+	Notmuch.save_thread thread
         add_or_unhide thread
+	load_more_threads(0)
         UpdateManager.relay self, :undeleted, thread
 	nil
       end
@@ -635,10 +669,10 @@ class ThreadIndexMode < LineCursorMode
       #STDERR.puts "Undo block in multi_toggle_deleted"
       undos.each {|u| u.call }
       regen_text
-      threads.each { |t| Notmuch.save_thread t }
+      #threads.each { |t| Notmuch.save_thread t }
     end
     regen_text
-    threads.each { |t| Notmuch.save_thread t }
+    #threads.each { |t| Notmuch.save_thread t }
   end
 
   def multi_toggle_deleted(*args)

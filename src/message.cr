@@ -680,8 +680,8 @@ class ThreadList
 
     # Construct a show query from the list of threads and obtain
     # the JSON output.
-    show_query = lines.join(" or ")
-    #puts "run_notmuch_show: query #{query}"
+    show_query = lines.join(" or ") + " and (#{query})"
+    debug "run_notmuch_show: query #{show_query}"
     json = Notmuch.show(show_query, body: body, html: body)
     parse_json(json)
   end
@@ -714,9 +714,13 @@ class ThreadList
   def find_thread(other : MsgThread) : MsgThread?
     return unless m = other.msg
     mid = m.id
+    #STDERR.puts "find_thread: other thread #{other}, message #{mid}"
     threads.each do |t|
+      #STDERR.puts "Find_thread: searching thread #{t}"
       t.messages.each do |m|
+        #STDERR.puts "find_thread: comparing #{m.id} with #{mid}"
         if m.id == mid
+	  #STDERR.puts "find_thread: found #{mid}, t = #{t}!"
 	  return t
 	end
       end

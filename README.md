@@ -17,35 +17,25 @@ Other features from Sup that have been implemented so far include:
 * saved searches
 * user-configured colors, accounts, and contacts
 * buffer list mode
+* editing labels
 
 Major features yet to be implemented include:
 
-* editing labels
 * file browser mode
 * completions for prompts
 * contact list mode
 * label list mode
 
-I embarked on this rewrite mainly as learning exercise, but
-I also wanted to simplify the way Sup-notmuch creates message threads.
-It was using notmuch to determine the parent/child tree structure,
-but then it was reading the message files directly to parse
-their contents.  This seemed wasteful to me, because notmuch
-is able to parse the messages and break them up into their parts.
-So in Csup, I use notmuch for determining the message tree
-structure, and for obtaining the contents of the various parts.
-Csup never has to examine the message files directly.
+I rewrote the message threading code to use notmuch not just to determine
+the structure of the thread trees, but also to obtain the headers and
+content of the messages.
+This avoids having to read the raw message files, as Sup does.
 
-I chose to simplify some aspects of Sup in this port.  In
-particular, Sup uses parallel processing to load buffer data in the
-background.  This results in code that uses mutexes and has a very
-confusing control flow in some areas.  Crystal supports concurrency using
-cooperative multi-tasking, but does not support parallel processing.
-So I eliminated all forms of asychronous execution, but a user will
-notice very little difference from the way Sup operates.
+I also eliminated the parallel processing that Sup used to load thread
+data in the background, which required many mutexes and a confusing control flow.
 
 Csup has a built-in SMTP client for sending email,
-so it does not depend on external programs like `sendmail`
+so it does not depend on an external program like `sendmail`
 for this purpose.
 
 The result is a mail client that looks and behaves almost identically
@@ -54,3 +44,19 @@ easier to deploy, being a single compiled binary.
 
 Eventually I'll provide installation and configuration information
 for Csup.  Stay tuned!
+
+## Notmuch configuration
+
+Csup works best if you make the following changes to your `.notmuch-config` file:
+
+Add the following line to the `[search]` section:
+
+    exclude_tags=spam;deleted;killed
+
+You can still search for messages with any of these tags by explicitly specifying
+the tag in a search: e.g., `tag:deleted` .
+
+Add the following lines to the end of the file:
+
+    [show]
+    extra_headers=Delivered-To;X-Original-To;List-Post;Reply-To;References

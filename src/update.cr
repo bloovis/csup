@@ -46,7 +46,7 @@ class UpdateManager
     @targets.keys.each do |o|
       #STDERR.puts "relay: checking if #{o.class.name} responds to #{meth}"
       if o != sender && o.respond_to?(meth)
-	#STDERR.puts "relay: sending #{meth} to #{o.class.name}"
+	#STDERR.puts "relay: sender #{sender.class.name} sending (#{args[0]?}) to #{o.class.name}.#{meth}"
         o.send meth, sender, *args
       end
     end

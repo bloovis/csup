@@ -25,7 +25,7 @@ class SearchManager
     end
     @modified = false
 
-    @predefined_searches = { "inbox" => "tag:inbox not tag:spam not tag:deleted" }
+    @predefined_searches = { "inbox" => "tag:inbox" }
     @predefined_searches.each do |k,v|
       @searches[k] = v
     end
