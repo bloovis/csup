@@ -42,51 +42,44 @@ class InboxMode < ThreadIndexMode
 
     UndoManager.register "archiving thread" do
       thread.apply_label :inbox
-      add_or_unhide thread
       Notmuch.save_thread thread
+      reload
     end
 
     thread.remove_label :inbox
-    hide_thread thread
-    regen_text
     Notmuch.save_thread thread
+    reload
+    regen_text
   end
 
   def multi_archive(*args)
     #STDERR.puts "inbox mode multi_archive"
     threads = @tags.all
     UndoManager.register "archiving #{threads.size.pluralize "thread"}" do
-      threads.map do |t|
+      threads.each do |t|
         t.apply_label :inbox
-	add_or_unhide t
         Notmuch.save_thread t
       end
+      reload
       regen_text
     end
 
     threads.each do |t|
       t.remove_label :inbox
-      hide_thread t
+      Notmuch.save_thread t
     end
+    reload
     regen_text
-    threads.each { |t| Notmuch.save_thread t }
   end
 
   def handle_unarchived_update(*args)
-    #STDERR.puts "inbox mode handle_unarchived_update"
-    t = get_update_thread(*args)
-    if t
-      add_or_unhide t
-    end
+    reload
+    update
   end
 
   def handle_archived_update(*args)
-    t = get_update_thread(*args)
-    if t
-      #STDERR.puts "inbox: handle_archived_update for #{t.to_s}"
-      hide_thread t
-      regen_text
-    end
+    reload
+    update
   end
 
   def status

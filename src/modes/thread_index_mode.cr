@@ -42,7 +42,6 @@ class ThreadIndexMode < LineCursorMode
   @size_widget_width = 0
   @date_widget_width = 0
   @hidden_labels = Set(String).new
-  @hidden_threads = Set(MsgThread).new
 
   def killable?
     true
@@ -97,18 +96,20 @@ class ThreadIndexMode < LineCursorMode
     nil
   end
 
+  # Completely reload the thread list, because something happened
+  # that could have caused one or more threads to change its visibility.
+  def reload
+    load_more_threads(0)
+  end
+
   def handle_deleted_update(*args)
-    t = get_update_thread(*args)
-    if t
-      hide_thread t
-    end
+    reload
     update
   end
 
   def handle_undeleted_update(*args)
-    t = get_update_thread(*args)
-    #STDERR.puts "ThreadIndexMode: handle_undeleted_update t = #{t}"
-    add_or_unhide t
+    reload
+    update
   end
 
   # This is called after a notmuch poll.  It is passed a notmuch search term
@@ -161,14 +162,12 @@ class ThreadIndexMode < LineCursorMode
     threadlist = @ts
     return unless threadlist
     #STDERR.puts "ThreadIndexMode.update: nthreads = #{threadlist.threads.size}"
-    if threadlist.threads.size == 0
+    @threads = threadlist.threads
+    if @threads.size == 0
       # The thread list is now empty
       @text = Array(Text).new
-      @threads = Array(MsgThread).new
       return
     end
-
-    @threads = threadlist.threads.select {|t|!@hidden_threads.includes?(t)}
 
     @size_widgets = @threads.map { |t| size_widget_for_thread t }
     @size_widget_width = @size_widgets.max_of { |w| w.display_length }
@@ -182,19 +181,6 @@ class ThreadIndexMode < LineCursorMode
     end
 
     regen_text
-  end
-
-  def hide_thread(t : MsgThread)
-    return unless i = @threads.index(t)
-    #STDERR.puts "hide_thread: before hiding thread #{i}, nthreads = #{@threads.size}"
-    raise "already hidden" if @hidden_threads.includes?(t)
-    @hidden_threads.add(t)
-    @threads.delete_at i
-    @size_widgets.delete_at i
-    @date_widgets.delete_at i
-    #@patchwork_widgets.delete_at i if @patchwork_widgets
-    @tags.drop_tag_for t
-    #STDERR.puts "hide_thread: after hiding thread #{i}, nthreads = #{@threads.size}"
   end
 
   def update_text_for_line(l : Int32)
@@ -359,23 +345,6 @@ class ThreadIndexMode < LineCursorMode
       {subj_color, t.subj + (t.subj.empty? ? "" : " ")},
       {:snippet_color, t.snippet},
     ]
-  end
-
-  def add_or_unhide(t : MsgThread?)
-    if t
-      if @hidden_threads.includes?(t)
-	@hidden_threads.delete t
-      else
-	if m = t.msg
-	  id = m.id
-	else
-	  id = "<unknown>"
-	end
-	#STDERR.puts "add_or_unhide: couldn't find thread #{t} with message #{id} in hidden threads"
-      end
-    end
-    load_more_threads(0)	# reload the whole thread set
-    update
   end
 
   def size_widget_for_thread(t : MsgThread)
@@ -633,29 +602,27 @@ class ThreadIndexMode < LineCursorMode
     if t.has_label? :deleted
       t.remove_label :deleted
       Notmuch.save_thread t
-      add_or_unhide t
+      reload
       #STDERR.puts "actually_toggle_deleted: undelete thread #{t}"
       UpdateManager.relay self, :undeleted, t
       return -> do
         #STDERR.puts "undo lambda applying :deleted"
         thread.apply_label :deleted
 	Notmuch.save_thread thread
-        hide_thread thread
-	load_more_threads(0)
+        reload
         UpdateManager.relay self, :deleted, thread
 	nil
       end
     else
       t.apply_label :deleted
       Notmuch.save_thread t
-      hide_thread t
+      reload
       UpdateManager.relay self, :deleted, t
       return -> do
         #STDERR.puts "undo lambda removing :deleted"
         thread.remove_label :deleted
 	Notmuch.save_thread thread
-        add_or_unhide thread
-	load_more_threads(0)
+        reload
         UpdateManager.relay self, :undeleted, thread
 	nil
       end
