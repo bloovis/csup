@@ -53,6 +53,8 @@ Add the following line to the `[search]` section:
 
     exclude_tags=spam;deleted;killed
 
+(*NOTE*: This line will cause sup to crash, so comment it out before using sup.)
+
 You can still search for messages with any of these tags by explicitly specifying
 the tag in a search: e.g., `tag:deleted` .
 
