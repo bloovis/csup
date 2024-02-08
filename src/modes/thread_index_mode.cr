@@ -104,12 +104,10 @@ class ThreadIndexMode < LineCursorMode
 
   def handle_deleted_update(*args)
     reload
-    update
   end
 
   def handle_undeleted_update(*args)
     reload
-    update
   end
 
   # This is called after a notmuch poll.  It is passed a notmuch search term
@@ -417,7 +415,7 @@ class ThreadIndexMode < LineCursorMode
     num = t.size
     message = "Loading #{num.pluralize "message body"}..."
     BufferManager.flash(message)
-    t.reload
+    t.load_body
     mode = ThreadViewMode.new(t, self)
     viewbuf = BufferManager.spawn(t.subj, mode)
     #STDERR.puts "Spawned ThreadViewMode"

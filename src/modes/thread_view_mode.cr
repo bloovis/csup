@@ -615,9 +615,9 @@ class ThreadViewMode < LineCursorMode
     dispatch(op) do
       undo_thread = @thread	# save thread for the undo block, because @thread might change
       @thread.remove_label :inbox
+      Notmuch.save_thread @thread
       #STDERR.puts "archive_and_then about to relay :archived for #{@thread.to_s}"
       UpdateManager.relay self, :archived, @thread 	# .first is bogus!
-      Notmuch.save_thread @thread
       UndoManager.register "archiving 1 thread" do
         #STDERR.puts "undoing archive of #{undo_thread.to_s}"
         undo_thread.apply_label :inbox
@@ -631,8 +631,8 @@ class ThreadViewMode < LineCursorMode
     dispatch op do
       undo_thread = @thread	# save thread for the undo block, because @thread might change
       @thread.apply_label :deleted
-      UpdateManager.relay self, :deleted, @thread
       Notmuch.save_thread @thread
+      UpdateManager.relay self, :deleted, @thread
       UndoManager.register "deleting 1 thread" do
         undo_thread.remove_label :deleted
         Notmuch.save_thread undo_thread

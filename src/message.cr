@@ -531,7 +531,7 @@ class MsgThread
   # Reload message thread data with body and html content.  This involves
   # using notmuch search and show to get the thread data, and replacing
   # the current top level message, which doesn't have body and html content.
-  def reload
+  def load_body
     return unless m = @msg
     ts = ThreadList.new("id:#{m.id}", offset: 0, limit: 1, body: true)
     if ts
