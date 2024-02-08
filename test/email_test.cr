@@ -69,7 +69,7 @@ config.use_tls(EMail::Client::TLSMode::STARTTLS)
 client = EMail::Client.new(config)
 begin
   client.start do
-    send(email)
+    send(email, override_message_id: false)
   end
 rescue ex
   puts "Exception #{ex}"
