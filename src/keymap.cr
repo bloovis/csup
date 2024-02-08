@@ -87,6 +87,20 @@ class Keymap
 
   alias KeyHelp = Tuple(String, String)	# {keynames, helpstring}
 
+  # Change an internal keyname to a more user-friendly name
+  def fix_name(k : String) : String
+    case k
+    when "C-m"
+      "Enter"
+    when "C-i"
+      "Tab"
+    when " "
+      "Space"
+    else
+      k
+    end
+  end
+
   def help_lines(except_for = Set(String).new, prefix="") : Array(KeyHelp)
     lines = Array(KeyHelp).new
     @order.each do |entry|
@@ -97,7 +111,7 @@ class Keymap
       next if valid_keys.size == 0
       case action
       when Symbol
-        keynames = valid_keys.map { |k| prefix + k }.join(", ")
+        keynames = valid_keys.map { |k| prefix + fix_name(k) }.join(", ")
         lines << {keynames, help}
       when Keymap
         lines += action.help_lines(Set(String).new, prefix + keys.first)
