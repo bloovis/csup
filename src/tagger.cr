@@ -72,10 +72,11 @@ class Tagger(T)
   # Also, the invoked multi_{action} method must call Tagger(T).all
   # to obtain the tagged objects.
   def apply_to_tagged(action=nil)
-    #STDERR.puts "apply_to_tagged, mode = #{@mode.object_id}"
+    STDERR.puts "apply_to_tagged, mode = #{@mode.object_id}"
     mode = @mode
     return unless mode
     if num_tagged == 0
+      #STDERR.puts "apply_to_tagged: no tagged threads"
       BufferManager.flash "No tagged threads!"
       return
     end

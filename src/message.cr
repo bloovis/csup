@@ -44,7 +44,7 @@ class Message
   property children : Array(Message)
   property headers : Headers
   property labels : Set(String)
-  property parts : Parts	# parts indexed by a numeric ID
+  property parts : Parts		# index to this array may not match part.id!
   property timestamp : Int64
   property filename : String
   property date_relative : String

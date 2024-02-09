@@ -97,11 +97,17 @@ class ThreadIndexMode < LineCursorMode
   end
 
   # Completely reload the thread list, because something happened
-  # that could have caused one or more threads to change its visibility.
+  # that could have caused one or more threads to change their visibility
+  # or their message tree.
   def reload
     load_more_threads(0)
   end
 
+  # These update handlers were much more complicated in Sup, because
+  # they were trying to make the thread list look like what notmuch
+  # would have produced, apparently in an effort to make things go faster.
+  # But it's much simpler to let notmuch do all the work, and it's fast
+  # enough, so just reload the thread list from notmuch.
   def handle_deleted_update(*args)
     reload
   end
@@ -400,19 +406,33 @@ class ThreadIndexMode < LineCursorMode
     offset = 0
     limit = [@threads.size + num, buffer.content_height].max
 
-    #STDERR.puts "load_more_threads: query #{translated_query}, offset #{offset}, limit #{limit}"
+    STDERR.puts "load_more_threads: query #{translated_query}, offset #{offset}, limit #{limit}"
     new_ts = ThreadList.new(translated_query, offset: offset, limit: limit)
 
-    # If any of threads in the new list were in the old thread list, and
-    # had loaded their bodies, load the new threads' bodies.  This will keep
-    # snippets from disappearing.
+    new_tags = Tagger(MsgThread).new
+    new_tags.setmode(self)
+
     new_ts.threads.each do |new_t|
-      if (old_t = old_ts.find_thread(new_t)) && (old_msg = old_t.msg) && (old_msg.parts.size > 0)
-	#STDERR.puts "loading body for thread #{old_msg.id}"
-	new_t.load_body
+      # Find the thread in the old thread list that matches the one in the new list, if any.
+      if old_t = old_ts.find_thread(new_t)
+	# If the thread from the old list had loaded its bodies, load the new thread's bodies.
+	# This will keep snippets from disappearing.
+	if (old_msg = old_t.msg) && (old_msg.parts.size > 0)
+	  #STDERR.puts "loading body for new thread #{old_msg.id}"
+	  new_t.load_body
+	end
+
+	# If the thread from the old thread list was tagged, tag it in the new thread list.
+	if @tags.tagged?(old_t)
+	  #if new_msg = new_t.msg
+	  #  STDERR.puts "tagging new thread #{new_msg.id}"
+	  #end
+	  new_tags.tag(new_t)
+	end
       end
     end
     @ts = new_ts
+    @tags = new_tags
     update
   end
 
