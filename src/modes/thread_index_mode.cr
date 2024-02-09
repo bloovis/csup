@@ -382,6 +382,10 @@ class ThreadIndexMode < LineCursorMode
   # Commands
 
   def load_more_threads(*args)
+    # These should never be nil.
+    return unless old_ts = @ts
+    return unless translated_query = @translated_query
+
     arg = args[0]?
     if arg && arg.is_a?(Int32)
       num = arg
@@ -389,17 +393,27 @@ class ThreadIndexMode < LineCursorMode
       num = ThreadIndexMode::LOAD_MORE_THREAD_NUM
     end
 
+
     # It's too complicated to try to figure out the correct non-zero offset,
     # then merge the new thread list into the old one.  Just start at 0
     # and rebuild the entire thread list.
     offset = 0
     limit = [@threads.size + num, buffer.content_height].max
 
-    if translated_query = @translated_query
-      #STDERR.puts "load_more_threads: query #{translated_query}, offset #{offset}, limit #{limit}"
-      @ts = ThreadList.new(translated_query, offset: offset, limit: limit)
-      update
+    #STDERR.puts "load_more_threads: query #{translated_query}, offset #{offset}, limit #{limit}"
+    new_ts = ThreadList.new(translated_query, offset: offset, limit: limit)
+
+    # If any of threads in the new list were in the old thread list, and
+    # had loaded their bodies, load the new threads' bodies.  This will keep
+    # snippets from disappearing.
+    new_ts.threads.each do |new_t|
+      if (old_t = old_ts.find_thread(new_t)) && (old_msg = old_t.msg) && (old_msg.parts.size > 0)
+	#STDERR.puts "loading body for thread #{old_msg.id}"
+	new_t.load_body
+      end
     end
+    @ts = new_ts
+    update
   end
 
   def undo(*args)
