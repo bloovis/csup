@@ -425,7 +425,7 @@ class ThreadIndexMode < LineCursorMode
 	# If the thread from the old thread list was tagged, tag it in the new thread list.
 	if @tags.tagged?(old_t)
 	  if new_msg = new_t.msg
-	    STDERR.puts "load_more_threads: tagging new thread #{new_msg.id}, old thread #{old_t.object_id}"
+	    #STDERR.puts "load_more_threads: tagging new thread #{new_msg.id}, old thread #{old_t.object_id}"
 	  end
 	  new_tags.tag(new_t)
 	end
@@ -643,26 +643,26 @@ class ThreadIndexMode < LineCursorMode
   ## returns an undo lambda
   def actually_toggle_deleted(t : MsgThread) : Proc(Nil)
     thread = t
-    tagged = @tags.tagged?(t)
+    tagged = @tags.tagged?(t)	# used only in debug statements
     if t.has_label? :deleted
-      STDERR.puts "actually_toggle_deleted: remove :deleted, thread #{t.object_id}, tagged = #{tagged}"
+      #STDERR.puts "actually_toggle_deleted: remove :deleted, thread #{t.object_id}, tagged = #{tagged}"
       t.remove_label :deleted
       Notmuch.save_thread t
       UpdateManager.relay self, :undeleted, t
       return -> do
-        STDERR.puts "undo lambda add :deleted, thread #{thread.object_id}, tagged = #{tagged}"
+        #STDERR.puts "undo lambda add :deleted, thread #{thread.object_id}, tagged = #{tagged}"
         thread.apply_label :deleted
 	Notmuch.save_thread thread
         UpdateManager.relay self, :deleted, thread
 	nil
       end
     else
-      STDERR.puts "actually_toggle_deleted: add :deleted, thread #{t.object_id}, tagged = #{tagged}"
+      #STDERR.puts "actually_toggle_deleted: add :deleted, thread #{t.object_id}, tagged = #{tagged}"
       t.apply_label :deleted
       Notmuch.save_thread t
       UpdateManager.relay self, :deleted, t
       return -> do
-        STDERR.puts "undo lambda remove :deleted, thread #{thread.object_id}, tagged = #{tagged}"
+        #STDERR.puts "undo lambda remove :deleted, thread #{thread.object_id}, tagged = #{tagged}"
         thread.remove_label :deleted
 	Notmuch.save_thread thread
         UpdateManager.relay self, :undeleted, thread
