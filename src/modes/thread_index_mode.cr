@@ -406,7 +406,7 @@ class ThreadIndexMode < LineCursorMode
     offset = 0
     limit = [@threads.size + num, buffer.content_height].max
 
-    STDERR.puts "load_more_threads: query #{translated_query}, offset #{offset}, limit #{limit}"
+    #STDERR.puts "load_more_threads: query #{translated_query}, offset #{offset}, limit #{limit}"
     new_ts = ThreadList.new(translated_query, offset: offset, limit: limit)
 
     new_tags = Tagger(MsgThread).new
@@ -424,9 +424,9 @@ class ThreadIndexMode < LineCursorMode
 
 	# If the thread from the old thread list was tagged, tag it in the new thread list.
 	if @tags.tagged?(old_t)
-	  #if new_msg = new_t.msg
-	  #  STDERR.puts "tagging new thread #{new_msg.id}"
-	  #end
+	  if new_msg = new_t.msg
+	    STDERR.puts "load_more_threads: tagging new thread #{new_msg.id}, old thread #{old_t.object_id}"
+	  end
 	  new_tags.tag(new_t)
 	end
       end
@@ -628,33 +628,43 @@ class ThreadIndexMode < LineCursorMode
 
   # Toggle deleted commands
 
+  # Restore the tagged state of an old thread that might not be
+  # in the current thread list.  This should be called from an
+  # undo proc that changes the visibility of thread due to
+  # changing its spam, deleted, or killed tags.  Call it AFTER
+  # calling reload, to ensure that the thread list is up-to-date.
+  def tag_old_thread(t : MsgThread)
+    if (ts = @ts) && (new_t = ts.find_thread(t))
+      @tags.tag(new_t)
+      update_text_for_thread(new_t)
+    end
+  end
+
   ## returns an undo lambda
   def actually_toggle_deleted(t : MsgThread) : Proc(Nil)
     thread = t
+    tagged = @tags.tagged?(t)
     if t.has_label? :deleted
+      STDERR.puts "actually_toggle_deleted: remove :deleted, thread #{t.object_id}, tagged = #{tagged}"
       t.remove_label :deleted
       Notmuch.save_thread t
-      reload
-      #STDERR.puts "actually_toggle_deleted: undelete thread #{t}"
       UpdateManager.relay self, :undeleted, t
       return -> do
-        #STDERR.puts "undo lambda applying :deleted"
+        STDERR.puts "undo lambda add :deleted, thread #{thread.object_id}, tagged = #{tagged}"
         thread.apply_label :deleted
 	Notmuch.save_thread thread
-        reload
         UpdateManager.relay self, :deleted, thread
 	nil
       end
     else
+      STDERR.puts "actually_toggle_deleted: add :deleted, thread #{t.object_id}, tagged = #{tagged}"
       t.apply_label :deleted
       Notmuch.save_thread t
-      reload
       UpdateManager.relay self, :deleted, t
       return -> do
-        #STDERR.puts "undo lambda removing :deleted"
+        STDERR.puts "undo lambda remove :deleted, thread #{thread.object_id}, tagged = #{tagged}"
         thread.remove_label :deleted
 	Notmuch.save_thread thread
-        reload
         UpdateManager.relay self, :undeleted, thread
 	nil
       end
@@ -663,13 +673,18 @@ class ThreadIndexMode < LineCursorMode
 
   def do_multi_toggle_deleted(threads : Array(MsgThread))
     undos = threads.map { |t| actually_toggle_deleted t }
+    tagged_threads = @tags.all
     #STDERR.puts "multi_toggle_deleted: #{threads.size.pluralize "thread"}, #{undos.size.pluralize "undo"}"
     UndoManager.register "deleting/undeleting #{threads.size.pluralize "thread"}" do
       #STDERR.puts "Undo block in multi_toggle_deleted"
-      undos.each {|u| u.call }
-      regen_text
-      #threads.each { |t| Notmuch.save_thread t }
+      if undos.size > 0
+	undos.each {|u| u.call }
+	reload
+	regen_text
+      end
+      tagged_threads.each { |t| tag_old_thread(t) }
     end
+    reload
     regen_text
     #threads.each { |t| Notmuch.save_thread t }
   end
