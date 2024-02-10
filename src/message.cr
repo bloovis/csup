@@ -366,32 +366,12 @@ class Message
     @chunks = [] of Chunk
     found_plain = false
     @parts.each do |p|
-      if p.content_type == "text/plain" && p.content_size > 0
+      if found_plain == false && p.content_type == "text/plain" && p.content_size > 0
 	found_plain = true
 	lines = p.content.lines
 	@chunks = @chunks + text_to_chunks(lines)
       else
-        result = ""
-	# If this is a non-empty part HTML part, and we haven't
-	# seen a plain text part yet, decode it and treat it as it were
-	# plain text attachment.
-	if p.content_type == "text/html" && p.content_size > 0 && !found_plain
-	  success = HookManager.run("mime-decode") do |pipe|
-	    pipe.transmit do |f|
-	      f.puts(p.content_type)
-	      f << p.content
-	    end
-	    pipe.receive do |f|
-	      result = f.gets_to_end
-	    end
-	  end
-	end
-	if result.size > 0
-	  lines = result.lines
-	  @chunks = @chunks + text_to_chunks(lines)
-	else
-	  @chunks << AttachmentChunk.new(p, self)
-	end
+	@chunks << AttachmentChunk.new(p, self)
       end
     end
   end

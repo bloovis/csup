@@ -69,7 +69,6 @@ class AttachmentChunk < Chunk
 
     @color = :text_color
     @patina_color = :attachment_color
-    @patina_text = "Attachment: #{part.filename} (#{part.content_type}); #{part.content_size.to_human_size})"
     @initial_state = :open
 
     text = ""
@@ -89,7 +88,9 @@ class AttachmentChunk < Chunk
     if text && text.size > 0
       @lines = text.gsub("\r\n", "\n").gsub(/\t/, "        ").gsub(/\r/, "").split("\n")
       @quotable = true
+      @patina_text = "Attachment: #{part.filename} (#{lines.length.pluralize "line"})"
     else
+      @patina_text = "Attachment: #{part.filename} (#{part.content_type}); #{part.content_size.to_human_size})"
       @lines = [] of String
     end
     if filename != "" && !filename =~ /^c?sup-attachment-/
@@ -100,8 +101,15 @@ class AttachmentChunk < Chunk
   ## an attachment is expandable if we've managed to decode it into
   ## something we can display inline. otherwise, it's viewable.
   def inlineable?; false end
-  def viewable?; lines.size > 0 end
-  def expandable?; !viewable? end
+  def viewable?
+    #STDERR.puts "attachment lines.size #{lines.size}"
+    lines.size == 0
+  end
+
+  def expandable?
+    #STDERR.puts "attachment part #{part.content_type}, expandable #{!viewable?}, initial state #{initial_state}"
+    !viewable?
+  end
 
   def filename
     @part.filename
