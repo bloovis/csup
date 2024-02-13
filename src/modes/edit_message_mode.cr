@@ -62,11 +62,10 @@ class Attachment
 end
 
 class EditMessageMode < LineCursorMode
-  mode_class send_message, default_edit_message,
+  mode_class send_message, default_edit_message, save_as_draft,
 	     move_cursor_right, move_cursor_left, attach_file, delete_attachment
-	     #edit_message_or_field, edit_to, edit_cc,
+	     #edit_message_or_field, edit_to, edit_cc
 	     #edit_subject,  alternate_edit_message,
-	     #save_as_draft,
 
 
   # HeaderHash, defined in ScrollMode, is a representation
@@ -112,7 +111,7 @@ class EditMessageMode < LineCursorMode
     #k.add :edit_subject, "Edit Subject", 's'
     k.add :default_edit_message, "Edit message (default)", "C-m"
     #k.add :alternate_edit_message, "Edit message (alternate, asynchronously)", 'E'
-    #k.add :save_as_draft, "Save as draft", 'P'
+    k.add :save_as_draft, "Save as draft", 'P'
     k.add :attach_file, "Attach a file", 'a'
     k.add :delete_attachment, "Delete an attachment", 'd'
     k.add :move_cursor_right, "Move selector to the right", "Right", 'l'
@@ -339,7 +338,7 @@ class EditMessageMode < LineCursorMode
     header_lines = Array(String).new	# array of header keys
     headers = TextLines.new
     (FORCE_HEADERS + (header.keys - FORCE_HEADERS)).each do |h|
-      lines = make_lines "#{h}:", header[h]
+      lines = make_lines "#{h}:", header[h]? || ""
       lines.each do |l|
         #STDERR.puts "format_headers: adding line #{l} to headers"
         header_lines << h
@@ -687,6 +686,12 @@ class EditMessageMode < LineCursorMode
     end
   end
 
+  def save_as_draft(*args)
+    DraftManager.write_draft(@message_id) { |f| write_message f, false }
+    BufferManager.kill_buffer buffer
+    BufferManager.flash "Saved for later editing."
+  end
+
   def build_message(date : Time) : EMail::Message
     email = EMail::Message.new
     @header.each do |k, v|
@@ -757,6 +762,12 @@ class EditMessageMode < LineCursorMode
 
     return email
   end
+
+  def write_message(f : IO, full=true, date=Time.now)
+    email = build_message(date)
+    email.to_s(f)
+  end
+
 end	# EditMessage Mode
 
 end	# Redwood

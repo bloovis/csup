@@ -109,6 +109,7 @@ class ThreadIndexMode < LineCursorMode
   # But it's much simpler to let notmuch do all the work, and it's fast
   # enough, so just reload the thread list from notmuch.
   def handle_deleted_update(*args)
+    #STDERR.puts "ThreadIndexMode.handle_deleted_update calling reload"
     reload
   end
 

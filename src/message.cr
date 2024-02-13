@@ -167,8 +167,12 @@ class Message
     @dirty_labels = true
   end
 
-  def is_draft?; has_label?(:draft) end
   def is_list_message?; !@list_address.nil?; end
+  def is_draft?; has_label?(:draft) end
+  def draft_filename
+    raise "not a draft" unless is_draft?
+    @filename
+  end
 
   def sync_back_labels
     Message.sync_back_labels [self]

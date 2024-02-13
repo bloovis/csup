@@ -49,6 +49,14 @@ for Csup.  Stay tuned!
 
 Csup works best if you make the following changes to your `.notmuch-config` file:
 
+Add the following line to the `[maildir]` section:
+
+    synchronize_flags=false
+
+This is *very* important, because without it, csup may crash when you
+try to edit a draft message, due to notmuch renaming the file containing
+the draft message.
+
 Add the following line to the `[search]` section:
 
     exclude_tags=spam;deleted;killed

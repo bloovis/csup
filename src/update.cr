@@ -40,7 +40,7 @@ class UpdateManager
   end
   singleton_method unregister, o
 
-  def relay(sender : Mode, type : Symbol, *args)
+  def relay(sender : Object, type : Symbol, *args)
     #STDERR.puts "relay: sender #{sender.class.name}, type #{type}"
     meth = "handle_#{type.to_s}_update"
     @targets.keys.each do |o|

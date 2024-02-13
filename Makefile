@@ -1,7 +1,7 @@
 % : test/%.cr
 	crystal build --no-color --error-trace $<
 
-csup : src/csup.cr src/modes/inbox_mode.cr src/modes/thread_index_mode.cr
+csup : $(wildcard src/*.cr) $(wildcard src/modes/*.cr)
 	crystal build --no-color --error-trace -D MAIN src/csup.cr
 
 .PHONY: tests

@@ -2,6 +2,7 @@ require "./line_cursor_mode"
 require "./text_mode"
 require "./compose_mode"
 require "./reply_mode"
+require "./resume_mode"
 
 module Redwood
 
@@ -10,7 +11,7 @@ class ThreadViewMode < LineCursorMode
 	     align_current_message, toggle_detailed_header,
 	     jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
-	     compose, reply_cmd,
+	     compose, reply_cmd, edit_draft,
 	     archive_and_kill, delete_and_kill, do_nothing_and_kill,
 	     archive_and_next, delete_and_next, do_nothing_and_next,
 	     archive_and_prev, delete_and_prev, do_nothing_and_prev
@@ -38,6 +39,7 @@ class ThreadViewMode < LineCursorMode
     k.add :toggle_detailed_header, "Toggle detailed header", 'h'
     k.add :activate_chunk, "Expand/collapse or activate item", "C-m"
     k.add :expand_all_messages, "Expand/collapse all messages", 'E'
+    k.add :edit_draft, "Edit draft", 'e'
     k.add :expand_all_quotes, "Expand/collapse all quotes in a message", 'o'
     k.add :jump_to_next_open, "Jump to next open message", 'n'
     k.add :jump_to_next_and_open, "Jump to next message and open", "C-n"
@@ -436,6 +438,21 @@ class ThreadViewMode < LineCursorMode
     if chunk.is_a?(Message) && Config.bool(:jump_to_open_message)
       jump_to_message chunk
       jump_to_next_open if layout && layout.state == :closed
+    end
+  end
+
+  def edit_draft(*args)
+    return unless m = @message_lines[curpos]
+    #STDERR.puts "edit_draft: id #{m.id}, filename #{m.filename}, is_draft #{m.is_draft?}"
+    raise "edit_draft: file #{m.filename} does not exist" unless File.exists?(m.filename)
+    if m && m.is_draft?
+      #STDERR.puts "edit_draft: creating ResumeMode"
+      mode = ResumeMode.new m
+      BufferManager.spawn "Edit message", mode
+      BufferManager.kill_buffer self.buffer
+      mode.default_edit_message
+    else
+      BufferManager.flash "Not a draft message!"
     end
   end
 

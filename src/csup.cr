@@ -15,6 +15,7 @@ require "./modes/buffer_list_mode"
 require "./modes/search_results_mode"
 require "./modes/search_list_mode"
 require "./modes/help_mode"
+require "./draft"
 
 module Redwood
   BASE_DIR = File.join(ENV["HOME"], ".csup")
@@ -41,6 +42,7 @@ module Redwood
     am = AccountManager.new(Config.accounts)
     lm = LabelManager.new(File.join(basedir, "labels.txt"))
     sentm = SentManager.new(Config.str(:sent_folder) || "sent")
+    dm = DraftManager.new(Config.str(:draft_folder) || "draft")
 
     log_io = File.open(File.join(basedir, "log"), "a")
     if log_io
