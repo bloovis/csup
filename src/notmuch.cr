@@ -153,6 +153,7 @@ module Notmuch
   end
 
   def load_contacts(email_addresses : Array(String), limit : Int32 = 20)
+    return Array(Person).new
   end
 
   # Translate a query string from the user into one that can

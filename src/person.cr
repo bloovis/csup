@@ -47,6 +47,23 @@ class Person
     Person.full_address @name, @email
   end
 
+  ## when sorting addresses, sort by this
+  def sort_by_me
+    name = @name || ""
+    case name
+    when /^(\S+), \S+/
+      $1
+    when /^\S+ \S+ (\S+)/
+      $1
+    when /^\S+ (\S+)/
+      $1
+    when ""
+      @email || ""
+    else
+      name
+    end.downcase
+  end
+
   # Class methods
 
   def self.from_name_and_email(name : (String | Nil), email : String)

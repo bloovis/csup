@@ -33,7 +33,7 @@ class ContactManager
   end
   singleton_method contacts
 
-  def contacts_with_aliases
+  def contacts_with_aliases : Array(Person)
     @a2p.values.uniq
   end
   singleton_method contacts_with_aliases
@@ -83,7 +83,12 @@ class ContactManager
   singleton_method person_for, email
 
   def is_aliased_contact?(person)
-    !@p2a[person]?.nil?
+    if p = @p2a[person]?
+      # In Csup, we use an empty string instead of nil to mean "no alias".
+      return !p.empty?
+    else
+      return false
+    end
   end
   singleton_method is_aliased_contact?, person
 

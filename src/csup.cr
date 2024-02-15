@@ -15,6 +15,7 @@ require "./modes/buffer_list_mode"
 require "./modes/search_results_mode"
 require "./modes/search_list_mode"
 require "./modes/help_mode"
+require "./modes/contact_list_mode"
 require "./draft"
 
 module Redwood
@@ -161,7 +162,7 @@ end
 
 # Commands.  Every command must be listed in the actions macro below.
 actions quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards,
-        list_buffers, redraw, search, poll, compose, help
+        list_buffers, list_contacts, redraw, search, poll, compose, help
 
 def quit_now
   #BufferManager.say "This is the global quit command."
@@ -197,6 +198,11 @@ end
 
 def list_buffers
   BufferManager.spawn_unless_exists("buffer list", Opts.new({:system => true})) { BufferListMode.new }
+end
+
+def list_contacts
+  b, new = BufferManager.spawn_unless_exists("Contact List") { ContactListMode.new }
+  #mode.load_in_background if new
 end
 
 def redraw
@@ -262,6 +268,7 @@ def main
     k.add :roll_buffers_backwards, "Switch to previous buffer", 'B'
     k.add :kill_buffer, "Kill the current buffer", 'x'
     k.add :list_buffers, "List all buffers", ';'
+    k.add :list_contacts, "List contacts", 'C'
     k.add :redraw, "Redraw screen", "C-l"
     k.add :search, "Search all messages", '\\', 'F'
     k.add :poll, "Poll for new messages", 'P', "ERR"

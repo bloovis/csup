@@ -143,7 +143,7 @@ struct Int
   # Definitely cheesy, but it keeps existing Sup code happy, even if
   # if it's not always correct.
   def pluralize(s : String) : String
-    if self > 1
+    if self != 1
       if s =~/(.*)y$/
 	"#{self} #{$1}ies"
       else

@@ -734,7 +734,7 @@ class BufferManager
         spawn title, mode, opts
         true
       end
-    [@name_map[title], new]
+    {@name_map[title], new}
   end
   def self.spawn_unless_exists(title : String, opts=Opts.new, &b : -> Mode)
     self.instance.spawn_unless_exists(title, opts, &b)
