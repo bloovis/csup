@@ -163,7 +163,7 @@ class ContactListMode < LineCursorMode
   def text_for_contact(p)
     aalias = ContactManager.alias_for(p) || ""
     [{:tagged_color, @tags.tagged?(p) ? ">" : " "},
-     {:text_color, sprintf("%-#{@awidth}s %-#{@nwidth}s %s", aalias, p.name, p.email)}]
+     {:text_color, aalias.pad_right(@awidth) + " " + (p.name || "").pad_right(@nwidth) + " " + p.email}]
   end
 
   def regen_text
