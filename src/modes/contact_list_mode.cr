@@ -21,7 +21,7 @@ end
 
 class ContactListMode < LineCursorMode
   mode_class load_more, reload, edit_alias, toggle_tagged, apply_to_tagged, search,
-	     multi_toggle_tagged, multi_search
+	     multi_toggle_tagged, multi_search, select_item, multi_select_item
 
   LOAD_MORE_CONTACTS_NUM = 100
 
@@ -93,17 +93,17 @@ class ContactListMode < LineCursorMode
   def do_multi_select(people : Array(Person))
     case @mode
     when :regular
-      mode = ComposeMode.new(Opts.new({:to => people}))
+      mode = ComposeMode.new(Opts.new({:to => people.map{|p| p.full_address}}))
       BufferManager.spawn "new message", mode
       mode.default_edit_message
     end
   end
 
-  def multi_select(*args)
+  def multi_select_item(*args)
     do_multi_select(@tags.all)
   end
 
-  def select(*args)
+  def select_item(*args)
     return unless p = @contacts[curpos]
     do_multi_select([p])
   end
