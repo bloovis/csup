@@ -23,13 +23,7 @@ class ForwardMode < EditMessageMode
       elsif atts
         filenames = Array(String).new
 	atts.each do |a|
-	  splits = a.split("|")
-	  # See class Attachment for information about attachment descriptor strings.
-	  if splits[0] == "file"
-	    filenames << splits[1]	# filename from file attachment
-	  else
-	    filenames << splits[3]	# filename from notmuch part attachment
-	  end
+	  filenames << a.split("|")[1]
 	end
         "Fwd: " + filenames.join(", ")
       else
@@ -90,7 +84,7 @@ class ForwardMode < EditMessageMode
       end
       m.parts.each do |p|
         if p.content_type != "text/plain"
-	  attachments << "part|#{m.id}|#{p.id}|#{p.filename}|#{p.content_type}|#{p.content_size}"
+	  attachments << "part|#{p.filename}|#{m.id}|#{p.id}|#{p.content_type}|#{p.content_size}"
 	end
       end
     end
@@ -103,12 +97,7 @@ class ForwardMode < EditMessageMode
       elsif attachments
         filenames = Array(String).new
 	attachments.each do |a|
-	  splits = a.split("|")
-	  if splits[0] == "file"
-	    filenames << splits[1]
-	  else
-	    filenames << splits[3]
-	  end
+	  filenames << a.split("|")[1]
 	end
         filenames.join(", ")
       else

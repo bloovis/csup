@@ -149,8 +149,8 @@ class ThreadViewMode < LineCursorMode
 
   def forward(*args)
     if(chunk = @chunk_lines[curpos]) && chunk.is_a?(AttachmentChunk)
-      att = "part|#{chunk.message.id}|#{chunk.part.id}|" +
-            "#{chunk.part.filename}|#{chunk.part.content_type}|#{chunk.part.content_size}"
+      att = "part|#{chunk.part.filename}|#{chunk.message.id}|#{chunk.part.id}|" +
+            "#{chunk.part.content_type}|#{chunk.part.content_size}"
       ForwardMode.spawn_nicely(Opts.new({:attachments => [att]}))
     elsif(m = @message_lines[curpos])
       ForwardMode.spawn_nicely(Opts.new({:message => m}))

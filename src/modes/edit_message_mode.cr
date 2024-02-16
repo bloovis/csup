@@ -21,7 +21,7 @@ class Attachment
 
   # s is a string describing the attachment.  It consists
   # of '|'- separated components.  There are two types:
-  # - notmuch part: part|<message id>|<part no>|<filename>|<content type>|<size>
+  # - notmuch part: part|<filename>|<message id>|<part no>|<content type>|<size>
   # - file: file|<filename>
   def initialize(s : String)
     splits = s.split("|")
@@ -36,9 +36,9 @@ class Attachment
       @basename = Path[@filename].basename
       #STDERR.puts "Created file attachment: #{@filename}, base name #{@basename}, size #{@size}, content type #{@content_type}"
     when "part"
-      @message_id = splits[1]
-      @part = splits[2].to_i
-      @filename = splits[3]
+      @filename = splits[1]
+      @message_id = splits[2]
+      @part = splits[3].to_i
       @basename = @filename
       @content_type = splits[4]
       @size = splits[5].to_i
