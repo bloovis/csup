@@ -1,4 +1,5 @@
 require "json"
+require "./message"
 
 # Class for passing options to methods in Mode and its subclasses.
 
@@ -8,7 +9,7 @@ alias HeaderHash = Hash(String, String | Array(String))
 
 class Opts
   alias Value = String | Int32 | Bool | Symbol | Array(String) |
-		HeaderHash | JSON::Any
+		HeaderHash | JSON::Any | Message
 
   def initialize(h = nil)
     @entries = Hash(Symbol, Value).new
@@ -58,6 +59,7 @@ class Opts
   get(sym, Symbol)
   get(strarray, Array(String))
   get(hash, HeaderHash)
+  get(message, Message)
 
 end	# Opts
 

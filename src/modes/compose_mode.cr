@@ -66,8 +66,6 @@ class ComposeMode < EditMessageMode
 
     unless to = opts.strarray(:to)
       if Config.bool(:ask_for_to)
-	# FIXME - must convert list of Persons to their email addresses, and opts[:to_default]
-	# must be an email address, not a person (see ThreadViewMode.compose).
         to = BufferManager.ask_for_contacts(:people, "To: ", opts.str(:to_default) || "")
       end
     end

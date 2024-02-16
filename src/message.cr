@@ -188,6 +188,15 @@ class Message
     chunks.select { |c| c.quotable? }.map { |c| c.lines }.flatten
   end
 
+  def quotable_header_lines
+    ["From: #{@from.full_address}"] +
+      (@to.empty? ? [] of String : ["To: " + @to.map { |p| p.full_address }.join(", ")]) +
+      (@cc.empty? ? [] of String : ["Cc: " + @cc.map { |p| p.full_address }.join(", ")]) +
+      (@bcc.empty? ? [] of String : ["Bcc: " + @bcc.map { |p| p.full_address }.join(", ")]) +
+      ["Date: #{@date.to_rfc2822}",
+       "Subject: #{@subj}"]
+  end
+
   # Code for constructing parts
   def add_part(id : Int32, ctype : String, filename : String, s : String, content_size : Int32)
     if filename == ""

@@ -3,6 +3,7 @@ require "./text_mode"
 require "./compose_mode"
 require "./reply_mode"
 require "./resume_mode"
+require "./forward_mode"
 
 module Redwood
 
@@ -11,7 +12,7 @@ class ThreadViewMode < LineCursorMode
 	     align_current_message, toggle_detailed_header,
 	     jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
-	     compose, reply_cmd, edit_draft,
+	     compose, reply_cmd, edit_draft, forward,
 	     archive_and_kill, delete_and_kill, do_nothing_and_kill,
 	     archive_and_next, delete_and_next, do_nothing_and_next,
 	     archive_and_prev, delete_and_prev, do_nothing_and_prev
@@ -48,6 +49,7 @@ class ThreadViewMode < LineCursorMode
     k.add :align_current_message, "Align current message in buffer", 'z'
     k.add :compose, "Compose message to person", 'm'
     k.add :reply_cmd, "Reply to a message", 'r'
+    k.add :forward, "Forward a message or attachment", 'f'
     k.add :archive_and_next, "Archive this thread, kill buffer, and view next", 'a'
     k.add :delete_and_next, "Delete this thread, kill buffer, and view next", 'd'
 
@@ -143,6 +145,16 @@ class ThreadViewMode < LineCursorMode
     return unless m = @message_lines[curpos]
     mode = ReplyMode.new(m, type_arg)
     BufferManager.spawn "Reply to #{m.subj}", mode
+  end
+
+  def forward(*args)
+    if(chunk = @chunk_lines[curpos]) && chunk.is_a?(AttachmentChunk)
+      att = "part|#{chunk.message.id}|#{chunk.part.id}|" +
+            "#{chunk.part.filename}|#{chunk.part.content_type}|#{chunk.part.content_size}"
+      ForwardMode.spawn_nicely(Opts.new({:attachments => [att]}))
+    elsif(m = @message_lines[curpos])
+      ForwardMode.spawn_nicely(Opts.new({:message => m}))
+    end
   end
 
   def toggle_detailed_header(*args)
