@@ -42,7 +42,7 @@ class Attachment
       @basename = @filename
       @content_type = splits[4]
       @size = splits[5].to_i
-      STDERR.puts "Created part attachment: mid #{@message_id}, part #{@part}, #{@filename}, size #{@size}, content type #{@content_type}"
+      #STDERR.puts "Created part attachment: mid #{@message_id}, part #{@part}, #{@filename}, size #{@size}, content type #{@content_type}"
     else
       raise "Invalid attachment descriptor type '#{splits[0]}'"
     end
@@ -55,7 +55,7 @@ class Attachment
       end
     else
       basename = Path[@filename].basename
-      STDERR.puts "Attaching file #{@filename}, base name #{basename}, content type #{@content_type}"
+      #STDERR.puts "Attaching file #{@filename}, base name #{basename}, content type #{@content_type}"
       email.attach(@filename, basename, @content_type)
     end
   end
@@ -253,7 +253,7 @@ class EditMessageMode < LineCursorMode
       @text << ""
       @attachment_lines_offset = @text.size
       attachments.each do |a|
-        @text << [{:attachment_color, "+ Attachment: #{a.basename} (#{a.size.to_human_size})"}]
+        @text << [{:attachment_color, "+ Attachment: #{a.filename} (#{a.size.to_human_size})"}]
       end
     end
   end
