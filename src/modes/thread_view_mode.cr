@@ -9,7 +9,7 @@ module Redwood
 
 class ThreadViewMode < LineCursorMode
   mode_class expand_all_quotes, expand_all_messages, activate_chunk,
-	     align_current_message, toggle_detailed_header, show_header,
+	     align_current_message, toggle_detailed_header, show_header, pipe_message,
 	     jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
 	     compose, reply_cmd, edit_draft, forward,
@@ -48,9 +48,11 @@ class ThreadViewMode < LineCursorMode
     k.add :jump_to_prev_open, "Jump to previous open message", 'p'
     k.add :jump_to_prev_and_open, "Jump to previous message and open", "C-p"
     k.add :align_current_message, "Align current message in buffer", 'z'
-    k.add :compose, "Compose message to person", 'm'
-    k.add :reply_cmd, "Reply to a message", 'r'
     k.add :forward, "Forward a message or attachment", 'f'
+    k.add :compose, "Compose message to person", 'm'
+    k.add :pipe_message, "Pipe message or attachment to a shell command", '|'
+    k.add :reply_cmd, "Reply to a message", 'r'
+
     k.add :archive_and_next, "Archive this thread, kill buffer, and view next", 'a'
     k.add :delete_and_next, "Delete this thread, kill buffer, and view next", 'd'
 
@@ -712,6 +714,52 @@ class ThreadViewMode < LineCursorMode
     end
     BufferManager.flash s
   end
+
+  def pipe_message(*args)
+    msgid = ""
+    partid = 0
+    if (chunk = @chunk_lines[curpos]) && chunk.is_a?(AttachmentChunk)
+      msgid = chunk.message.id
+      partid = chunk.part.id
+    elsif message = @message_lines[curpos]
+      msgid = message.id
+      partid = 0
+    else
+      return
+    end
+
+    command = BufferManager.ask(:shell, "pipe command: ")
+    return if command.nil? || command.empty?
+
+    pipe = Pipe.new(command, [] of String, shell: true)
+    output = ""
+    exit_status = pipe.start do |p|
+      # Send the part data to the command.
+      p.transmit do |cmd|
+        Notmuch.write_part(msgid, partid) do |part|
+          IO.copy(part, cmd)
+	end
+      end
+
+      # Read the output of the command (should only be present
+      # in case of an error).
+      p.receive do |cmd|
+        output = cmd.gets_to_end
+      end
+    end
+
+    if exit_status != 0
+      BufferManager.flash "Command '#{command}' returned exit status #{exit_status}"
+      return
+    end
+
+    if output && output.size > 0
+      BufferManager.spawn "Output of '#{command}'", TextMode.new(output)
+    else
+      BufferManager.flash "'#{command}' done!"
+    end
+  end
+
 
   # Old test code.
 
