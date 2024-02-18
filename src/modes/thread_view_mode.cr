@@ -9,7 +9,7 @@ module Redwood
 
 class ThreadViewMode < LineCursorMode
   mode_class expand_all_quotes, expand_all_messages, activate_chunk,
-	     align_current_message, toggle_detailed_header,
+	     align_current_message, toggle_detailed_header, show_header,
 	     jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
 	     compose, reply_cmd, edit_draft, forward,
@@ -38,6 +38,7 @@ class ThreadViewMode < LineCursorMode
 
   register_keymap do |k|
     k.add :toggle_detailed_header, "Toggle detailed header", 'h'
+    k.add :show_header, "Show full message header", 'H'
     k.add :activate_chunk, "Expand/collapse or activate item", "C-m"
     k.add :expand_all_messages, "Expand/collapse all messages", 'E'
     k.add :edit_draft, "Edit draft", 'e'
@@ -136,6 +137,14 @@ class ThreadViewMode < LineCursorMode
     super
     regen_text
   end
+
+  def show_header(*args)
+    return unless m = @message_lines[curpos]
+    BufferManager.spawn_unless_exists("Full header for #{m.id}") do
+      TextMode.new m.raw_header
+    end
+  end
+
 
   def reply_cmd(*args)
     reply("none")

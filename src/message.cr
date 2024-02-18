@@ -174,6 +174,20 @@ class Message
     @filename
   end
 
+  def raw_header : String
+    ret = ""
+    begin
+      File.open(@filename) do |f|
+        while (l = f.gets) && (l != "")
+	  ret += l + "\n"
+	end
+      end
+    rescue e
+      BufferManager.flash e.message || "Unable to open #{@filename}"
+    end
+    return ret
+  end
+
   def sync_back_labels
     Message.sync_back_labels [self]
   end
