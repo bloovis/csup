@@ -3,6 +3,7 @@ require "./colormap"
 require "./opts"
 require "./mode"
 require "./util"
+require "./modes/file_browser_mode"
 
 module Redwood
 
@@ -213,6 +214,24 @@ class BufferManager
     end
   end
   singleton_method handle_input, c
+
+  ## requires the mode to have #done? and #value methods
+  def spawn_modal(title : String, mode : Mode, opts = Opts.new)
+    b = spawn title, mode, opts
+    draw_screen
+
+    until mode.done?
+      c = Ncurses.getkey
+      break if c == KEY_CANCEL
+      mode.handle_input c
+      draw_screen
+      erase_flash
+    end
+
+    kill_buffer b
+    mode.value
+  end
+  singleton_method spawn_modal, title, mode, opts
 
   def kill_all_buffers_safely
     until @buffers.empty?
@@ -500,15 +519,7 @@ class BufferManager
   singleton_method ask_yes_or_no, question
 
   def ask_for_filename(domain : Symbol, question : String, default=nil, allow_directory=false) : String?
-{% if true %}
-    answer = ask(domain, question, default)
-    if answer
-      # Strip single quotes to allow filenames to be dragged and dropped
-      # from file browsers like Mate Caja.  Also strip leading and trailing spaces.
-      answer = answer.lstrip("' ").rstrip("' ")
-    end
-    return answer
-{% else %}
+{% if false %}
     answer = ask domain, question, default do |s|
       if s =~ /(~([^\s\/]*))/ # twiddle directory expansion
         full = $1
@@ -528,11 +539,13 @@ class BufferManager
         end
       end
     end
+{% end %}
 
+    answer = ask(domain, question, default)
     if answer
       # Strip single quotes to allow filenames to be dragged and dropped
-      # from file browsers like Mate Caja.
-      answer.gsub!(/'/, '')
+      # from file browsers like Mate Caja.  Also strip leading and trailing spaces.
+      answer = answer.lstrip("' ").rstrip("' ")
 
       answer =
         if answer.empty?
@@ -544,7 +557,6 @@ class BufferManager
         end
     end
     return answer
-{% end %}
   end
   singleton_method ask_for_filename, domain, question, default, allow_directory
 
