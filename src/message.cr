@@ -603,11 +603,9 @@ class MsgThread
   end
 
   def date
-    if m = @msg
-      Time.unix(m.timestamp)
-    else
-      Time.local
-    end
+    t = 0
+    each { |m, d, p| t = [t, m.timestamp].max}
+    return Time.unix(t)
   end
 
   def snippet : String
