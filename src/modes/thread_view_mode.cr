@@ -12,7 +12,7 @@ class ThreadViewMode < LineCursorMode
 	     align_current_message, toggle_detailed_header, show_header, pipe_message,
 	     jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
-	     compose, reply_cmd, edit_draft, forward,
+	     compose, reply_cmd, edit_draft, edit_labels, forward,
 	     archive_and_kill, delete_and_kill, do_nothing_and_kill,
 	     archive_and_next, delete_and_next, do_nothing_and_next,
 	     archive_and_prev, delete_and_prev, do_nothing_and_prev
@@ -42,6 +42,7 @@ class ThreadViewMode < LineCursorMode
     k.add :activate_chunk, "Expand/collapse or activate item", "C-m"
     k.add :expand_all_messages, "Expand/collapse all messages", 'E'
     k.add :edit_draft, "Edit draft", 'e'
+    k.add :edit_labels, "Edit or add labels for a thread", 'l'
     k.add :expand_all_quotes, "Expand/collapse all quotes in a message", 'o'
     k.add :jump_to_next_open, "Jump to next open message", 'n'
     k.add :jump_to_next_and_open, "Jump to next message and open", "C-n"
@@ -180,6 +181,25 @@ class ThreadViewMode < LineCursorMode
       ComposeMode.spawn_nicely(Opts.new({:to_default => p.full_address}))
     else
       ComposeMode.spawn_nicely
+    end
+  end
+
+  def edit_labels(*args)
+    thread = @thread	# save value for undo
+    old_labels = thread.labels
+    reserved_labels = old_labels & LabelManager::RESERVED_LABELS
+    new_labels = BufferManager.ask_for_labels(:label, "Labels for thread: ",
+					      thread.labels)
+    return unless new_labels
+    thread.labels = reserved_labels + new_labels
+    new_labels.each { |l| LabelManager << l }
+    update
+    UpdateManager.relay self, :labeled, thread
+    Notmuch.save_thread thread
+    UndoManager.register "labeling thread" do
+      thread.labels = old_labels
+      Notmuch.save_thread thread
+      UpdateManager.relay self, :labeled, thread
     end
   end
 

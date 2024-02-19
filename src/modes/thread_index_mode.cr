@@ -15,6 +15,7 @@ class ThreadIndexMode < LineCursorMode
 	     toggle_starred, multi_toggle_starred,
 	     toggle_deleted, multi_toggle_deleted,
 	     handle_deleted_update, handle_undeleted_update, handle_poll_update,
+	     handle_labeled_update,
 	     undo
 
   MIN_FROM_WIDTH = 15
@@ -94,6 +95,12 @@ class ThreadIndexMode < LineCursorMode
     end
     #STDERR.puts "get_update_thread: couldn't find thread #{t}"
     nil
+  end
+
+  def handle_labeled_update(*args)
+    return unless t = get_update_thread(*args)
+    return unless l = @lines[t]
+    update_text_for_line l
   end
 
   # Completely reload the thread list, because something happened
