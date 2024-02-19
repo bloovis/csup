@@ -246,18 +246,20 @@ class ThreadIndexMode < LineCursorMode
 
   def author_names_and_newness_for_thread(t : MsgThread, limit = 0) : Array(NameNewness)
     new = Hash(Person, Bool).new	# Person => newness
-    seen = Hash(Person, Bool).new	# Person => seen
+    seen = Hash(String, Bool).new	# Person.to_s => seen
 
     authors : Array(Person) = t.map do |m, depth, parent|
       next unless m && m.from
+      next if seen[m.from.to_s]?
+      seen[m.from.to_s] = true
       new[m.from] ||= m.has_label?(:unread)
-      next if seen[m.from]?
-      seen[m.from] = true
+      #STDERR.puts "from #{m.from} (#{m.from.to_s}), seen #{seen[m.from]?}"
       m.from
     end.compact
 
     result = Array(NameNewness).new
     authors.each do |a|
+      #STDERR.puts "author: #{a.to_s}"
       break if limit && result.size >= limit
       name = if AccountManager.is_account?(a)
         "me"
