@@ -12,7 +12,7 @@ class ThreadViewMode < LineCursorMode
 	     align_current_message, toggle_detailed_header, show_header, pipe_message,
 	     jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
-	     compose, reply_cmd, edit_draft, edit_labels, forward,
+	     compose, reply_cmd, reply_all, edit_draft, edit_labels, forward,
 	     archive_and_kill, delete_and_kill, do_nothing_and_kill,
 	     archive_and_next, delete_and_next, do_nothing_and_next,
 	     archive_and_prev, delete_and_prev, do_nothing_and_prev
@@ -49,10 +49,11 @@ class ThreadViewMode < LineCursorMode
     k.add :jump_to_prev_open, "Jump to previous open message", 'p'
     k.add :jump_to_prev_and_open, "Jump to previous message and open", "C-p"
     k.add :align_current_message, "Align current message in buffer", 'z'
+    k.add :reply_cmd, "Reply to a message", 'r'
+    k.add :reply_all, "Reply to all participants of this message", 'G'
     k.add :forward, "Forward a message or attachment", 'f'
     k.add :compose, "Compose message to person", 'm'
     k.add :pipe_message, "Pipe message or attachment to a shell command", '|'
-    k.add :reply_cmd, "Reply to a message", 'r'
 
     k.add :archive_and_next, "Archive this thread, kill buffer, and view next", 'a'
     k.add :delete_and_next, "Delete this thread, kill buffer, and view next", 'd'
@@ -148,6 +149,10 @@ class ThreadViewMode < LineCursorMode
     end
   end
 
+
+  def reply_all(*args)
+    reply("all")
+  end
 
   def reply_cmd(*args)
     reply("none")
