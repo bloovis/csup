@@ -12,6 +12,7 @@ class ThreadIndexMode < LineCursorMode
 	     toggle_tagged, multi_toggle_tagged, apply_to_tagged,
 	     edit_labels, multi_edit_labels,
 	     toggle_archived, multi_toggle_archived,
+	     toggle_new, multi_toggle_new,
 	     toggle_starred, multi_toggle_starred,
 	     toggle_deleted, multi_toggle_deleted,
 	     handle_deleted_update, handle_undeleted_update, handle_poll_update,
@@ -23,12 +24,13 @@ class ThreadIndexMode < LineCursorMode
 
   register_keymap do |k|
     k.add :load_more_threads, "Load #{LOAD_MORE_THREAD_NUM} more threads", 'M'
-    k.add :apply_to_tagged, "Apply next command to all tagged threads", '+', '='
-    k.add :toggle_starred, "Star or unstar all messages in thread", '*'
     k.add :toggle_archived, "Toggle archived status", 'a'
-    k.add :toggle_deleted, "Delete/undelete thread", 'd'
+    k.add :toggle_starred, "Star or unstar all messages in thread", '*'
+    k.add :toggle_new, "Toggle new/read status of all messages in thread", 'N'
     k.add :edit_labels, "Edit or add labels for a thread", 'l'
+    k.add :toggle_deleted, "Delete/undelete thread", 'd'
     k.add :toggle_tagged, "Tag/untag selected thread", 't'
+    k.add :apply_to_tagged, "Apply next command to all tagged threads", '+', '='
     k.add :undo, "Undo the previous action", 'u'
   end
 
@@ -625,6 +627,26 @@ class ThreadIndexMode < LineCursorMode
     update_text_for_line curpos
     Notmuch.save_thread t
   end
+
+  # Toggle new commands
+
+  def toggle_new(*args)
+    return unless t = cursor_thread
+    t.toggle_label :unread
+    update_text_for_line curpos
+    cursor_down
+    Notmuch.save_thread t
+  end
+
+  def multi_toggle_new(*args)
+    threads = @tags.all
+    threads.each do |t|
+      t.toggle_label :unread
+      Notmuch.save_thread t
+    end
+    regen_text
+  end
+
 
   # Toggle tag commands
 
