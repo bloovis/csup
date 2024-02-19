@@ -99,7 +99,7 @@ class EditMessageMode < LineCursorMode
   property attachments = Array(Attachment).new
   property attachment_lines_offset = 0
 
-  property account_selector : HorizontalSelector
+  property account_selector : HorizontalSelector?
   bool_getter edited
   property file : File?
 
@@ -220,7 +220,10 @@ class EditMessageMode < LineCursorMode
   end
 
   def update
+    #STDERR.puts "update: about to examine account_selector"
+    #STDERR.puts "update: account_selector = #{@account_selector}"
     if a = @account_selector
+      #STDERR.puts "update: a.val = #{a.val}"
       if a.val == ""
         @header["From"] = @account_user
       else
@@ -569,7 +572,9 @@ class EditMessageMode < LineCursorMode
 
     @editing = true
     BufferManager.completely_redraw_screen
+    #STDERR.puts "about to run #{command}"
     success = BufferManager.shell_out command, is_gui
+    #STDERR.puts "done running #{command}"
     @editing = false
 
     if File.exists?(filepath) && File.mtime(filepath) > mtime && success
@@ -581,19 +586,24 @@ class EditMessageMode < LineCursorMode
       return @edited
     end
 
+    #STDERR.puts "about to call parse_file"
     header, @body = parse_file filepath
     @header = purge_hash(header, NON_EDITABLE_HEADERS)
     # FIXME: implement this ugly function!
     #set_sig_edit_flag
 
-    if @account_selector && @header["From"] != old_from
+    #STDERR.puts "checking from"
+    if (a = @account_selector) && @header["From"] != old_from
       @account_user = @header["From"].as(String)
-      @account_selector.set_to nil
+      a.set_to nil
     end
 
+    #STDERR.puts "calling handle_new_text"
     handle_new_text @header, @body
     #rerun_crypto_selector_hook
+    #STDERR.puts "calling update"
     update
+    #STDERR.puts "calling completely_redraw_screen"
     BufferManager.completely_redraw_screen
 
     @edited
