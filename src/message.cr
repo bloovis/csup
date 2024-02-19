@@ -649,11 +649,15 @@ class MsgThread
   end
 
   def authors : Array(Person)
-    map { |m, d, p| m.from if m }.compact.uniq
+    map { |m, d, p| m.from }.compact.uniq
+  end
+
+  def direct_participants : Array(Person)
+    map { |m, d, p| [m.from] + m.to }.flatten.compact.uniq
   end
 
   def participants : Array(Person)
-    map { |m, d, p| [m.from] + m.to + m.cc + m.bcc if m }.flatten.compact.uniq
+    map { |m, d, p| [m.from] + m.to + m.cc + m.bcc }.flatten.compact.uniq
   end
 
 end	# MsgThread

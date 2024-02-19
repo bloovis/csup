@@ -324,6 +324,10 @@ class ThreadIndexMode < LineCursorMode
       from << {(newness ? :index_new_color : (starred ? :index_starred_color : :index_old_color)), abbrev}
     end
 
+    directly_participated = t.direct_participants.any?{|p| AccountManager.is_account?(p)}
+    participated = directly_participated ||
+		   t.participants.any?{|p| AccountManager.is_account?(p)}
+
     subj_color =
       if t.has_label?(:draft)
         :index_draft_color
@@ -352,7 +356,7 @@ class ThreadIndexMode < LineCursorMode
     ] + from + [
       {:size_widget_color, size_widget_text},
       {:with_attachment_color , t.labels.includes?("attachment") ? "@" : " "},
-#      {:to_me_color, directly_participated ? ">" : (participated ? '+' : " ")},
+      {:to_me_color, directly_participated ? ">" : (participated ? "+" : " ")}
     ] + label_widgets + [
       {subj_color, t.subj + (t.subj.empty? ? "" : " ")},
       {:snippet_color, t.snippet},
