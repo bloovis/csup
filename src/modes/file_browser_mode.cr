@@ -80,7 +80,7 @@ class FileBrowserMode < LineCursorMode
     STDERR.puts "select: name = #{name}, f = #{f}"
     return unless f
 
-    if File.directory?(f) && name != "."
+    if File.directory?(f) && name != "./"
       if File.readable?(f)
         @dirs.push f
         reload

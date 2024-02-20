@@ -72,16 +72,25 @@ module Notmuch
   # Save a message part to a file.
   def save_part(msgid : String, partid : Int32, filename : String) : Bool
     if File.exists?(filename)
-      return false
+      unless BufferManager.ask_yes_or_no "File \"#{filename}\" exists. Overwrite?"
+        info "Not overwriting #{filename}"
+        return false
+      end
     end
+
     #STDERR.puts "About to run notmuch show --part=#{partid} id:#{msgid}"
-    pipe = Pipe.new("notmuch", ["show", "--part=#{partid}", "id:#{msgid}"])
-    pipe.start do |p|
-      p.receive do |output|
-        File.open(filename, "w") do |f|
-	  IO.copy(output, f)
+    begin
+      pipe = Pipe.new("notmuch", ["show", "--part=#{partid}", "id:#{msgid}"])
+      pipe.start do |p|
+	p.receive do |output|
+	  File.open(filename, "w") do |f|
+	    IO.copy(output, f)
+	  end
 	end
       end
+    rescue e
+      BufferManager.flash e.message || "Unknown error saving #[filename}"
+      return false
     end
     return true
   end

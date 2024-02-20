@@ -13,7 +13,7 @@ class ThreadViewMode < LineCursorMode
 	     jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
 	     compose, reply_cmd, reply_all, edit_draft, send_draft,
-	     edit_labels, forward,
+	     edit_labels, forward, save_to_disk, save_all_to_disk,
 	     archive_and_kill, delete_and_kill, do_nothing_and_kill,
 	     archive_and_next, delete_and_next, do_nothing_and_next,
 	     archive_and_prev, delete_and_prev, do_nothing_and_prev
@@ -54,6 +54,8 @@ class ThreadViewMode < LineCursorMode
     k.add :reply_cmd, "Reply to a message", 'r'
     k.add :reply_all, "Reply to all participants of this message", 'G'
     k.add :forward, "Forward a message or attachment", 'f'
+    k.add :save_to_disk, "Save message/attachment to disk", 's'
+    k.add :save_all_to_disk, "Save all attachments to disk", 'A'
     k.add :compose, "Compose message to person", 'm'
     k.add :pipe_message, "Pipe message or attachment to a shell command", '|'
 
@@ -488,6 +490,62 @@ class ThreadViewMode < LineCursorMode
     if chunk.is_a?(Message) && Config.bool(:jump_to_open_message)
       jump_to_message chunk
       jump_to_next_open if layout && layout.state == :closed
+    end
+  end
+
+  def save_to_disk(*args)
+    return unless chunk = @chunk_lines[curpos]
+    case chunk
+    when AttachmentChunk
+      default_dir = Config.str(:default_attachment_save_dir) || ""
+      default_dir = ENV["HOME"] if default_dir.empty?
+      default_fn = Path.new(default_dir, chunk.safe_filename).expand.to_s
+      fn = BufferManager.ask_for_filename :filename, "Save attachment to file or directory: ",
+				           default_fn, true
+      return unless fn
+
+      # if user selects directory use file name from message
+      if File.directory? fn
+        fn = File.join(fn, chunk.filename)
+      end
+      chunk.save(fn)
+    else
+      return unless m = @message_lines[curpos]
+      fn = BufferManager.ask_for_filename :filename, "Save message to file: "
+      return unless fn
+      Notmuch.save_part(m.id, 0, fn)
+    end
+  end
+
+  def save_all_to_disk(*args)
+    return unless m = @message_lines[curpos]
+    default_dir = Config.str(:default_attachment_save_dir) || "."
+    folder = BufferManager.ask_for_filename :filename, "Save all attachments to folder: ", default_dir, true
+    return unless folder
+    unless File.directory?(folder)
+      BufferManager.flash("#{folder} is not a directory!")
+      return
+    end
+
+    num = 0
+    num_errors = 0
+    m.chunks.each do |chunk|
+      next unless chunk.is_a?(AttachmentChunk)
+      fn = File.join(folder, chunk.safe_filename)
+      unless chunk.save(fn)
+        num_errors += 1
+      end
+      num += 1
+    end
+
+    if num == 0
+      BufferManager.flash "Didn't find any attachments!"
+    else
+      if num_errors == 0
+        BufferManager.flash "Wrote #{num.pluralize "attachment"} to #{folder}."
+      else
+        BufferManager.flash "Wrote #{(num - num_errors).pluralize "attachment"} to #{folder}; couldn't write #{num_errors} of them (see log)."
+      end
     end
   end
 
