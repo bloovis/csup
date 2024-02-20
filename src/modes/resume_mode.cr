@@ -56,7 +56,9 @@ class ResumeMode < EditMessageMode
   end
 
   def send_message
+    #STDERR.puts "ResumeMode calling EditMessageMode.send_message"
     if super
+      #STDERR.puts "ResumeMode: EditMessageMode.send_message returned true"
       DraftManager.discard @m
       @safe = true
     end

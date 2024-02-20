@@ -610,6 +610,7 @@ class EditMessageMode < LineCursorMode
   end
 
   def send_message(*args) : Bool
+    #STDERR.puts "Sending message #{@message_id}"
     #return false if warn_editing
     return false if !edited? && !BufferManager.ask_yes_or_no("Message unedited. Really send?")
     return false if Config.bool(:confirm_no_attachments) &&
@@ -705,6 +706,7 @@ class EditMessageMode < LineCursorMode
   def build_message(date : Time) : EMail::Message
     email = EMail::Message.new
     @header.each do |k, v|
+      #STDERR.puts "build_message: header #{k} = #{v}"
       case k
       when "From"
         from = v.as(String)
@@ -740,10 +742,8 @@ class EditMessageMode < LineCursorMode
 	email.subject(v.as(String))
       when "Date"
         # Ignore the date header, use current time instead.
-      when "Message-ID"
-        # Ignore the Message-ID header, use the correct one.
-        #STDERR.puts "ignoring message-id header"
-	#email.message_id(@message_id)
+      when "Message-ID", "Message-Id", "Message-id", "Mime-version"
+        # Ignore these headers.  They cause build_message to fail.
       else
 	if v.is_a?(String)
 	  #STDERR.puts "Setting custom header string #{k}=#{v}"

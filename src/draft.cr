@@ -48,7 +48,7 @@ class DraftManager
     raise ArgumentError.new("message #{m.id} is not a draft") unless m.is_draft?
     if thread = m.thread
       delete_message_files m.id
-      STDERR.puts "DraftManager.discard deleted files for #{m.id}, calling relay :deleted"
+      #STDERR.puts "DraftManager.discard deleted files for #{m.id}, calling relay :deleted"
       UpdateManager.relay self, :deleted, m
     end
   end
@@ -57,7 +57,7 @@ class DraftManager
     filenames = Notmuch.filenames_from_message_id(mid)
     if filenames.size > 0
       filenames.each do |f|
-        STDERR.puts "Deleting draft file #{f}"
+        #STDERR.puts "Deleting draft file #{f}"
 	debug "Deleting draft file #{f}"
 	File.delete?(f)
       end
