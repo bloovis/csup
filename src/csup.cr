@@ -259,6 +259,7 @@ def main
   mode = InboxMode.new
   buf = BufferManager.spawn("Inbox Mode", mode, Opts.new({:width => 80, :height => 25}))
   BufferManager.raise_to_front(buf)
+  poll
 
   global_keymap = Keymap.new do |k|
     k.add :quit_ask, "Quit Sup, but ask first", 'q'

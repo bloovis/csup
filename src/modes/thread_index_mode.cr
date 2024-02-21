@@ -133,12 +133,19 @@ class ThreadIndexMode < LineCursorMode
     #STDERR.puts "handle_poll_update started"
     arg = args[1]?
     if arg && arg.is_a?(String) && (ts = @ts)
-      # arg is a search term like "(lastmod:X..Y)"
+      # arg is a search term like "lastmod:X..Y"
       #STDERR.puts "handle_poll_update: search terms #{arg}, translated query #{@translated_query}"
 
-      # Get the list of updated threads.
+      # Add the lastmod search term to our existing query.
       query = "(#{@translated_query}) and (#{arg})"
-      new_ts = ThreadList.new(query, offset: 0, limit: 100)	# FIXME: what should 100 really be?
+
+      # Find out how many threads match the new query.  Use that to set
+      # a limit on how many threads to fetch for the query.
+      count = Notmuch.count(query)
+      limit = [ts.threads.size + count, buffer.content_height].max
+
+      # Get the list of updated threads.
+      new_ts = ThreadList.new(query, offset: 0, limit: limit)
       n = new_ts.threads.size
 
       # Run through the old thread list, and add to the new list any thread
@@ -414,7 +421,6 @@ class ThreadIndexMode < LineCursorMode
     else
       num = ThreadIndexMode::LOAD_MORE_THREAD_NUM
     end
-
 
     # It's too complicated to try to figure out the correct non-zero offset,
     # then merge the new thread list into the old one.  Just start at 0
