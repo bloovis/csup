@@ -432,6 +432,8 @@ class BufferManager
 	if ret.size > 0
 	  ret = ret[0..-2]
 	end
+      when "C-u"
+        ret = ""
       when "C-m"
         done = true
       when KEY_CANCEL
