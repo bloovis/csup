@@ -16,7 +16,7 @@ class ThreadIndexMode < LineCursorMode
 	     toggle_starred, multi_toggle_starred,
 	     toggle_deleted, multi_toggle_deleted,
 	     handle_deleted_update, handle_undeleted_update, handle_poll_update,
-	     handle_labeled_update,
+	     handle_labeled_update, handle_updated_update,
 	     undo
 
   MIN_FROM_WIDTH = 15
@@ -97,6 +97,27 @@ class ThreadIndexMode < LineCursorMode
     end
     #STDERR.puts "get_update_thread: couldn't find thread #{t}"
     nil
+  end
+
+  # This is called from DraftManager.write_draft with the updated
+  # thread containing the newly created draft message.  Replace
+  # the matching thread in the current thread list with this new thread.
+  def handle_updated_update(*args)
+    STDERR.puts "handle_updated_update"
+    # Get the new thread containing the draft message, and
+    # the matching existing thread in the thread list.
+    return unless (t = args[1]?) && t.is_a?(MsgThread)
+    return unless msg = t.msg
+    return unless (ts = @ts) && (oldt = ts.find_thread(t))
+    return unless l = @lines[oldt]
+
+    # Replace the old thread's top level message with the new one's.
+    # This has the effect of replacing the entire thread.
+    #STDERR.puts "handle_updated_update: setting thread msg"
+    oldt.set_msg(msg)
+
+    # Notmuch.save_thread t # do we need this?
+    update_text_for_line l
   end
 
   def handle_labeled_update(*args)
