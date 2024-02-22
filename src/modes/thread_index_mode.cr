@@ -122,7 +122,6 @@ class ThreadIndexMode < LineCursorMode
   end
 
   def handle_single_message_labeled_update(*args)
-    STDERR.puts "handle_single_message_labeled_update"
     ## no need to do anything different here; we don't differentiate
     ## messages from their containing threads
     handle_labeled_update(*args)
@@ -131,7 +130,7 @@ class ThreadIndexMode < LineCursorMode
   def handle_labeled_update(*args)
     return unless t = get_update_thread(*args)
     return unless l = @lines[t]
-    STDERR.puts "handle_labeled_update: thread #{t.object_id}"
+    #STDERR.puts "handle_labeled_update: thread #{t.object_id}, starred = #{t.has_label? :starred}"
     update_text_for_line l
   end
 
