@@ -15,9 +15,11 @@ class ThreadIndexMode < LineCursorMode
 	     toggle_new, multi_toggle_new,
 	     toggle_starred, multi_toggle_starred,
 	     toggle_deleted, multi_toggle_deleted,
+	     toggle_spam, multi_toggle_spam,
 	     handle_deleted_update, handle_undeleted_update, handle_poll_update,
 	     handle_labeled_update, handle_updated_update,
-	     handle_single_message_labeled_update,
+	     handle_single_message_labeled_update, handle_spammed_update,
+	     handle_unspammed_update,
 	     undo
 
   MIN_FROM_WIDTH = 15
@@ -29,6 +31,7 @@ class ThreadIndexMode < LineCursorMode
     k.add :toggle_starred, "Star or unstar all messages in thread", '*'
     k.add :toggle_new, "Toggle new/read status of all messages in thread", 'N'
     k.add :edit_labels, "Edit or add labels for a thread", 'l'
+    k.add :toggle_spam, "Mark/unmark thread as spam", 'S'
     k.add :toggle_deleted, "Delete/undelete thread", 'd'
     k.add :toggle_tagged, "Tag/untag selected thread", 't'
     k.add :apply_to_tagged, "Apply next command to all tagged threads", '+', '='
@@ -152,6 +155,16 @@ class ThreadIndexMode < LineCursorMode
   end
 
   def handle_undeleted_update(*args)
+    reload
+  end
+
+  def handle_spammed_update(*args)
+    #STDERR.puts "ThreadIndexMode.handle_spammed_update calling reload"
+    reload
+  end
+
+  def handle_unspammed_update(*args)
+    #STDERR.puts "ThreadIndexMode.handle_unspammed_update calling reload"
     reload
   end
 
@@ -768,6 +781,63 @@ class ThreadIndexMode < LineCursorMode
     return unless t = cursor_thread
     do_multi_toggle_deleted([t])
   end
+
+  # Toggle spammed commands
+
+  ## returns an undo lambda
+  def actually_toggle_spammed(t : MsgThread) : Proc(Nil)
+    thread = t
+    if t.has_label? :spam
+      t.remove_label :spam
+      Notmuch.save_thread t
+      UpdateManager.relay self, :unspammed, t
+      return -> do
+        thread.apply_label :spam
+        Notmuch.save_thread thread
+        UpdateManager.relay self, :spammed, thread
+	nil
+      end
+    else
+      t.apply_label :spam
+      Notmuch.save_thread t
+      UpdateManager.relay self, :spammed, t
+      return -> do
+        thread.remove_label :spam
+        Notmuch.save_thread thread
+        UpdateManager.relay self, :unspammed, thread
+	nil
+      end
+    end
+  end
+
+  def do_multi_toggle_spam(threads : Array(MsgThread))
+    undos = threads.map { |t| actually_toggle_spammed t }
+    tagged_threads = @tags.all
+    #threads.each { |t| HookManager.run("mark-as-spam", :thread => t) }
+    UndoManager.register "marking/unmarking #{threads.size.pluralize "thread"} as spam" do
+      if undos.size > 0
+	undos.each {|u| u.call }
+	reload
+	regen_text
+      end
+      tagged_threads.each { |t| tag_old_thread(t) }
+    end
+    reload
+    regen_text
+    #threads.each { |t| Notmuch.save_thread t }
+  end
+
+  def multi_toggle_spam(*args)
+    do_multi_toggle_spam(@tags.all)
+  end
+
+  def toggle_spam(*args)
+    return unless t = cursor_thread
+    do_multi_toggle_spam([t])
+  end
+
+
+  # Other commands.
 
   def apply_to_tagged(*args); @tags.apply_to_tagged; end
 
