@@ -1,0 +1,6 @@
+baseURL = 'https://www.bloovis.com/csupguide'
+languageCode = 'en-us'
+title = 'Csup User Guide'
+theme = "hugo-book"
+relativeURLs = false
+BookSearch = true
