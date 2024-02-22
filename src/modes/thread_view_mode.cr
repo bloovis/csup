@@ -14,6 +14,7 @@ class ThreadViewMode < LineCursorMode
 	     jump_to_next_open, jump_to_prev_open,
 	     compose, reply_cmd, reply_all, edit_draft, send_draft,
 	     edit_labels, forward, save_to_disk, save_all_to_disk,
+	     toggle_starred, toggle_new,
 	     archive_and_kill, delete_and_kill, do_nothing_and_kill,
 	     archive_and_next, delete_and_next, do_nothing_and_next,
 	     archive_and_prev, delete_and_prev, do_nothing_and_prev
@@ -51,6 +52,8 @@ class ThreadViewMode < LineCursorMode
     k.add :jump_to_prev_open, "Jump to previous open message", 'p'
     k.add :jump_to_prev_and_open, "Jump to previous message and open", "C-p"
     k.add :align_current_message, "Align current message in buffer", 'z'
+    k.add :toggle_starred, "Star or unstar message", '*'
+    k.add :toggle_new, "Toggle unread/read status of message", 'N'
     k.add :reply_cmd, "Reply to a message", 'r'
     k.add :reply_all, "Reply to all participants of this message", 'G'
     k.add :forward, "Forward a message or attachment", 'f'
@@ -210,6 +213,30 @@ class ThreadViewMode < LineCursorMode
       Notmuch.save_thread thread
       UpdateManager.relay self, :labeled, thread
     end
+  end
+
+  def toggle_starred(*args)
+    return unless m = @message_lines[curpos]
+    toggle_label m, :starred
+  end
+
+  def toggle_new(*args)
+    return unless m = @message_lines[curpos]
+    toggle_label m, :unread
+  end
+
+  def toggle_label(m : Message, label : Symbol | String)
+    if m.has_label? label
+      m.remove_label label
+    else
+      m.add_label label
+    end
+    ## TODO: don't recalculate EVERYTHING just to add a stupid little
+    ## star to the display
+    Notmuch.save_thread @thread
+    update
+    STDERR.puts "toggle_label: relay :single_message_labeled"
+    UpdateManager.relay self, :single_message_labeled, @thread
   end
 
   def update

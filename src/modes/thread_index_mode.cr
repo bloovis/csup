@@ -17,6 +17,7 @@ class ThreadIndexMode < LineCursorMode
 	     toggle_deleted, multi_toggle_deleted,
 	     handle_deleted_update, handle_undeleted_update, handle_poll_update,
 	     handle_labeled_update, handle_updated_update,
+	     handle_single_message_labeled_update,
 	     undo
 
   MIN_FROM_WIDTH = 15
@@ -120,9 +121,17 @@ class ThreadIndexMode < LineCursorMode
     update_text_for_line l
   end
 
+  def handle_single_message_labeled_update(*args)
+    STDERR.puts "handle_single_message_labeled_update"
+    ## no need to do anything different here; we don't differentiate
+    ## messages from their containing threads
+    handle_labeled_update(*args)
+  end
+
   def handle_labeled_update(*args)
     return unless t = get_update_thread(*args)
     return unless l = @lines[t]
+    STDERR.puts "handle_labeled_update: thread #{t.object_id}"
     update_text_for_line l
   end
 
