@@ -117,7 +117,7 @@ class ThreadIndexMode < LineCursorMode
     return unless (t = args[1]?) && t.is_a?(MsgThread)
     return unless msg = t.msg
     return unless (ts = @ts) && (oldt = ts.find_thread(t))
-    return unless l = @lines[oldt]
+    return unless l = @lines[oldt]?
 
     # Replace the old thread's top level message with the new one's.
     # This has the effect of replacing the entire thread.
@@ -136,7 +136,7 @@ class ThreadIndexMode < LineCursorMode
 
   def handle_labeled_update(*args)
     return unless t = get_update_thread(*args)
-    return unless l = @lines[t]
+    return unless l = @lines[t]?
     #STDERR.puts "handle_labeled_update: thread #{t.object_id}, starred = #{t.has_label? :starred}"
     update_text_for_line l
   end
@@ -551,7 +551,9 @@ class ThreadIndexMode < LineCursorMode
   end
 
   def launch_another_thread(thread, direction, &b)
-    return unless l = @lines[thread]
+    return unless ts = @ts
+    return unless t = ts.find_thread(thread)
+    return unless l = @lines[t]?
     target_l = l + direction
     t = if target_l >= 0 && target_l < @threads.length
       @threads[target_l]
