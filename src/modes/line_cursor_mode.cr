@@ -11,16 +11,19 @@ module Redwood
 ## extends ScrollMode to have a line-based cursor.
 class LineCursorMode < ScrollMode
   mode_class cursor_down, cursor_up, select_item, line_down, line_up,
-	     page_down, page_up, jump_to_start, jump_to_end
+	     page_down, page_up, jump_to_start, jump_to_end,
+	     click, double_click
 
   register_keymap do |k|
     ## overwrite scrollmode binding on arrow keys for cursor movement
     ## but C-e and C-y still scroll!
-    k.add(:cursor_down, "Move cursor down one line", "Down", "j")
-    k.add(:cursor_up, "Move cursor up one line", "Up", "k")
+    k.add :cursor_down, "Move cursor down one line", "Down", "j"
+    k.add :cursor_up, "Move cursor up one line", "Up", "k"
     # In sup, this was named `select`, but here we rename it to
     # `select_item` to avoid confusion with `select` from the standard library.
-    k.add(:select_item, "Select this item", "C-m")
+    k.add :select_item, "Select this item", "C-m"
+    k.add :click, "Click on item", "click"
+    k.add :double_click, "Double-click on item", "doubleclick"
   end
 
   property curpos = 0
@@ -211,6 +214,16 @@ class LineCursorMode < ScrollMode
     set_cursor_pos(lines - 1)
   end
 
+  def click(*args)
+    y = [Ncurses.getmouse_y + topline, lines - 1].min
+    set_cursor_pos y
+  end
+
+  def double_click(*args)
+    y = [Ncurses.getmouse_y + topline, lines - 1].min
+    set_cursor_pos y
+    select_item
+  end
 
   private def select_item(*args)
   end

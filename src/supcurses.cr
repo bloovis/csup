@@ -26,6 +26,7 @@ module NCurses
 
   @@num_colors = 0
   @@max_pairs = 0
+  @@mouse_y = 0
 
   def num_colors
     if @@num_colors = 0
@@ -117,6 +118,7 @@ module NCurses
 
   # Keycodes
   KEY_CODE_YES = 0x100
+  KEY_MOUSE = 0x199
   KEY_ENTER = 0x157
   KEY_BACKSPACE = 0x107
   KEY_UP = 0x103
@@ -238,7 +240,19 @@ module NCurses
       return "ERR"
     end
     if result == Ncurses::KEY_CODE_YES
-      return prefix + keyname(ch, true)
+      if ch == KEY_MOUSE
+        if mouse = NCurses.get_mouse
+          @@mouse_y = mouse.coordinates[:y]
+	  if mouse.state.includes?(Mouse::B1DoubleClicked)
+	    return "doubleclick"
+	  elsif mouse.state.includes?(Mouse::B1Clicked)
+	    return "click"
+	  end
+	end
+	return "click"
+      else
+	return prefix + keyname(ch, true)
+      end
     else
       if ch == 0x1b
 	return do_getkey("M-")
@@ -259,6 +273,10 @@ module NCurses
     s = do_getkey
     timeout(-1)
     return s
+  end
+
+  def getmouse_y
+    @@mouse_y
   end
 
   class Window
@@ -304,6 +322,9 @@ module Redwood
     Ncurses.curs_set 0
     Ncurses.start_color
     Ncurses.use_default_colors
+    if Config.bool(:mouse)
+      NCurses.mouse_mask(NCurses::Mouse::AllEvents | NCurses::Mouse::Position)
+    end
     #Ncurses.prepare_form_driver
     @@cursing = true
   end

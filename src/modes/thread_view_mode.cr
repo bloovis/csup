@@ -8,7 +8,7 @@ require "./forward_mode"
 module Redwood
 
 class ThreadViewMode < LineCursorMode
-  mode_class expand_all_quotes, expand_all_messages, activate_chunk,
+  mode_class expand_all_quotes, expand_all_messages, select_item,
 	     align_current_message, toggle_detailed_header, show_header, pipe_message,
 	     jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
@@ -41,7 +41,7 @@ class ThreadViewMode < LineCursorMode
   register_keymap do |k|
     k.add :toggle_detailed_header, "Toggle detailed header", 'h'
     k.add :show_header, "Show full message header", 'H'
-    k.add :activate_chunk, "Expand/collapse or activate item", "C-m"
+    k.add :select_item, "Expand/collapse or activate item", "C-m"
     k.add :expand_all_messages, "Expand/collapse all messages", 'E'
     k.add :edit_draft, "Edit draft", 'e'
     k.add :edit_labels, "Edit or add labels for a thread", 'l'
@@ -498,7 +498,7 @@ class ThreadViewMode < LineCursorMode
   ## a chunk. for expandable chunks (including messages) we toggle
   ## open/closed state; for viewable chunks (like attachments) we
   ## view.
-  def activate_chunk(*args)
+  def select_item(*args)
     return unless chunk = @chunk_lines[curpos]
     if chunk.is_a?(Chunk) && chunk.type == :text
       ## if the cursor is over a text region, expand/collapse the
@@ -827,36 +827,6 @@ class ThreadViewMode < LineCursorMode
 
   def do_nothing_and_then(op)
     dispatch(op) {}
-  end
-
-  def select_item
-    l = curpos
-    s = String.build do |s|
-      s << "Line #{l}: from "
-      m = @message_lines[l]
-      if m
-	s << m.from.email
-      else
-	s << "nobody"
-      end
-      s << ", chunk "
-      c = @chunk_lines[l]
-      if c
-	if c.is_a?(Message)
-	  s << "msg from " + c.from.email
-	else
-	  s << c.type
-	end
-      end
-      s << ", person "
-      p = @person_lines[l]
-      if p
-	s << p.email
-      else
-	s << "nobody"
-      end
-    end
-    BufferManager.flash s
   end
 
   def pipe_message(*args)

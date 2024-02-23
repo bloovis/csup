@@ -82,7 +82,7 @@ class AttachmentChunk < Chunk
       end
     end
     if !success || text.size == 0
-      text = "mime-decode hook not implemented for part #{@part.id}, #{@part.content_type}.\n"
+      #text = "mime-decode hook not implemented for part #{@part.id}, #{@part.content_type}.\n"
     end
 
     if text && text.size > 0
