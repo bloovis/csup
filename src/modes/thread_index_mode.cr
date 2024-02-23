@@ -13,7 +13,7 @@ class ThreadIndexMode < LineCursorMode
 	     toggle_tagged, multi_toggle_tagged, apply_to_tagged,
 	     edit_labels, multi_edit_labels,
 	     toggle_archived, multi_toggle_archived,
-	     toggle_new, multi_toggle_new,
+	     toggle_new, multi_toggle_new, jump_to_next_new,
 	     toggle_starred, multi_toggle_starred,
 	     toggle_deleted, multi_toggle_deleted,
 	     toggle_spam, multi_toggle_spam,
@@ -36,6 +36,7 @@ class ThreadIndexMode < LineCursorMode
     k.add :edit_labels, "Edit or add labels for a thread", 'l'
     k.add :toggle_spam, "Mark/unmark thread as spam", 'S'
     k.add :toggle_deleted, "Delete/undelete thread", 'd'
+    k.add :jump_to_next_new, "Jump to next new thread", "C-i"
     k.add :toggle_tagged, "Tag/untag selected thread", 't'
     k.add :apply_to_tagged, "Apply next command to all tagged threads", '+', '='
     k.add :undo, "Undo the previous action", 'u'
@@ -842,6 +843,17 @@ class ThreadIndexMode < LineCursorMode
 
 
   # Other commands.
+
+  def jump_to_next_new(*args)
+    n = ((curpos + 1) ... lines).find { |i| @threads[i].has_label? :unread } ||
+        (0 ... curpos).find { |i| @threads[i].has_label? :unread }
+    if n
+      jump_to_line n unless n >= topline && n < botline
+      set_cursor_pos n
+    else
+      BufferManager.flash "No new messages."
+    end
+  end
 
   def apply_to_tagged(*args); @tags.apply_to_tagged; end
 
