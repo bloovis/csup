@@ -1,23 +1,9 @@
 require "./line_cursor_mode"
 require "../contact"
 require "./person_search_results_mode"
+require "./can_alias_contacts"
 
 module Redwood
-
-module CanAliasContacts
-  def alias_contact(p : Person)
-    aalias = BufferManager.ask(:alias, "Alias for #{p.longname}: ", ContactManager.alias_for(p))
-    return if aalias.nil?
-    #aalias = nil if aalias.empty? # allow empty aliases
-
-    name = BufferManager.ask(:name, "Name for #{p.longname}: ", p.name)
-    return if name.nil? || name.empty? # don't allow empty names
-    p.name = name
-
-    ContactManager.update_alias p, aalias
-    BufferManager.flash "Contact updated!"
-  end
-end
 
 class ContactListMode < LineCursorMode
   mode_class load_more, reload, edit_alias, toggle_tagged, apply_to_tagged, search,

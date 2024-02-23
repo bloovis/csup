@@ -4,6 +4,7 @@ require "./compose_mode"
 require "./reply_mode"
 require "./resume_mode"
 require "./forward_mode"
+require "./can_alias_contacts"
 
 module Redwood
 
@@ -13,7 +14,7 @@ class ThreadViewMode < LineCursorMode
 	     jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
 	     compose, reply_cmd, reply_all, edit_draft, send_draft,
-	     edit_labels, forward, save_to_disk, save_all_to_disk,
+	     edit_labels, forward, save_to_disk, save_all_to_disk, edit_alias,
 	     toggle_starred, toggle_new,
 	     archive_and_kill, delete_and_kill, spam_and_kill, do_nothing_and_kill,
 	     archive_and_next, delete_and_next, spam_and_next, do_nothing_and_next,
@@ -57,6 +58,7 @@ class ThreadViewMode < LineCursorMode
     k.add :reply_cmd, "Reply to a message", 'r'
     k.add :reply_all, "Reply to all participants of this message", 'G'
     k.add :forward, "Forward a message or attachment", 'f'
+    k.add :edit_alias, "Edit alias/nickname for a person", 'i'
     k.add :save_to_disk, "Save message/attachment to disk", 's'
     k.add :save_all_to_disk, "Save all attachments to disk", 'A'
     k.add :compose, "Compose message to person", 'm'
@@ -187,6 +189,13 @@ class ThreadViewMode < LineCursorMode
   def toggle_detailed_header(*args)
     return unless m = @message_lines[curpos]
     @layout[m].state = (@layout[m].state == :detailed ? :open : :detailed)
+    update
+  end
+
+  include CanAliasContacts
+  def edit_alias(*args)
+    return unless p = @person_lines[curpos]
+    alias_contact p
     update
   end
 
