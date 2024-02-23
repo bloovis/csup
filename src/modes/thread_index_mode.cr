@@ -9,6 +9,7 @@ module Redwood
 
 class ThreadIndexMode < LineCursorMode
   mode_class load_more_threads, reload,
+	     read_and_archive, multi_read_and_archive,
 	     toggle_tagged, multi_toggle_tagged, apply_to_tagged,
 	     edit_labels, multi_edit_labels,
 	     toggle_archived, multi_toggle_archived,
@@ -27,6 +28,7 @@ class ThreadIndexMode < LineCursorMode
 
   register_keymap do |k|
     k.add :load_more_threads, "Load #{LOAD_MORE_THREAD_NUM} more threads", 'M'
+    k.add :read_and_archive, "Archive thread (remove from inbox) and mark read", 'A'
     k.add :reload, "Refresh view", '@'
     k.add :toggle_archived, "Toggle archived status", 'a'
     k.add :toggle_starred, "Star or unstar all messages in thread", '*'
@@ -924,6 +926,48 @@ class ThreadIndexMode < LineCursorMode
     end
 
     threads.each { |t| Notmuch.save_thread t }
+  end
+
+  def read_and_archive(*args)
+    return unless thread = cursor_thread  # to make sure lambda only knows about 'old' cursor_thread
+    was_unread = thread.has_label? :unread
+
+    UndoManager.register "reading and archiving thread" do
+      thread.apply_label :inbox
+      thread.apply_label :unread if was_unread
+      Notmuch.save_thread thread
+      reload
+      regen_text
+    end
+
+    thread.remove_label :unread
+    thread.remove_label :inbox
+    Notmuch.save_thread thread
+    reload
+    regen_text
+  end
+
+  def multi_read_and_archive(*args)
+    threads = @tags.all
+    was_unread = threads.map { |t| t.has_label? :unread }
+
+    threads.each do |t|
+      t.remove_label :unread
+      t.remove_label :inbox
+      Notmuch.save_thread t
+    end
+    reload
+    regen_text
+
+    UndoManager.register "reading and archiving #{threads.size.pluralize "thread"}" do
+      threads.zip(was_unread).each do |t, u|
+	t.apply_label :inbox
+	t.apply_label :unread if u
+        Notmuch.save_thread t
+      end
+      reload
+      regen_text
+    end
   end
 
 end
