@@ -8,7 +8,7 @@ require "./thread_view_mode"
 module Redwood
 
 class ThreadIndexMode < LineCursorMode
-  mode_class load_more_threads,
+  mode_class load_more_threads, reload,
 	     toggle_tagged, multi_toggle_tagged, apply_to_tagged,
 	     edit_labels, multi_edit_labels,
 	     toggle_archived, multi_toggle_archived,
@@ -27,6 +27,7 @@ class ThreadIndexMode < LineCursorMode
 
   register_keymap do |k|
     k.add :load_more_threads, "Load #{LOAD_MORE_THREAD_NUM} more threads", 'M'
+    k.add :reload, "Refresh view", '@'
     k.add :toggle_archived, "Toggle archived status", 'a'
     k.add :toggle_starred, "Star or unstar all messages in thread", '*'
     k.add :toggle_new, "Toggle new/read status of all messages in thread", 'N'
@@ -140,7 +141,8 @@ class ThreadIndexMode < LineCursorMode
   # Completely reload the thread list, because something happened
   # that could have caused one or more threads to change their visibility
   # or their message tree.
-  def reload
+  def reload(*args)
+    #STDERR.puts "ThreadIndexMode: reload"
     load_more_threads(0)
   end
 
