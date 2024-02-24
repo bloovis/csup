@@ -494,17 +494,19 @@ class Message
   end
 
   def parse_message(json : JSON::Any)
-    #puts "parse_message #{json}"
     msgarray = json.as_a
+    #STDERR.puts "parse_message #{json}, msgarray size #{msgarray.size}"
     msg_info = msgarray[0].as_h?
     if msg_info
       single_message msg_info
     else
       @id = "<null>"
     end
+    #STDERR.puts "parse_message: children #{msgarray[1]}"
     children = msgarray[1].as_a?
     if children
       children.each do |child|
+        #STDERR.puts "parse_message: child #{child}"
 	c = Message.new(child)
 	add_child(c)
       end
@@ -525,9 +527,20 @@ class MsgThread
   property subj = "<no subject>"
 
   def initialize(json : JSON::Any)
-    #STDERR.puts "MsgThread #{json}"
-    msglist = json.as_a	# There always seems to be only one message in the array
+    #STDERR.puts "MsgThread: json #{json}"
+    # There usually seems to be only one message in the array, but occasionally
+    # there is more than one.  Treat the messages after the first one as children
+    # of the first message.
+    msglist = json.as_a
+    #STDERR.puts "MsgThread: msglist size #{msglist.size}"
     m = Message.new(msglist[0])
+    if msglist.size > 1
+      msglist[1..].each do |json|
+        #STDERR.puts "MsgThread: adding unexpected child"
+        child = Message.new(json)
+	m.add_child child
+      end
+    end
     @dirty_labels = false
     if m
       @subj = m.subj
