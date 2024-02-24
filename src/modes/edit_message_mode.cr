@@ -245,7 +245,6 @@ class EditMessageMode < LineCursorMode
     end
     @text << ""
     @body.each {|l| @text << l}
-    @text += sig_lines unless @sig_edited
     if !@sig_edited
       sig_lines.each {|l| @text << l}
     end
@@ -765,7 +764,13 @@ class EditMessageMode < LineCursorMode
     email.message_id(@message_id)
 
     # Add the body.
-    email.message @body.join("\n")
+    body = @body.join("\n")
+    unless @sig_edited
+      body += "\n" + sig_lines.join("\n")
+    end
+    ## body must end in a newline or GPG signatures will be WRONG!
+    body += "\n" unless body[-1] == '\n'
+    email.message body
 
     # Add the attachments.
     @attachments.each {|a| a.attach_to_email(email)}
