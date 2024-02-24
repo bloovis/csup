@@ -115,7 +115,7 @@ class ReplyMode < EditMessageMode
       #  hook_reply
       elsif @m.is_list_message?
         "list"
-      elsif @headers.member? "sender"
+      elsif @headers.has_key? "sender"
         "sender"
       else
         "recipient"
