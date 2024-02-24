@@ -245,7 +245,7 @@ class EditMessageMode < LineCursorMode
     end
     @text << ""
     @body.each {|l| @text << l}
-    #@text += sig_lines unless @sig_edited
+    @text += sig_lines unless @sig_edited
     if !@sig_edited
       sig_lines.each {|l| @text << l}
     end

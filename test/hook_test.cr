@@ -53,4 +53,14 @@ end
 
 puts "pluralize hook failed" unless success
 
+# Run the signature hook, which doesn't take any input, only outputs some text.
+success = HookManager.run("signature") do |pipe|
+  pipe.receive do |f|
+    result = f.gets_to_end
+    print "result of signature hook:\n---\n#{result}\n---\n"
+  end
+end
+
+puts "signature hook failed" unless success
+
 end
