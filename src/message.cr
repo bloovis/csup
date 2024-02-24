@@ -660,6 +660,16 @@ class MsgThread
     map { |m, d, p| [m.from] + m.to + m.cc + m.bcc }.flatten.compact.uniq
   end
 
+  def latest_message : Message?
+    return nil unless latest = @msg
+    each do |m, d, p|
+      if m && m.date > latest.date
+	latest = m
+      end
+    end
+    return latest
+  end
+
 end	# MsgThread
 
 class ThreadList

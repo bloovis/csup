@@ -11,7 +11,7 @@ class ThreadIndexMode < LineCursorMode
   mode_class load_more_threads, reload,
 	     read_and_archive, multi_read_and_archive,
 	     toggle_tagged, multi_toggle_tagged, apply_to_tagged,
-	     edit_labels, multi_edit_labels,
+	     edit_labels, multi_edit_labels, reply_cmd, reply_all,
 	     toggle_archived, multi_toggle_archived,
 	     toggle_new, multi_toggle_new, jump_to_next_new,
 	     toggle_starred, multi_toggle_starred,
@@ -37,6 +37,8 @@ class ThreadIndexMode < LineCursorMode
     k.add :toggle_spam, "Mark/unmark thread as spam", 'S'
     k.add :toggle_deleted, "Delete/undelete thread", 'd'
     k.add :jump_to_next_new, "Jump to next new thread", "C-i"
+    k.add :reply_cmd, "Reply to latest message in a thread", 'r'
+    k.add :reply_all, "Reply to all participants of the latest message in a thread", 'G'
     k.add :toggle_tagged, "Tag/untag selected thread", 't'
     k.add :apply_to_tagged, "Apply next command to all tagged threads", '+', '='
     k.add :undo, "Undo the previous action", 'u'
@@ -940,6 +942,22 @@ class ThreadIndexMode < LineCursorMode
     end
 
     threads.each { |t| Notmuch.save_thread t }
+  end
+
+  def reply(type_arg : String)
+    return unless t = cursor_thread
+    t.load_body
+    return unless m = t.latest_message
+    mode = ReplyMode.new(m, type_arg)
+    BufferManager.spawn "Reply to #{m.subj}", mode
+  end
+
+  def reply_cmd(*args)
+    reply("none")
+  end
+
+  def reply_all(*args)
+    reply("all")
   end
 
   def read_and_archive(*args)
