@@ -278,6 +278,15 @@ class BufferManager
   end
   singleton_method kill_buffer, buf
 
+  def ask_with_completions(domain, question, completions, default=nil) : String?
+    #ask domain, question, default do |s|
+    #  s.fix_encoding!
+    #  completions.select { |x| x =~ /^#{Regexp::escape s}/iu }.map { |x| [x, x] }
+    #end
+    ask domain, question, default
+  end
+  singleton_method ask_with_completions, domain, question, completions, default
+
   def ask_many_emails_with_completions(domain : Symbol, question : String,
 			               completions : Array(String),
 				       default=nil) : String

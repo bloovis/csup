@@ -97,6 +97,7 @@ class LabelManager
       @modified = true
     end
   end
+  singleton_method delete, t
 
   def save
     return unless @modified

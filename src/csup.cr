@@ -17,6 +17,8 @@ require "./modes/search_list_mode"
 require "./modes/help_mode"
 require "./modes/contact_list_mode"
 require "./draft"
+require "./modes/label_search_results_mode"
+require "./modes/label_list_mode"
 
 module Redwood
   BASE_DIR = File.join(ENV["HOME"], ".csup")
@@ -162,7 +164,8 @@ end
 
 # Commands.  Every command must be listed in the actions macro below.
 actions quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards,
-        list_buffers, list_contacts, redraw, search, poll, compose, help
+        list_buffers, list_contacts, redraw, search, poll, compose, help,
+	list_labels
 
 def quit_now
   #BufferManager.say "This is the global quit command."
@@ -240,6 +243,19 @@ def help
   end
 end
 
+def list_labels
+  labels = LabelManager.all_labels.map { |l| LabelManager.string_for l }
+
+  user_label = BufferManager.ask_with_completions :label, "Show threads with label (enter for listing): ", labels
+  unless user_label.nil?
+    if user_label.empty?
+      BufferManager.spawn_unless_exists("Label list") { LabelListMode.new }
+    else
+      LabelSearchResultsMode.spawn_nicely user_label
+    end
+  end
+end
+
 # Main program
 def main
   init_managers
@@ -272,6 +288,7 @@ def main
     k.add :list_contacts, "List contacts", 'C'
     k.add :redraw, "Redraw screen", "C-l"
     k.add :search, "Search all messages", '\\', 'F'
+    k.add :list_labels, "List labels", 'L'
     k.add :poll, "Poll for new messages", 'P', "ERR"
     k.add :compose, "Compose new message", 'm', 'c'
   end

@@ -5,10 +5,11 @@ type: docs
 
 # What Is This?
 
-Csup is a terminal-based [email client](https://www.bloovis.com/cgit/csup/) for Linux.
-It is written in [Crystal](https://crystal-lang.org/), and is a partial of
+Csup is a terminal-based [email client](https://www.bloovis.com/cgit/csup/) for Linux,
+written in [Crystal](https://crystal-lang.org/).  It is a partial port of
 [Sup-notmuch](https://www.bloovis.com/cgit/sup-notmuch/), which is in turn
 a fork of the original [Sup mail client](https://github.com/sup-heliotrope/sup).
+It uses [Notmuch](https://notmuchmail.org/) for mail storage, searching, and tagging.
 
 ![Csup screen shot](/csupguide/images/csup-screen-shot.png)
 
