@@ -61,14 +61,14 @@ class CompletionMode < ScrollMode
           suffix = s[(plen + 1) .. -1]
           char = s[plen].to_s
 
-          widgets << {:text_color, sprintf("%#{max_length - suffix.length - 1}s", prefix)}
+          widgets << {:text_color, prefix.pad_left(max_length - suffix.length - 1)}
 	  widgets << {:completion_character_color, char}
 	  widgets << {:text_color, suffix + INTERSTITIAL}
         else
-          widgets << {:text_color, sprintf("%#{max_length}s#{INTERSTITIAL}", s)}
+          widgets << {:text_color, s.pad_left(max_length) + INTERSTITIAL}
         end
       else
-        widgets << {:text_color, sprintf("%#{max_length}s#{INTERSTITIAL}", s)}
+        widgets << {:text_color, s.pad_left(max_length) + INTERSTITIAL}
       end
     end
     if widgets.size > 0
