@@ -634,20 +634,24 @@ class ThreadIndexMode < LineCursorMode
     pos = curpos
     if t.has_label? :inbox
       t.remove_label :inbox
+      Notmuch.save_thread t
       UpdateManager.relay self, :archived, t
       return -> do
         #STDERR.puts "undo lambda applying :inbox"
         thread.apply_label :inbox
+	Notmuch.save_thread thread
         update_text_for_line pos
         UpdateManager.relay self, :unarchived, thread
 	nil
       end
     else
       t.apply_label :inbox
+      Notmuch.save_thread t
       UpdateManager.relay self, :unarchived, t
       return -> do
         #STDERR.puts "undo lambda removing :inbox"
         thread.remove_label :inbox
+	Notmuch.save_thread thread
         update_text_for_line pos
         UpdateManager.relay self, :unarchived, thread
 	nil
