@@ -313,8 +313,8 @@ class BufferManager
     lastc = ""
     until done
       # Don't let ret exceed the number of columns available.
-      if ret.size >= fillcols
-	ret = ret[0...fillcols]
+      if ret.size >= fillcols-1
+	ret = ret[0...fillcols-1]
       end
 
       # CompletionMode changes the color to blue for its status line,
