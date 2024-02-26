@@ -5,6 +5,7 @@ require "./mode"
 require "./util"
 require "./modes/file_browser_mode"
 require "system/user"
+require "./modes/completion_mode"
 
 module Redwood
 
@@ -311,6 +312,7 @@ class BufferManager
 				completions : Array(String),
 				default=nil) : String?
     do_ask domain, question, true, default do |partial|
+      STDERR.puts "ask_many_with_completions, partial #{partial}"
       prefix, target =
         case partial
         when /^\s*$/
@@ -431,7 +433,9 @@ class BufferManager
     ret = default || ""
     done = false
     aborted = false
+    completion_buf = nil
     until done
+      Ncurses.attrset Colormap.color_for(:text_color)
       Ncurses.mvaddstr(row, leftcol, ret + (" " * (fillcols - ret.size)))
       Ncurses.move(row, leftcol + ret.size)
       Ncurses.refresh
@@ -449,6 +453,23 @@ class BufferManager
       when KEY_CANCEL
 	done = true
 	aborted = true
+      when "C-i"
+	comps = yield(ret)
+	#STDERR.puts "#{comps.size} completions returned by block: "
+	#comps.each do |t|
+	  #STDERR.puts "  full #{t[0]}, short #{t[1]}"
+	#end
+	if comps.size > 0
+	  ret = comps.map { |t| t[0] }.shared_prefix(true)	# t[0] = full
+	  shorts = comps.map { |t| t[1] }			# t[1] = short
+	  kill_buffer(completion_buf) if completion_buf
+	  prefix_len = shorts.shared_prefix(caseless=true).size
+	  mode = CompletionMode.new(shorts,
+				    Opts.new({:header => "Possible completions for \"#{ret}\": ",
+					      :prefix_len => prefix_len}))
+	  completion_buf = spawn("<completions>", mode, Opts.new({:height => 10}))
+	  draw_screen(Opts.new({:skip_minibuf => true}))
+	end
       else
 	if c.size == 1
 	  ret += c
@@ -456,6 +477,7 @@ class BufferManager
       end
     end
 
+    kill_buffer(completion_buf) if completion_buf
     @asking = false
     Ncurses.curs_set 0
     draw_screen Opts.new({:sync => false, :status => status, :title => title})
