@@ -281,12 +281,124 @@ class BufferManager
   end
   singleton_method kill_buffer, buf
 
+  ## for simplicitly, we always place the question at the very bottom of the
+  ## screen.
+  # Crystal note: we don't use TextField or Ncurses forms, so ignore
+  # then domain parameter, but allow it for compatibility with existing code.
+
+  alias AskBlock = Proc(String, Array(Tuple(String, String)))
+
+  def do_ask(domain : Symbol, question : String, block_given? = true,
+	     default=nil, &block : AskBlock) : String?
+    #STDERR.puts "ask: domain #{domain}, question '#{question}', default '#{default}'"
+    raise "impossible!" if @asking
+    raise "Question too long" if Ncurses.cols <= question.size
+    @asking = true
+    status, title = get_status_and_title(@focus_buf)
+    draw_screen Opts.new({:sync => false, :status => status, :title => title})
+    row = Ncurses.rows - 1
+    leftcol = question.size
+    fillcols = Ncurses.cols - leftcol
+    Ncurses.mvaddstr(row, 0, question)
+    Ncurses.move(row, leftcol)
+    Ncurses.clrtoeol
+    Ncurses.curs_set 1
+    Ncurses.refresh
+
+    ret = default || ""
+    done = false
+    aborted = false
+    completion_buf = nil
+    completion_mode = nil
+    lastc = ""
+    until done
+      # Don't let ret exceed the number of columns available.
+      if ret.size >= fillcols
+	ret = ret[0...fillcols]
+      end
+
+      # CompletionMode changes the color to blue for its status line,
+      # reset to the normal color.
+      Ncurses.attrset Colormap.color_for(:text_color)
+
+      # Redraw the ret buffer.
+      Ncurses.mvaddstr(row, leftcol, ret + (" " * (fillcols - ret.size)))
+      Ncurses.move(row, leftcol + ret.size)
+      Ncurses.refresh
+
+      c = Ncurses.getkey
+      next if c == ""
+      case c
+      when "C-h"
+	if ret.size > 0
+	  ret = ret[0..-2]
+	end
+      when "C-u"
+        ret = ""
+      when "C-m"
+        done = true
+      when KEY_CANCEL
+	done = true
+	aborted = true
+      when "C-i"
+        if lastc == "C-i"
+	  if completion_mode
+	    completion_mode.roll
+	    draw_screen(Opts.new({:skip_minibuf => true}))
+	  end
+	else
+	  comps = yield(ret)
+	  #STDERR.puts "#{comps.size} completions returned by block: "
+	  #comps.each do |t|
+	    #STDERR.puts "  full #{t[0]}, short #{t[1]}"
+	  #end
+	  if comps.size > 0
+	    ret = comps.map { |t| t[0] }.shared_prefix(true)	# t[0] = full
+	    shorts = comps.map { |t| t[1] }			# t[1] = short
+	    kill_buffer(completion_buf) if completion_buf
+	    prefix_len = shorts.shared_prefix(caseless=true).size
+	    completion_mode = CompletionMode.new(shorts,
+				      Opts.new({:header => "Possible completions for \"#{ret}\": ",
+						:prefix_len => prefix_len}))
+	    completion_buf = spawn("<completions>", completion_mode, Opts.new({:height => 10}))
+	    draw_screen(Opts.new({:skip_minibuf => true}))
+	  end
+	end
+      else
+	if c.size == 1
+	  ret += c
+	end
+      end
+      lastc = c
+    end
+
+    kill_buffer(completion_buf) if completion_buf
+    @asking = false
+    Ncurses.curs_set 0
+    draw_screen Opts.new({:sync => false, :status => status, :title => title})
+
+    if aborted
+      return nil
+    else
+      return ret
+    end
+  end
+
+  # This variant expects a completions block.
+  def self.ask(domain : Symbol, question : String, default=nil)
+    self.instance.do_ask(domain, question, true, default) {|s| yield s }
+  end
+
+  # This variant does NOT expect a completions block.
+  def self.ask(domain : Symbol, question : String, default=nil)
+    self.instance.do_ask(domain, question, false, default) {|s| [{"", ""}]}
+  end
+
   def ask_with_completions(domain, question, completions, default=nil) : String?
     do_ask domain, question, true, default do |s|
     #  s.fix_encoding!
       completions.select { |x| x =~ /^#{Regex.escape s}/i }.map { |x| {x, x} }
     end
-    #do_ask domain, question, default
   end
   singleton_method ask_with_completions, domain, question, completions, default
 
@@ -404,98 +516,6 @@ class BufferManager
     return answer
   end
   singleton_method ask_for_account, domain, question
-
-  ## for simplicitly, we always place the question at the very bottom of the
-  ## screen.
-  # Crystal note: we don't use TextField or Ncurses forms, so ignore
-  # then domain parameter, but allow it for compatibility with existing code.
-  # FIXME: should take an optional block!
-
-  alias AskBlock = Proc(String, Array(Tuple(String, String)))
-
-  def do_ask(domain : Symbol, question : String, block_given? = true,
-		  default=nil, &block : AskBlock) : String?
-    #STDERR.puts "ask: domain #{domain}, question '#{question}', default '#{default}'"
-    raise "impossible!" if @asking
-    raise "Question too long" if Ncurses.cols <= question.size
-    @asking = true
-    status, title = get_status_and_title(@focus_buf)
-    draw_screen Opts.new({:sync => false, :status => status, :title => title})
-    row = Ncurses.rows - 1
-    leftcol = question.size
-    fillcols = Ncurses.cols - leftcol
-    Ncurses.mvaddstr(row, 0, question)
-    Ncurses.move(row, leftcol)
-    Ncurses.clrtoeol
-    Ncurses.curs_set 1
-    Ncurses.refresh
-
-    ret = default || ""
-    done = false
-    aborted = false
-    completion_buf = nil
-    until done
-      Ncurses.attrset Colormap.color_for(:text_color)
-      Ncurses.mvaddstr(row, leftcol, ret + (" " * (fillcols - ret.size)))
-      Ncurses.move(row, leftcol + ret.size)
-      Ncurses.refresh
-      c = Ncurses.getkey
-      next if c == ""
-      case c
-      when "C-h"
-	if ret.size > 0
-	  ret = ret[0..-2]
-	end
-      when "C-u"
-        ret = ""
-      when "C-m"
-        done = true
-      when KEY_CANCEL
-	done = true
-	aborted = true
-      when "C-i"
-	comps = yield(ret)
-	#STDERR.puts "#{comps.size} completions returned by block: "
-	#comps.each do |t|
-	  #STDERR.puts "  full #{t[0]}, short #{t[1]}"
-	#end
-	if comps.size > 0
-	  ret = comps.map { |t| t[0] }.shared_prefix(true)	# t[0] = full
-	  shorts = comps.map { |t| t[1] }			# t[1] = short
-	  kill_buffer(completion_buf) if completion_buf
-	  prefix_len = shorts.shared_prefix(caseless=true).size
-	  mode = CompletionMode.new(shorts,
-				    Opts.new({:header => "Possible completions for \"#{ret}\": ",
-					      :prefix_len => prefix_len}))
-	  completion_buf = spawn("<completions>", mode, Opts.new({:height => 10}))
-	  draw_screen(Opts.new({:skip_minibuf => true}))
-	end
-      else
-	if c.size == 1
-	  ret += c
-	end
-      end
-    end
-
-    kill_buffer(completion_buf) if completion_buf
-    @asking = false
-    Ncurses.curs_set 0
-    draw_screen Opts.new({:sync => false, :status => status, :title => title})
-
-    if aborted
-      return nil
-    else
-      return ret
-    end
-  end
-
-  def self.ask(domain : Symbol, question : String, default=nil)
-    self.instance.do_ask(domain, question, true, default) {|s| yield s }
-  end
-
-  def self.ask(domain : Symbol, question : String, default=nil)
-    self.instance.do_ask(domain, question, false, default) {|s| [{"", ""}]}
-  end
 
   def ask_getch(question : String, accept_string = "") : String
     # If we're not in Ncurses mode, prompt on the terminal and read
