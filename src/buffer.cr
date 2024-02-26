@@ -4,6 +4,7 @@ require "./opts"
 require "./mode"
 require "./util"
 require "./modes/file_browser_mode"
+require "system/user"
 
 module Redwood
 
@@ -113,6 +114,7 @@ class BufferManager
 
   @focus_buf : Buffer | Nil
   @flash : String?
+  @users : Array(String)?
 
   def initialize
     singleton_pre_init
@@ -279,40 +281,36 @@ class BufferManager
   singleton_method kill_buffer, buf
 
   def ask_with_completions(domain, question, completions, default=nil) : String?
-    #ask domain, question, default do |s|
+    do_ask domain, question, true, default do |s|
     #  s.fix_encoding!
-    #  completions.select { |x| x =~ /^#{Regexp::escape s}/iu }.map { |x| [x, x] }
-    #end
-    ask domain, question, default
+      completions.select { |x| x =~ /^#{Regex.escape s}/i }.map { |x| {x, x} }
+    end
+    #do_ask domain, question, default
   end
   singleton_method ask_with_completions, domain, question, completions, default
 
   def ask_many_emails_with_completions(domain : Symbol, question : String,
 			               completions : Array(String),
-				       default=nil) : String
-{% if false %}
-    # FIXME - use this code someday when completions work
-    ask domain, question, default do |partial|
+				       default=nil) : String?
+    do_ask(domain, question, true, default) do |partial|
       prefix, target = partial.split_on_commas_with_remainder
       target ||= prefix.pop || ""
-      target.fix_encoding!
+      #target.fix_encoding!
 
       prefix = prefix.join(", ") + (prefix.empty? ? "" : ", ")
-      prefix.fix_encoding!
+      #prefix.fix_encoding!
 
-      completions.select { |x| x =~ /^#{Regexp::escape target}/iu }.sort_by { |c| [ContactManager.contact_for(c) ? 0 : 1, c] }.map { |x| [prefix + x, x] }
+      completions.select { |x| x =~ /^#{Regex.escape target}/i }.
+		  sort_by { |c| {ContactManager.contact_for(c) ? 0 : 1, c} }.
+		  map { |x| {prefix + x, x} }
     end
-{% else %}
-    return ask(domain, question, default) || ""
-{% end %}
   end
   singleton_method ask_many_emails_with_completions, domain, question, completions, default
 
   def ask_many_with_completions(domain : Symbol, question : String,
 				completions : Array(String),
-				default=nil) : Array(String)?
-{% if false %}
-    ask domain, question, default do |partial|
+				default=nil) : String?
+    do_ask domain, question, true, default do |partial|
       prefix, target =
         case partial
         when /^\s*$/
@@ -323,17 +321,10 @@ class BufferManager
           raise "william screwed up completion: #{partial.inspect}"
         end
 
-      prefix.fix_encoding!
-      target.fix_encoding!
-      completions.select { |x| x =~ /^#{Regexp::escape target}/iu }.map { |x| [prefix + x, x] }
+      #prefix.fix_encoding!
+      #target.fix_encoding!
+      completions.select { |x| x =~ /^#{Regex.escape target}/i }.map { |x| {prefix + x, x} }
     end
-{% else %}
-    if s = ask(domain, question, default)
-      return s.split
-    else
-      return nil
-    end
-{% end %}
   end
   singleton_method ask_many_with_completions, domain, question, completions, default
 
@@ -354,7 +345,7 @@ class BufferManager
     answer = ask_many_with_completions domain, question, applyable_labels, default
     return nil unless answer
 
-    user_labels = answer.to_set
+    user_labels = Set.new(answer.split)
     user_labels.each do |l|
       if forbidden_labels.includes?(l) || LabelManager::RESERVED_LABELS.includes?(l)
         BufferManager.flash "'#{l}' is a reserved label!"
@@ -372,15 +363,22 @@ class BufferManager
   def ask_for_contacts(domain : Symbol, question : String, default = "") : Array(String)
     default += " " unless default == ""
 
-{% if false %}
-    # Enable this code when completions are implemented.
     recent = Notmuch.load_contacts(AccountManager.user_emails, 10).map { |c| [c.full_address, c.email] }
-    contacts = ContactManager.contacts.map { |c| [ContactManager.alias_for(c), c.full_address, c.email] }
+    contacts = Array(String).new
+    ContactManager.contacts.each do |c|
+      if a = ContactManager.alias_for(c)
+	contacts << a
+      end
+      if f = c.full_address
+	contacts << f
+      end
+      if e = c.email
+	contacts << e
+      end
+    end
 
     completions = (recent + contacts).flatten.uniq
-    completions += HookManager.run("extra-contact-addresses") || []
-{% end %}
-    completions = Array(String).new
+    #completions += HookManager.run("extra-contact-addresses") || []
 
     email_list = Array(String).new
     answer = BufferManager.ask_many_emails_with_completions(domain, question, completions, default)
@@ -395,11 +393,10 @@ class BufferManager
   end
   singleton_method ask_for_contacts, domain, question, default
 
-  def ask_for_account(domain : Symbol, question : String) : String
-    #completions = AccountManager.user_emails
-    completions = Array(String).new
+  def ask_for_account(domain : Symbol, question : String) : String?
+    completions = AccountManager.user_emails
     answer = BufferManager.ask_many_emails_with_completions domain, question, completions, ""
-    if answer == "" && (acct = AccountManager.default_account)
+    if answer && answer == "" && (acct = AccountManager.default_account)
       answer = acct.email
     end
     return answer
@@ -411,7 +408,11 @@ class BufferManager
   # Crystal note: we don't use TextField or Ncurses forms, so ignore
   # then domain parameter, but allow it for compatibility with existing code.
   # FIXME: should take an optional block!
-  def ask(domain : Symbol, question : String, default=nil) : String?
+
+  alias AskBlock = Proc(String, Array(Tuple(String, String)))
+
+  def do_ask(domain : Symbol, question : String, block_given? = true,
+		  default=nil, &block : AskBlock) : String?
     #STDERR.puts "ask: domain #{domain}, question '#{question}', default '#{default}'"
     raise "impossible!" if @asking
     raise "Question too long" if Ncurses.cols <= question.size
@@ -465,7 +466,14 @@ class BufferManager
       return ret
     end
   end
-  singleton_method ask, domain, question, default
+
+  def self.ask(domain : Symbol, question : String, default=nil)
+    self.instance.do_ask(domain, question, true, default) {|s| yield s }
+  end
+
+  def self.ask(domain : Symbol, question : String, default=nil)
+    self.instance.do_ask(domain, question, false, default) {|s| [{"", ""}]}
+  end
 
   def ask_getch(question : String, accept_string = "") : String
     # If we're not in Ncurses mode, prompt on the terminal and read
@@ -530,29 +538,34 @@ class BufferManager
   singleton_method ask_yes_or_no, question
 
   def ask_for_filename(domain : Symbol, question : String, default=nil, allow_directory=false) : String?
-{% if false %}
-    answer = ask domain, question, default do |s|
+    answer = do_ask domain, question, true, default do |s|
       if s =~ /(~([^\s\/]*))/ # twiddle directory expansion
         full = $1
-        name = $2.empty? ? Etc.getlogin : $2
-        dir = Etc.getpwnam(name).dir rescue nil
+	name = $2
+	if name.empty?
+	  dir = Path.home.to_s
+	else
+	  if u = System::User.find_by?(name: name)
+	    dir = u.home_directory
+	  else
+	    dir = nil
+	  end
+	end
         if dir
-          [[s.sub(full, dir), "~#{name}"]]
+          [{s.sub(full, dir), "~#{name}"}]
         else
-          users.select { |u| u =~ /^#{Regexp::escape name}/u }.map do |u|
-            [s.sub("~#{name}", "~#{u}"), "~#{u}"]
+          users.select { |u| u =~ /^#{Regex.escape name}/ }.map do |u|
+            {s.sub("~#{name}", "~#{u}"), "~#{u}"}
           end
         end
       else # regular filename completion
         Dir["#{s}*"].sort.map do |fn|
           suffix = File.directory?(fn) ? "/" : ""
-          [fn + suffix, File.basename(fn) + suffix]
+          {fn + suffix, File.basename(fn) + suffix}
         end
       end
     end
-{% end %}
 
-    answer = ask(domain, question, default)
     if answer
       # Strip single quotes to allow filenames to be dragged and dropped
       # from file browsers like Mate Caja.  Also strip leading and trailing spaces.
@@ -855,6 +868,15 @@ class BufferManager
     success
   end
   singleton_method shell_out, command, is_gui
+
+  def users
+    unless u = @users
+      u = `getent passwd`.lines.map {|x| x.split(":")[0]}
+      @users = u
+    end
+    u
+  end
+  singleton_method users
 
 end
 

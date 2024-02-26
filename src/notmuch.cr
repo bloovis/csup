@@ -161,6 +161,7 @@ module Notmuch
     Message.sync_back_labels t.messages
   end
 
+  # It's too expensive to search notmuch for addresses, so just return an empty list.
   def load_contacts(email_addresses : Array(String), limit : Int32 = 20)
     return Array(Person).new
   end

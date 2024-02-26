@@ -99,6 +99,64 @@ class String
     normalize_whitespace.split(/,\s*(?=(?:[^"]*"[^"]*")*(?![^"]*"))/)
   end
 
+  ## ok, here we do it the hard way. got to have a remainder for purposes of
+  ## tab-completing full email addresses
+  def split_on_commas_with_remainder : Tuple(Array(String), String?)
+    ret = Array(String).new
+    state = :outstring
+    pos = 0
+    region_start = 0
+    while pos <= size
+      newpos = case state
+        when :escaped_instring, :escaped_outstring then pos
+        else index(/[,"\\]/, pos)
+      end
+
+      if newpos
+        char = self[newpos]
+      else
+        char = nil
+        newpos = size
+      end
+
+      case char
+      when '"'
+        state = case state
+          when :outstring then :instring
+          when :instring then :outstring
+          when :escaped_instring then :instring
+          when :escaped_outstring then :outstring
+        end
+      when ',', nil
+        state = case state
+          when :outstring, :escaped_outstring then
+            ret << self[region_start ... newpos].gsub(/^\s+|\s+$/, "")
+            region_start = newpos + 1
+            :outstring
+          when :instring then :instring
+          when :escaped_instring then :instring
+        end
+      when '\\'
+        state = case state
+          when :instring then :escaped_instring
+          when :outstring then :escaped_outstring
+          when :escaped_instring then :instring
+          when :escaped_outstring then :outstring
+        end
+      end
+      pos = newpos + 1
+    end
+
+    remainder = case state
+      when :instring
+        self[region_start .. -1].gsub(/^\s+/, "")
+      else
+        nil
+      end
+
+    {ret, remainder}
+  end
+
 end
 
 # Enumerable extensions
@@ -123,6 +181,19 @@ module Enumerable
   def max_of
     map { |e| yield e }.max
   end
+
+  def shared_prefix(caseless = false, exclude = "")
+    return "" if size == 0
+    prefix = ""
+    (0 ... first.size).each do |i|
+      c = (caseless ? first.downcase : first)[i]
+      break unless all? { |s| (caseless ? s.downcase : s)[i]? == c }
+      next if exclude[i]? == c
+      prefix += first[i].to_s
+    end
+    prefix
+  end
+
 end
 
 # Number extensions
