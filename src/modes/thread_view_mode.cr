@@ -13,7 +13,7 @@ class ThreadViewMode < LineCursorMode
 	     align_current_message, toggle_detailed_header, show_header, show_message,
 	     pipe_message, jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
-	     compose, reply_cmd, reply_all, edit_draft, send_draft,
+	     compose, search, reply_cmd, reply_all, edit_draft, send_draft,
 	     edit_labels, forward, save_to_disk, save_all_to_disk, edit_alias,
 	     toggle_starred, toggle_new,
 	     archive_and_kill, delete_and_kill, spam_and_kill, do_nothing_and_kill,
@@ -46,8 +46,8 @@ class ThreadViewMode < LineCursorMode
     k.add :select_item, "Expand/collapse or activate item", "C-m"
     k.add :expand_all_messages, "Expand/collapse all messages", 'E'
     k.add :edit_draft, "Edit draft", 'e'
-    k.add :edit_labels, "Edit or add labels for a thread", 'l'
     k.add :send_draft, "Send draft", 'y'
+    k.add :edit_labels, "Edit or add labels for a thread", 'l'
     k.add :expand_all_quotes, "Expand/collapse all quotes in a message", 'o'
     k.add :jump_to_next_open, "Jump to next open message", 'n'
     k.add :jump_to_next_and_open, "Jump to next message and open", "C-n"
@@ -62,6 +62,7 @@ class ThreadViewMode < LineCursorMode
     k.add :edit_alias, "Edit alias/nickname for a person", 'i'
     k.add :save_to_disk, "Save message/attachment to disk", 's'
     k.add :save_all_to_disk, "Save all attachments to disk", 'A'
+    k.add :search, "Search for messages from particular people", 'S'
     k.add :compose, "Compose message to person", 'm'
     k.add :pipe_message, "Pipe message or attachment to a shell command", '|'
 
@@ -204,6 +205,13 @@ class ThreadViewMode < LineCursorMode
     return unless p = @person_lines[curpos]
     alias_contact p
     update
+  end
+
+  def search(*args)
+    return unless p = @person_lines[curpos]
+    mode = PersonSearchResultsMode.new [p]
+    BufferManager.spawn "Search for #{p.name}", mode
+    #mode.load_threads :num => mode.buffer.content_height
   end
 
   def compose(*args)
