@@ -15,7 +15,7 @@ class ThreadViewMode < LineCursorMode
 	     jump_to_next_open, jump_to_prev_open,
 	     compose, search, reply_cmd, reply_all, edit_draft, send_draft,
 	     edit_labels, forward, save_to_disk, save_all_to_disk, edit_alias,
-	     toggle_starred, toggle_new,
+	     toggle_starred, toggle_new, toggle_wrap,
 	     archive_and_kill, delete_and_kill, spam_and_kill, unread_and_kill, do_nothing_and_kill,
 	     archive_and_next, delete_and_next, spam_and_next, unread_and_next, do_nothing_and_next,
 	     archive_and_prev, delete_and_prev, spam_and_prev, unread_and_prev, do_nothing_and_prev
@@ -68,6 +68,7 @@ class ThreadViewMode < LineCursorMode
 
     k.add :archive_and_next, "Archive this thread, kill buffer, and view next", 'a'
     k.add :delete_and_next, "Delete this thread, kill buffer, and view next", 'd'
+    k.add :toggle_wrap, "Toggle wrapping of text", 'w'
 
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read:", '.' do |kk|
       kk.add :archive_and_kill, "Archive this thread and kill buffer", 'a'
@@ -141,6 +142,12 @@ class ThreadViewMode < LineCursorMode
     @layout[earliest].state = :detailed if (earliest && earliest.has_label?(:unread)) || @thread.size == 1
 
 #    display_thread(thread) # old test code
+  end
+
+  def toggle_wrap(*args)
+    @wrap = !@wrap
+    regen_text
+    buffer.mark_dirty if buffer
   end
 
   def initial_state_for(m : Message) : Symbol
@@ -470,10 +477,6 @@ class ThreadViewMode < LineCursorMode
         width = [config_width, buffer.content_width].min
       else
         width = buffer.content_width
-      end
-      # lines can apparently be both String and Array, convert to Array for map.
-      if lines.is_a? String
-        lines = lines.lines.to_a
       end
       lines = lines.map { |l| l.chomp.wrap width }.flatten
     end
