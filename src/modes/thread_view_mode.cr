@@ -16,9 +16,9 @@ class ThreadViewMode < LineCursorMode
 	     compose, search, reply_cmd, reply_all, edit_draft, send_draft,
 	     edit_labels, forward, save_to_disk, save_all_to_disk, edit_alias,
 	     toggle_starred, toggle_new,
-	     archive_and_kill, delete_and_kill, spam_and_kill, do_nothing_and_kill,
-	     archive_and_next, delete_and_next, spam_and_next, do_nothing_and_next,
-	     archive_and_prev, delete_and_prev, spam_and_prev, do_nothing_and_prev
+	     archive_and_kill, delete_and_kill, spam_and_kill, unread_and_kill, do_nothing_and_kill,
+	     archive_and_next, delete_and_next, spam_and_next, unread_and_next, do_nothing_and_next,
+	     archive_and_prev, delete_and_prev, spam_and_prev, unread_and_prev, do_nothing_and_prev
 
   class Layout
     property state = :none
@@ -73,18 +73,21 @@ class ThreadViewMode < LineCursorMode
       kk.add :archive_and_kill, "Archive this thread and kill buffer", 'a'
       kk.add :delete_and_kill, "Delete this thread and kill buffer", 'd'
       kk.add :spam_and_kill, "Mark this thread as spam and kill buffer", 's'
+      kk.add :unread_and_kill, "Mark this thread as unread and kill buffer", 'N'
       kk.add :do_nothing_and_kill, "Just kill this buffer", '.'
     end
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read/do (n)othing:", ',' do |kk|
       kk.add :archive_and_next, "Archive this thread and view next", 'a'
       kk.add :delete_and_next, "Delete this thread, kill buffer, and view next", 'd'
       kk.add :spam_and_next, "Mark this thread as spam, kill buffer, and view next", 's'
+      kk.add :unread_and_next, "Mark this thread as unread, kill buffer, and view next", 'N'
       kk.add :do_nothing_and_next, "Kill buffer, and view next", 'n', ','
     end
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read/do (n)othing:", ']' do |kk|
       kk.add :archive_and_prev, "Archive this thread, kill buffer, and view previous", 'a'
       kk.add :delete_and_prev, "Delete this thread, kill buffer, and view previous", 'd'
       kk.add :spam_and_prev, "Mark this thread as spam, kill buffer, and view previous", 's'
+      kk.add :unread_and_prev, "Mark this thread as unread, kill buffer, and view previous", 'N'
       kk.add :do_nothing_and_prev, "Kill buffer, and view previous", 'n', ']'
     end
   end
@@ -771,16 +774,19 @@ class ThreadViewMode < LineCursorMode
   def archive_and_kill(*args); archive_and_then :kill end
   def spam_and_kill(*args); spam_and_then :kill end
   def delete_and_kill(*args); delete_and_then :kill end
+  def unread_and_kill(*args); unread_and_then :kill end
   def do_nothing_and_kill(*args); do_nothing_and_then :kill end
 
   def archive_and_next(*args); archive_and_then :next end
   def spam_and_next(*args); spam_and_then :next end
   def delete_and_next(*args); delete_and_then :next end
+  def unread_and_next(*args); unread_and_then :next end
   def do_nothing_and_next(*args); do_nothing_and_then :next end
 
   def archive_and_prev(*args); archive_and_then :prev end
   def spam_and_prev(*args); spam_and_then :prev end
   def delete_and_prev(*args); delete_and_then :prev end
+  def unread_and_prev(*args); unread_and_then :prev end
   def do_nothing_and_prev(*args); do_nothing_and_then :prev end
 
 
@@ -846,6 +852,14 @@ class ThreadViewMode < LineCursorMode
         Notmuch.save_thread undo_thread
         UpdateManager.relay self, :undeleted, undo_thread
       end
+    end
+  end
+
+  def unread_and_then(op : Symbol)
+    dispatch op do
+      @thread.apply_label :unread
+      Notmuch.save_thread @thread
+      UpdateManager.relay self, :labeled, @thread
     end
   end
 
