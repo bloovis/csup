@@ -8,10 +8,11 @@ existing notmuch-enabled variant of Sup, which I call Sup-notmuch.
 You can find my version of the Sup-notmuch variant
 [here](https://www.bloovis.com/cgit/sup-notmuch/).
 
-As of this writing (2024-02-25), Csup has nearly all of of the functionality
-of Sup-notmuch.  The one major missing feature is completions for prompts.
+As of this writing (2024-02-26), Csup has nearly all of of the functionality
+of Sup-notmuch.  A few lesser-used commands are missing and will be added
+as needed.
 
-Most of the code in Csup is a port of code from Sup-notmuch, except for
+Most of Csup is a port of code from Sup-notmuch, except for
 the message threading code.  I rewrote this to use notmuch not just for determining
 the structure of the thread trees, but also for obtaining the headers and
 content of the messages.
