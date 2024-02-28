@@ -188,6 +188,18 @@ class Message
     return ret
   end
 
+  def raw_message : String
+    ret = ""
+    begin
+      File.open(@filename) do |f|
+        ret = f.gets_to_end
+      end
+    rescue e
+      BufferManager.flash e.message || "Unable to open #{@filename}"
+    end
+    return ret
+  end
+
   def sync_back_labels
     Message.sync_back_labels [self]
   end

@@ -10,8 +10,8 @@ module Redwood
 
 class ThreadViewMode < LineCursorMode
   mode_class expand_all_quotes, expand_all_messages, select_item,
-	     align_current_message, toggle_detailed_header, show_header, pipe_message,
-	     jump_to_next_and_open, jump_to_prev_and_open,
+	     align_current_message, toggle_detailed_header, show_header, show_message,
+	     pipe_message, jump_to_next_and_open, jump_to_prev_and_open,
 	     jump_to_next_open, jump_to_prev_open,
 	     compose, reply_cmd, reply_all, edit_draft, send_draft,
 	     edit_labels, forward, save_to_disk, save_all_to_disk, edit_alias,
@@ -42,6 +42,7 @@ class ThreadViewMode < LineCursorMode
   register_keymap do |k|
     k.add :toggle_detailed_header, "Toggle detailed header", 'h'
     k.add :show_header, "Show full message header", 'H'
+    k.add :show_message, "Show full message (raw form)", 'V'
     k.add :select_item, "Expand/collapse or activate item", "C-m"
     k.add :expand_all_messages, "Expand/collapse all messages", 'E'
     k.add :edit_draft, "Edit draft", 'e'
@@ -161,6 +162,12 @@ class ThreadViewMode < LineCursorMode
     end
   end
 
+  def show_message(*args)
+    return unless m = @message_lines[curpos]
+    BufferManager.spawn_unless_exists("Raw message for #{m.id}") do
+      TextMode.new m.raw_message
+    end
+  end
 
   def reply_all(*args)
     reply("all")
