@@ -81,9 +81,14 @@ class InboxMode < ThreadIndexMode
   end
 
   def handle_unarchived_update(*args)
-    #reload
-    return unless t = get_update_thread(*args)
-    unhide_thread t
+    if t = get_update_thread(*args)
+      #STDERR.puts "inbox mode: handle_unarchived_update for #{t.id}"
+      unhide_thread t
+    else
+      # Thread wasn't in the inbox.  Do a reload in case it should be.
+      #STDERR.puts "inbox mode: handle_unarchived_update: thread not found, doing a reload"
+      reload
+    end
     update
   end
 

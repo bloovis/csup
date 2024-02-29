@@ -194,7 +194,13 @@ class ThreadIndexMode < LineCursorMode
 
   def unhide_thread(t : MsgThread)
     if ti = @tinfo[t.id]?
+      #STDERR.puts "unhide #{t.id}"
       ti.hidden = false
+    else
+      # Thread wasn't in the original list.  Do a full reload in case it should
+      # be in the list.
+      #STDERR.puts "unhide #{t.id}: not in list, so doing a reload"
+      reload
     end
   end
 
@@ -251,10 +257,11 @@ class ThreadIndexMode < LineCursorMode
       new_ts = ThreadList.new(query, offset: 0, limit: limit)
       #STDERR.puts "handle_poll_update: new thread list size #{n}"
 
-      # If any new thread is already in the existing thread list, replace
-      # its top-level messages, and remove it from the new thread list.
+      # If any new thread is already in the existing thread list, and has
+      # the same number of messages, replace the top-level message in the
+      # existing thread, and remove it from the new thread list.
       new_ts.threads.select! do |thread|
-        if t = ts.find_thread(thread)
+        if (t = ts.find_thread(thread)) && (t.size == thread.size)
 	  #STDERR.puts "handle_poll_update: new thread #{thread.id} found in old list"
 	  if msg = thread.msg
 	    t.set_msg(msg)
@@ -271,9 +278,12 @@ class ThreadIndexMode < LineCursorMode
       add_thread_info(new_ts)
       n = new_ts.threads.size
 
-      # Append all threads from the old thread list. */
+      # Append to the new list all threads from the old thread list that haven't
+      # already been added to the new list.
       ts.threads.each do |thread|
-        new_ts.threads << thread
+        unless new_ts.find_thread(thread)
+	  new_ts.threads << thread
+	end
       end
 
       # Replace this thread list with the new one.
@@ -719,6 +729,7 @@ class ThreadIndexMode < LineCursorMode
     else
       t.apply_label :inbox
       Notmuch.save_thread t
+      #STDERR.puts "relay unarchived thread #{t.id}"
       UpdateManager.relay self, :unarchived, t
       return -> do
         #STDERR.puts "undo lambda removing :inbox"
