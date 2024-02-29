@@ -64,7 +64,7 @@ class AttachmentChunk < Chunk
   property part : Message::Part
   property message : Message
 
-  def initialize(@part : Message::Part, @message : Message)
+  def initialize(@part : Message::Part, @message : Message, decode = false)
     super(:attachment)
 
     @color = :text_color
@@ -72,17 +72,19 @@ class AttachmentChunk < Chunk
     @initial_state = :open
 
     text = ""
-    success = HookManager.run("mime-decode") do |pipe|
-      pipe.transmit do |f|
-	f.puts(@part.content_type)
-	f << @part.content
+    if decode
+      success = HookManager.run("mime-decode") do |pipe|
+	pipe.transmit do |f|
+	  f.puts(@part.content_type)
+	  f << @part.content
+	end
+	pipe.receive do |f|
+	  text = f.gets_to_end
+	end
       end
-      pipe.receive do |f|
-	text = f.gets_to_end
+      if !success || text.size == 0
+	#text = "mime-decode hook not implemented for part #{@part.id}, #{@part.content_type}.\n"
       end
-    end
-    if !success || text.size == 0
-      #text = "mime-decode hook not implemented for part #{@part.id}, #{@part.content_type}.\n"
     end
 
     if text && text.size > 0
