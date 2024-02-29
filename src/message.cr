@@ -761,7 +761,7 @@ class ThreadList
   def find_thread(other : MsgThread) : MsgThread?
     #STDERR.puts "find_thread: other thread id #{other.id}"
     threads.each do |t|
-      if t.id = other.id
+      if t.id == other.id
 	return t
       end
     end

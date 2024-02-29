@@ -251,12 +251,15 @@ class ThreadIndexMode < LineCursorMode
       new_ts = ThreadList.new(query, offset: 0, limit: limit)
       add_thread_info(new_ts)
       n = new_ts.threads.size
+      #STDERR.puts "handle_poll_update: new thread list size #{n}"
 
       # Run through the old thread list, and add to the new list any thread
       # that is not already in the new list.
       ts.threads.each do |thread|
+        #STDERR.puts "handle_poll_update: adding thread #{thread.id}, found = #{!new_ts.find_thread(thread).nil?}"
         new_ts.threads << thread unless new_ts.find_thread(thread)
       end
+      #STDERR.puts "handle_poll_update: updated new thread list size #{new_ts.threads.size}"
 
 {% if false %}
       # If any of the updated threads are already in the existing thread list,
@@ -286,8 +289,9 @@ class ThreadIndexMode < LineCursorMode
     old_cursor_thread = cursor_thread
     threadlist = @ts
     return unless threadlist
-    #STDERR.puts "ThreadIndexMode.update: nthreads = #{threadlist.threads.size}"
+    #STDERR.puts "update: nthreads = #{threadlist.threads.size}"
     @threads = threadlist.threads.select {|t| !@tinfo[t.id].hidden}
+    #STDERR.puts "update: no. of non-hidden threads = #{@threads.size}"
     if @threads.size == 0
       # The thread list is now empty
       @text = Array(Text).new
