@@ -249,17 +249,45 @@ class ThreadIndexMode < LineCursorMode
 
       # Get the list of updated threads.
       new_ts = ThreadList.new(query, offset: 0, limit: limit)
-      add_thread_info(new_ts)
-      n = new_ts.threads.size
       #STDERR.puts "handle_poll_update: new thread list size #{n}"
 
-      # Run through the old thread list, and add to the new list any thread
-      # that is not already in the new list.
-      ts.threads.each do |thread|
-        #STDERR.puts "handle_poll_update: adding thread #{thread.id}, found = #{!new_ts.find_thread(thread).nil?}"
-        new_ts.threads << thread unless new_ts.find_thread(thread)
+      # If any new thread is already in the existing thread list, replace
+      # its top-level messages, and remove it from the new thread list.
+      new_ts.threads.select! do |thread|
+        if t = ts.find_thread(thread)
+	  #STDERR.puts "handle_poll_update: new thread #{thread.id} found in old list"
+	  if msg = thread.msg
+	    t.set_msg(msg)
+	    #STDERR.puts "handle_poll_update: setting top message for #{thread.id}, tags #{t.labels}"
+	    Notmuch.save_thread(t)
+	  end
+	  false
+	else
+	  #STDERR.puts "handle_poll_update: new thread #{thread.id} not in old list"
+	  true
+	end
       end
+
+      # Add thread info for the new threads.
+      add_thread_info(new_ts)
+      n = new_ts.threads.size
+
+      # Append all threads from the old thread list. */
+      ts.threads.each do |thread|
+        new_ts.threads << thread
+      end
+
+      # Replace this thread list with the new one.
+      @ts = new_ts
+
+      BufferManager.flash "#{n.pluralize "thread"} updated"
+      #STDERR.puts "handle_poll_update: calling update"
+      update
+
+{% if false %}
       #STDERR.puts "handle_poll_update: updated new thread list size #{new_ts.threads.size}"
+
+{% end %}
 
 {% if false %}
       # If any of the updated threads are already in the existing thread list,
@@ -275,11 +303,6 @@ class ThreadIndexMode < LineCursorMode
 	end
       end
 {% end %}
-
-      # Replace this thread list with the new one.
-      @ts = new_ts
-      BufferManager.flash "#{n.pluralize "thread"} updated"
-      update
     end
   end
 
@@ -288,6 +311,7 @@ class ThreadIndexMode < LineCursorMode
   def update
     old_cursor_thread = cursor_thread
     threadlist = @ts
+    #STDERR.puts "update: threadlist is nil: #{threadlist.nil?}"
     return unless threadlist
     #STDERR.puts "update: nthreads = #{threadlist.threads.size}"
     @threads = threadlist.threads.select {|t| !@tinfo[t.id].hidden}
@@ -409,6 +433,7 @@ class ThreadIndexMode < LineCursorMode
   AUTHOR_LIMIT = 5
   def text_for_thread_at(line : Int32) : Text
     t = @threads[line]
+    #STDERR.puts "text_for_thread_at: line #{line}, thread #{t.id}, tags #{t.labels}"
     size_widget = @size_widgets[line]
     date_widget = @date_widgets[line]
 
