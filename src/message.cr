@@ -247,6 +247,7 @@ class Message
     return nil
   end
 
+{% if flag?(:TEST) %}
   def print(level = 0, print_content = false)
     prefix = "  " * level
     puts "#{prefix}Message:"
@@ -283,6 +284,7 @@ class Message
       end
     end
   end
+{% end %}
 
   # Walk the the tree of messages, passing each message and its depth
   # to the block.
@@ -652,6 +654,7 @@ class MsgThread
     @msg
   end
 
+{% if flag?(:TEST) %}
   def print(print_content = false)
     if m = @msg
       puts "Thread object id #{self.object_id}, prev #{@prev.object_id}, next #{@next.object_id}"
@@ -660,6 +663,7 @@ class MsgThread
       puts "Thread is empty!"
     end
   end
+{% end %}
 
   # This allows MsgThread.map to be used.  We can't yield inside
   # the walktree block, so we have to save the results of walktree, then
@@ -768,6 +772,7 @@ class ThreadList
     return nil
   end
 
+{% if flag?(:TEST) %}
   def print(print_content = false)
     puts "ThreadList:"
     @threads.each_with_index do |thread, i|
@@ -776,6 +781,7 @@ class ThreadList
       thread.print(print_content: print_content)
     end
   end
+{% end %}
 
 end	# ThreadList
 
