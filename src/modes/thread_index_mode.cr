@@ -259,7 +259,6 @@ class ThreadIndexMode < LineCursorMode
 	  if msg = thread.msg
 	    t.set_msg(msg)
 	    #STDERR.puts "handle_poll_update: setting top message for #{thread.id}, tags #{t.labels}"
-	    Notmuch.save_thread(t)
 	  end
 	  false
 	else
