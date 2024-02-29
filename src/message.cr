@@ -537,8 +537,9 @@ class MsgThread
   property prev : MsgThread?
   property size = 0
   property subj = "<no subject>"
+  property id = ""
 
-  def initialize(json : JSON::Any)
+  def initialize(json : JSON::Any, @id)
     #STDERR.puts "MsgThread: json #{json}"
     # There usually seems to be only one message in the array, but occasionally
     # there is more than one.  Treat the messages after the first one as children
@@ -716,28 +717,30 @@ class ThreadList
     @query = query
 
     # First, get the list of threads matching the query.
-    lines = Notmuch.search(query, offset: offset, limit: limit)
-    if lines.size == 0
+    thread_ids = Notmuch.search(query, offset: offset, limit: limit)
+    if thread_ids.size == 0
       #puts "run_notmuch_show: query '#{query}' produced no results"
       return
     end
 
     # Construct a show query from the list of threads and obtain
     # the JSON output.
-    show_query = lines.join(" or ") + " and (#{query})"
+    show_query = thread_ids.join(" or ") + " and (#{query})"
     debug "run_notmuch_show: query #{show_query}"
     json = Notmuch.show(show_query, body: body, html: body)
-    parse_json(json)
+    parse_json(json, thread_ids)
   end
 
-  def parse_json(json : JSON::Any)
+  def parse_json(json : JSON::Any, thread_ids : Array(String))
     #puts "parse_json #{json}"
     results = json.as_a?
     if results
-      #puts "results is an array"
+      if results.size != thread_ids.size
+	raise "thread list should contain #{thread_ids.size} items, but has #{results.size} items!"
+      end
       prev_thread = nil
-      results.each do |result|
-        thread = MsgThread.new(result)
+      results.each_with_index do |result, i|
+        thread = MsgThread.new(result, thread_ids[i])
 	thread.prev = prev_thread
 	if prev_thread
 	  prev_thread.next = thread
@@ -746,7 +749,7 @@ class ThreadList
 	threads << thread
       end
     else
-      puts "results is a #{json.class.name}, expected array"
+      STDERR.puts "results is a #{json.class.name}, expected array"
     end
   end
 

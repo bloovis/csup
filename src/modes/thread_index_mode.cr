@@ -7,6 +7,25 @@ require "./thread_view_mode"
 
 module Redwood
 
+class ThreadInfo
+  property thread : MsgThread
+  property hidden : Bool
+  property size_widget : String
+  property date_widget : String
+
+  def initialize(@thread)
+    @hidden = false
+    @size_widget = case @thread.size
+      when 1
+        ""
+      else
+        "(#{@thread.size})"
+      end
+    @date_widget = @thread.date.to_local.to_nice_s
+  end
+
+end
+
 class ThreadIndexMode < LineCursorMode
   mode_class load_more_threads, reload,
 	     read_and_archive, multi_read_and_archive,
@@ -55,6 +74,7 @@ class ThreadIndexMode < LineCursorMode
   @size_widget_width = 0
   @date_widget_width = 0
   @hidden_labels = Set(String).new
+  @tinfo = Hash(String, ThreadInfo).new		# indexed by thread.id
 
   def killable?
     true
@@ -78,12 +98,14 @@ class ThreadIndexMode < LineCursorMode
 		     Set.new(Config.strarray(:hidden_labels)) +
 		     Set.new(hidden_labels.map(&.to_s))
     @ts = ThreadList.new(translated_query, offset: 0, limit: buffer.content_height)
+    @tinfo = Hash(String, ThreadInfo).new
     if ts = @ts
       num = ts.threads.size
       if num == 0
 	BufferManager.flash "No matches."
       else
 	BufferManager.flash "Found #{num.pluralize "thread"}."
+        ts.threads.each {|t| @tinfo[t.id] = ThreadInfo.new(t)}
         update
       end
     end
@@ -156,23 +178,48 @@ class ThreadIndexMode < LineCursorMode
   # would have produced, apparently in an effort to make things go faster.
   # But it's much simpler to let notmuch do all the work, and it's fast
   # enough, so just reload the thread list from notmuch.
+
+  def hide_thread(t : MsgThread)
+    if ti = @tinfo[t.id]?
+      ti.hidden = true
+    end
+  end
+
+  def unhide_thread(t : MsgThread)
+    if ti = @tinfo[t.id]?
+      ti.hidden = false
+    end
+  end
+
   def handle_deleted_update(*args)
     #STDERR.puts "ThreadIndexMode.handle_deleted_update calling reload"
-    reload
+    #reload
+    return unless t = get_update_thread(*args)
+    hide_thread t
+    update
   end
 
   def handle_undeleted_update(*args)
-    reload
+    #reload
+    return unless t = get_update_thread(*args)
+    unhide_thread t
+    update
   end
 
   def handle_spammed_update(*args)
     #STDERR.puts "ThreadIndexMode.handle_spammed_update calling reload"
-    reload
+    #reload
+    return unless t = get_update_thread(*args)
+    hide_thread t
+    update
   end
 
   def handle_unspammed_update(*args)
     #STDERR.puts "ThreadIndexMode.handle_unspammed_update calling reload"
-    reload
+    #reload
+    return unless t = get_update_thread(*args)
+    unhide_thread t
+    update
   end
 
   # This is called after a notmuch poll.  It is passed a notmuch search term
@@ -232,16 +279,16 @@ class ThreadIndexMode < LineCursorMode
     threadlist = @ts
     return unless threadlist
     #STDERR.puts "ThreadIndexMode.update: nthreads = #{threadlist.threads.size}"
-    @threads = threadlist.threads
+    @threads = threadlist.threads.select {|t| !@tinfo[t.id].hidden}
     if @threads.size == 0
       # The thread list is now empty
       @text = Array(Text).new
       return
     end
 
-    @size_widgets = @threads.map { |t| size_widget_for_thread t }
+    @size_widgets = @threads.map { |t| @tinfo[t.id].size_widget }
     @size_widget_width = @size_widgets.max_of { |w| w.display_length }
-    @date_widgets = @threads.map { |t| date_widget_for_thread t }
+    @date_widgets = @threads.map { |t| @tinfo[t.id].date_widget }
     @date_widget_width = @date_widgets.max_of { |w| w.display_length }
 
     if old_cursor_thread
@@ -264,8 +311,9 @@ class ThreadIndexMode < LineCursorMode
     # going on.
     return if @threads[l].empty?
 
-    @size_widgets[l] = size_widget_for_thread @threads[l]
-    @date_widgets[l] = date_widget_for_thread @threads[l]
+    tid = @threads[l].id
+    @size_widgets[l] = @tinfo[tid].size_widget
+    @date_widgets[l] = @tinfo[tid].date_widget
 
     ## if a widget size has increased, we need to redraw everyone
     need_update =
@@ -421,19 +469,6 @@ class ThreadIndexMode < LineCursorMode
       {subj_color, t.subj + (t.subj.empty? ? "" : " ")},
       {:snippet_color, t.snippet},
     ]
-  end
-
-  def size_widget_for_thread(t : MsgThread)
-    case t.size
-    when 1
-      ""
-    else
-      "(#{t.size})"
-    end
-  end
-
-  def date_widget_for_thread(t : MsgThread)
-    t.date.to_local.to_nice_s
   end
 
   def cursor_thread : MsgThread?
@@ -739,17 +774,19 @@ class ThreadIndexMode < LineCursorMode
 
   ## returns an undo lambda
   def actually_toggle_deleted(t : MsgThread) : Proc(Nil)
-    thread = t
+    thread = t			# save for undo proc
     tagged = @tags.tagged?(t)	# used only in debug statements
     if t.has_label? :deleted
       #STDERR.puts "actually_toggle_deleted: remove :deleted, thread #{t.object_id}, tagged = #{tagged}"
       t.remove_label :deleted
       Notmuch.save_thread t
+      unhide_thread t
       UpdateManager.relay self, :undeleted, t
       return -> do
         #STDERR.puts "undo lambda add :deleted, thread #{thread.object_id}, tagged = #{tagged}"
         thread.apply_label :deleted
 	Notmuch.save_thread thread
+	hide_thread thread
         UpdateManager.relay self, :deleted, thread
 	nil
       end
@@ -757,11 +794,13 @@ class ThreadIndexMode < LineCursorMode
       #STDERR.puts "actually_toggle_deleted: add :deleted, thread #{t.object_id}, tagged = #{tagged}"
       t.apply_label :deleted
       Notmuch.save_thread t
+      hide_thread t
       UpdateManager.relay self, :deleted, t
       return -> do
         #STDERR.puts "undo lambda remove :deleted, thread #{thread.object_id}, tagged = #{tagged}"
         thread.remove_label :deleted
 	Notmuch.save_thread thread
+	unhide_thread thread
         UpdateManager.relay self, :undeleted, thread
 	nil
       end
@@ -776,14 +815,13 @@ class ThreadIndexMode < LineCursorMode
       #STDERR.puts "Undo block in multi_toggle_deleted"
       if undos.size > 0
 	undos.each {|u| u.call }
-	reload
-	regen_text
+	#regen_text
+	update
       end
       tagged_threads.each { |t| tag_old_thread(t) }
     end
-    reload
-    regen_text
-    #threads.each { |t| Notmuch.save_thread t }
+    #regen_text
+    update
   end
 
   def multi_toggle_deleted(*args)
@@ -803,20 +841,24 @@ class ThreadIndexMode < LineCursorMode
     if t.has_label? :spam
       t.remove_label :spam
       Notmuch.save_thread t
+      unhide_thread t
       UpdateManager.relay self, :unspammed, t
       return -> do
         thread.apply_label :spam
         Notmuch.save_thread thread
+	hide_thread thread
         UpdateManager.relay self, :spammed, thread
 	nil
       end
     else
       t.apply_label :spam
       Notmuch.save_thread t
+      hide_thread t
       UpdateManager.relay self, :spammed, t
       return -> do
         thread.remove_label :spam
         Notmuch.save_thread thread
+	unhide_thread thread
         UpdateManager.relay self, :unspammed, thread
 	nil
       end
@@ -830,14 +872,15 @@ class ThreadIndexMode < LineCursorMode
     UndoManager.register "marking/unmarking #{threads.size.pluralize "thread"} as spam" do
       if undos.size > 0
 	undos.each {|u| u.call }
-	reload
-	regen_text
+	#reload
+	#regen_text
+	update
       end
       tagged_threads.each { |t| tag_old_thread(t) }
     end
-    reload
-    regen_text
-    #threads.each { |t| Notmuch.save_thread t }
+    #reload
+    #regen_text
+    update
   end
 
   def multi_toggle_spam(*args)
