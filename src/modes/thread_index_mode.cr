@@ -105,11 +105,17 @@ class ThreadIndexMode < LineCursorMode
 	BufferManager.flash "No matches."
       else
 	BufferManager.flash "Found #{num.pluralize "thread"}."
-        ts.threads.each {|t| @tinfo[t.id] = ThreadInfo.new(t)}
+	add_thread_info(ts)
         update
       end
     end
     UpdateManager.register self
+  end
+
+  # Create a ThreadInfo for each thread in the thread list.  Call this
+  # whenever a new thread list is obtained.
+  def add_thread_info(ts : ThreadList)
+    ts.threads.each {|t| @tinfo[t.id] = ThreadInfo.new(t)}
   end
 
   # handle_{type}_update methods invoked by UpdateManager.relay should call
@@ -135,12 +141,13 @@ class ThreadIndexMode < LineCursorMode
   # thread containing the newly created draft message.  Replace
   # the matching thread in the current thread list with this new thread.
   def handle_updated_update(*args)
-    STDERR.puts "handle_updated_update"
     # Get the new thread containing the draft message, and
     # the matching existing thread in the thread list.
     return unless (t = args[1]?) && t.is_a?(MsgThread)
     return unless msg = t.msg
+    #STDERR.puts "handle_updated_update: new thread id #{t.id}"
     return unless (ts = @ts) && (oldt = ts.find_thread(t))
+    #STDERR.puts "handle_updated_update: old thread id #{oldt.id}"
     return unless l = @lines[oldt]?
 
     # Replace the old thread's top level message with the new one's.
@@ -242,6 +249,7 @@ class ThreadIndexMode < LineCursorMode
 
       # Get the list of updated threads.
       new_ts = ThreadList.new(query, offset: 0, limit: limit)
+      add_thread_info(new_ts)
       n = new_ts.threads.size
 
       # Run through the old thread list, and add to the new list any thread
@@ -514,6 +522,7 @@ class ThreadIndexMode < LineCursorMode
 
     #STDERR.puts "load_more_threads: query #{translated_query}, offset #{offset}, limit #{limit}"
     new_ts = ThreadList.new(translated_query, offset: offset, limit: limit)
+    add_thread_info(new_ts)
 
     new_tags = Tagger(MsgThread).new
     new_tags.setmode(self)

@@ -754,22 +754,15 @@ class ThreadList
   end
 
   # Find a thread in this thread list that matches the `other` thread.
-  # The match is based on the threads' top message ID.  This is used
-  # by get_update_thread in thread index modes, because of the possibility
+  # The match is based on the thread IDs.  This is used by
+  # get_update_thread in thread index modes, because of the possibility
   # that two different thread objects in diffent modes may refer
   # to the same thread.
   def find_thread(other : MsgThread) : MsgThread?
-    return unless m = other.msg
-    mid = m.id
-    #STDERR.puts "find_thread: other thread #{other}, message #{mid}"
+    #STDERR.puts "find_thread: other thread id #{other.id}"
     threads.each do |t|
-      #STDERR.puts "Find_thread: searching thread #{t}"
-      t.messages.each do |m|
-        #STDERR.puts "find_thread: comparing #{m.id} with #{mid}"
-        if m.id == mid
-	  #STDERR.puts "find_thread: found #{mid}, t = #{t}!"
-	  return t
-	end
+      if t.id = other.id
+	return t
       end
     end
     return nil
