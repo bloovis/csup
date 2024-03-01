@@ -247,6 +247,7 @@ class Message
     return nil
   end
 
+{% if flag?(:TEST) %}
   def print(level = 0, print_content = false)
     prefix = "  " * level
     puts "#{prefix}Message:"
@@ -283,6 +284,7 @@ class Message
       end
     end
   end
+{% end %}
 
   # Walk the the tree of messages, passing each message and its depth
   # to the block.
@@ -537,8 +539,9 @@ class MsgThread
   property prev : MsgThread?
   property size = 0
   property subj = "<no subject>"
+  property id = ""
 
-  def initialize(json : JSON::Any)
+  def initialize(json : JSON::Any, @id)
     #STDERR.puts "MsgThread: json #{json}"
     # There usually seems to be only one message in the array, but occasionally
     # there is more than one.  Treat the messages after the first one as children
@@ -651,6 +654,7 @@ class MsgThread
     @msg
   end
 
+{% if flag?(:TEST) %}
   def print(print_content = false)
     if m = @msg
       puts "Thread object id #{self.object_id}, prev #{@prev.object_id}, next #{@next.object_id}"
@@ -659,6 +663,7 @@ class MsgThread
       puts "Thread is empty!"
     end
   end
+{% end %}
 
   # This allows MsgThread.map to be used.  We can't yield inside
   # the walktree block, so we have to save the results of walktree, then
@@ -716,28 +721,30 @@ class ThreadList
     @query = query
 
     # First, get the list of threads matching the query.
-    lines = Notmuch.search(query, offset: offset, limit: limit)
-    if lines.size == 0
+    thread_ids = Notmuch.search(query, offset: offset, limit: limit)
+    if thread_ids.size == 0
       #puts "run_notmuch_show: query '#{query}' produced no results"
       return
     end
 
     # Construct a show query from the list of threads and obtain
     # the JSON output.
-    show_query = lines.join(" or ") + " and (#{query})"
+    show_query = thread_ids.join(" or ") + " and (#{query})"
     debug "run_notmuch_show: query #{show_query}"
     json = Notmuch.show(show_query, body: body, html: body)
-    parse_json(json)
+    parse_json(json, thread_ids)
   end
 
-  def parse_json(json : JSON::Any)
+  def parse_json(json : JSON::Any, thread_ids : Array(String))
     #puts "parse_json #{json}"
     results = json.as_a?
     if results
-      #puts "results is an array"
+      if results.size != thread_ids.size
+	raise "thread list should contain #{thread_ids.size} items, but has #{results.size} items!"
+      end
       prev_thread = nil
-      results.each do |result|
-        thread = MsgThread.new(result)
+      results.each_with_index do |result, i|
+        thread = MsgThread.new(result, thread_ids[i])
 	thread.prev = prev_thread
 	if prev_thread
 	  prev_thread.next = thread
@@ -746,32 +753,26 @@ class ThreadList
 	threads << thread
       end
     else
-      puts "results is a #{json.class.name}, expected array"
+      STDERR.puts "results is a #{json.class.name}, expected array"
     end
   end
 
   # Find a thread in this thread list that matches the `other` thread.
-  # The match is based on the threads' top message ID.  This is used
-  # by get_update_thread in thread index modes, because of the possibility
+  # The match is based on the thread IDs.  This is used by
+  # get_update_thread in thread index modes, because of the possibility
   # that two different thread objects in diffent modes may refer
   # to the same thread.
   def find_thread(other : MsgThread) : MsgThread?
-    return unless m = other.msg
-    mid = m.id
-    #STDERR.puts "find_thread: other thread #{other}, message #{mid}"
+    #STDERR.puts "find_thread: other thread id #{other.id}"
     threads.each do |t|
-      #STDERR.puts "Find_thread: searching thread #{t}"
-      t.messages.each do |m|
-        #STDERR.puts "find_thread: comparing #{m.id} with #{mid}"
-        if m.id == mid
-	  #STDERR.puts "find_thread: found #{mid}, t = #{t}!"
-	  return t
-	end
+      if t.id == other.id
+	return t
       end
     end
     return nil
   end
 
+{% if flag?(:TEST) %}
   def print(print_content = false)
     puts "ThreadList:"
     @threads.each_with_index do |thread, i|
@@ -780,6 +781,7 @@ class ThreadList
       thread.print(print_content: print_content)
     end
   end
+{% end %}
 
 end	# ThreadList
 

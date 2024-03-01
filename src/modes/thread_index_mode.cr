@@ -7,6 +7,30 @@ require "./thread_view_mode"
 
 module Redwood
 
+# Information about a message thread that will make it easier to hide/unhide it
+# if it's deleted/undeleted, spammed/unspammed. or archived/unarchived.
+# In ThreadIndexMode, there is a hash of these objects called tinfo that
+# is indexed by thread ID.
+
+class ThreadInfo
+  property thread : MsgThread
+  property hidden : Bool
+  property size_widget : String
+  property date_widget : String
+
+  def initialize(@thread)
+    @hidden = false
+    @size_widget = case @thread.size
+      when 1
+        ""
+      else
+        "(#{@thread.size})"
+      end
+    @date_widget = @thread.date.to_local.to_nice_s
+  end
+
+end
+
 class ThreadIndexMode < LineCursorMode
   mode_class load_more_threads, reload,
 	     read_and_archive, multi_read_and_archive,
@@ -55,6 +79,7 @@ class ThreadIndexMode < LineCursorMode
   @size_widget_width = 0
   @date_widget_width = 0
   @hidden_labels = Set(String).new
+  @tinfo = Hash(String, ThreadInfo).new		# indexed by thread.id
 
   def killable?
     true
@@ -78,23 +103,31 @@ class ThreadIndexMode < LineCursorMode
 		     Set.new(Config.strarray(:hidden_labels)) +
 		     Set.new(hidden_labels.map(&.to_s))
     @ts = ThreadList.new(translated_query, offset: 0, limit: buffer.content_height)
+    @tinfo = Hash(String, ThreadInfo).new
     if ts = @ts
       num = ts.threads.size
       if num == 0
 	BufferManager.flash "No matches."
       else
 	BufferManager.flash "Found #{num.pluralize "thread"}."
+	add_thread_info(ts)
         update
       end
     end
     UpdateManager.register self
   end
 
+  # Create a ThreadInfo for each thread in the thread list.  Call this
+  # whenever a new thread list is obtained.
+  def add_thread_info(ts : ThreadList)
+    ts.threads.each {|t| @tinfo[t.id] = ThreadInfo.new(t)}
+  end
+
   # handle_{type}_update methods invoked by UpdateManager.relay should call
   # this to get the actual thread being updated.  We need to do this because
   # the sender's thread object may be different from the receiver's, even when
   # both refer to the same Notmuch thread.  So we have to find a matching thread
-  # based on the sent thread's top message's ID.
+  # based on thread ID.
   def get_update_thread(*args) : MsgThread?
     t = args[1]?
     #STDERR.puts "get_update_thread: t = #{t} (#{t.class.name})"
@@ -113,12 +146,13 @@ class ThreadIndexMode < LineCursorMode
   # thread containing the newly created draft message.  Replace
   # the matching thread in the current thread list with this new thread.
   def handle_updated_update(*args)
-    STDERR.puts "handle_updated_update"
     # Get the new thread containing the draft message, and
     # the matching existing thread in the thread list.
     return unless (t = args[1]?) && t.is_a?(MsgThread)
     return unless msg = t.msg
+    #STDERR.puts "handle_updated_update: new thread id #{t.id}"
     return unless (ts = @ts) && (oldt = ts.find_thread(t))
+    #STDERR.puts "handle_updated_update: old thread id #{oldt.id}"
     return unless l = @lines[oldt]?
 
     # Replace the old thread's top level message with the new one's.
@@ -145,34 +179,69 @@ class ThreadIndexMode < LineCursorMode
 
   # Completely reload the thread list, because something happened
   # that could have caused one or more threads to change their visibility
-  # or their message tree.
+  # or their message tree, and in a way that we can't simulate by hiding
+  # or unhiding a previously seen thread.  This can happen if thread
+  # wasn't in the initial thread list but should be now, e.g., because
+  # it was undeleted or unarchived.
   def reload(*args)
     #STDERR.puts "ThreadIndexMode: reload"
     load_more_threads(0)
   end
 
-  # These update handlers were much more complicated in Sup, because
-  # they were trying to make the thread list look like what notmuch
-  # would have produced, apparently in an effort to make things go faster.
-  # But it's much simpler to let notmuch do all the work, and it's fast
-  # enough, so just reload the thread list from notmuch.
+  # These update handlers have to decide whether to do an "easy" update or
+  # a hard "update".  They can do an "easy" update if the thread being updated
+  # was previously seen, and so has a record in the @tinfo hash, so
+  # can be hidden or unhidden easily.  If the thread wasn't previously seen, the handlers
+  # have to do a "hard" update, which involves completely reloading the thread
+  # list for the current query.
+
+  def hide_thread(t : MsgThread)
+    if ti = @tinfo[t.id]?
+      ti.hidden = true
+    end
+  end
+
+  def unhide_thread(t : MsgThread)
+    if ti = @tinfo[t.id]?
+      #STDERR.puts "unhide #{t.id}"
+      ti.hidden = false
+    else
+      # Thread wasn't in the original list.  Do a full reload in case it should
+      # be in the list.
+      #STDERR.puts "unhide #{t.id}: not in list, so doing a reload"
+      reload
+    end
+  end
+
   def handle_deleted_update(*args)
     #STDERR.puts "ThreadIndexMode.handle_deleted_update calling reload"
-    reload
+    #reload
+    return unless t = get_update_thread(*args)
+    hide_thread t
+    update
   end
 
   def handle_undeleted_update(*args)
-    reload
+    #reload
+    return unless t = get_update_thread(*args)
+    unhide_thread t
+    update
   end
 
   def handle_spammed_update(*args)
     #STDERR.puts "ThreadIndexMode.handle_spammed_update calling reload"
-    reload
+    #reload
+    return unless t = get_update_thread(*args)
+    hide_thread t
+    update
   end
 
   def handle_unspammed_update(*args)
     #STDERR.puts "ThreadIndexMode.handle_unspammed_update calling reload"
-    reload
+    #reload
+    return unless t = get_update_thread(*args)
+    unhide_thread t
+    update
   end
 
   # This is called after a notmuch poll.  It is passed a notmuch search term
@@ -195,32 +264,42 @@ class ThreadIndexMode < LineCursorMode
 
       # Get the list of updated threads.
       new_ts = ThreadList.new(query, offset: 0, limit: limit)
-      n = new_ts.threads.size
+      #STDERR.puts "handle_poll_update: new thread list size #{n}"
 
-      # Run through the old thread list, and add to the new list any thread
-      # that is not already in the new list.
-      ts.threads.each do |thread|
-        new_ts.threads << thread unless new_ts.find_thread(thread)
-      end
-
-{% if false %}
-      # If any of the updated threads are already in the existing thread list,
-      # replace their top-level messages.  Otherwise add the updated thread
-      # to the existing thread list.
-      new_ts.threads.each do |thread|
-        if t = ts.find_thread(thread)
+      # If any new thread is already in the existing thread list, and has
+      # the same number of messages, replace the top-level message in the
+      # existing thread, and remove it from the new thread list.
+      new_ts.threads.select! do |thread|
+        if (t = ts.find_thread(thread)) && (t.size == thread.size)
+	  #STDERR.puts "handle_poll_update: new thread #{thread.id} found in old list"
 	  if msg = thread.msg
 	    t.set_msg(msg)
+	    #STDERR.puts "handle_poll_update: setting top message for #{thread.id}, tags #{t.labels}"
 	  end
+	  false
 	else
-	  ts.threads << thread
+	  #STDERR.puts "handle_poll_update: new thread #{thread.id} not in old list"
+	  true
 	end
       end
-{% end %}
+
+      # Add thread info for the new threads.
+      add_thread_info(new_ts)
+      n = new_ts.threads.size
+
+      # Append to the new list all threads from the old thread list that haven't
+      # already been added to the new list.
+      ts.threads.each do |thread|
+        unless new_ts.find_thread(thread)
+	  new_ts.threads << thread
+	end
+      end
 
       # Replace this thread list with the new one.
       @ts = new_ts
+
       BufferManager.flash "#{n.pluralize "thread"} updated"
+      #STDERR.puts "handle_poll_update: calling update"
       update
     end
   end
@@ -230,18 +309,20 @@ class ThreadIndexMode < LineCursorMode
   def update
     old_cursor_thread = cursor_thread
     threadlist = @ts
+    #STDERR.puts "update: threadlist is nil: #{threadlist.nil?}"
     return unless threadlist
-    #STDERR.puts "ThreadIndexMode.update: nthreads = #{threadlist.threads.size}"
-    @threads = threadlist.threads
+    #STDERR.puts "update: nthreads = #{threadlist.threads.size}"
+    @threads = threadlist.threads.select {|t| !@tinfo[t.id].hidden}
+    #STDERR.puts "update: no. of non-hidden threads = #{@threads.size}"
     if @threads.size == 0
       # The thread list is now empty
       @text = Array(Text).new
       return
     end
 
-    @size_widgets = @threads.map { |t| size_widget_for_thread t }
+    @size_widgets = @threads.map { |t| @tinfo[t.id].size_widget }
     @size_widget_width = @size_widgets.max_of { |w| w.display_length }
-    @date_widgets = @threads.map { |t| date_widget_for_thread t }
+    @date_widgets = @threads.map { |t| @tinfo[t.id].date_widget }
     @date_widget_width = @date_widgets.max_of { |w| w.display_length }
 
     if old_cursor_thread
@@ -264,8 +345,9 @@ class ThreadIndexMode < LineCursorMode
     # going on.
     return if @threads[l].empty?
 
-    @size_widgets[l] = size_widget_for_thread @threads[l]
-    @date_widgets[l] = date_widget_for_thread @threads[l]
+    tid = @threads[l].id
+    @size_widgets[l] = @tinfo[tid].size_widget
+    @date_widgets[l] = @tinfo[tid].date_widget
 
     ## if a widget size has increased, we need to redraw everyone
     need_update =
@@ -349,6 +431,7 @@ class ThreadIndexMode < LineCursorMode
   AUTHOR_LIMIT = 5
   def text_for_thread_at(line : Int32) : Text
     t = @threads[line]
+    #STDERR.puts "text_for_thread_at: line #{line}, thread #{t.id}, tags #{t.labels}"
     size_widget = @size_widgets[line]
     date_widget = @date_widgets[line]
 
@@ -423,19 +506,6 @@ class ThreadIndexMode < LineCursorMode
     ]
   end
 
-  def size_widget_for_thread(t : MsgThread)
-    case t.size
-    when 1
-      ""
-    else
-      "(#{t.size})"
-    end
-  end
-
-  def date_widget_for_thread(t : MsgThread)
-    t.date.to_local.to_nice_s
-  end
-
   def cursor_thread : MsgThread?
     if curpos < @threads.size
       @threads[curpos]
@@ -479,6 +549,7 @@ class ThreadIndexMode < LineCursorMode
 
     #STDERR.puts "load_more_threads: query #{translated_query}, offset #{offset}, limit #{limit}"
     new_ts = ThreadList.new(translated_query, offset: offset, limit: limit)
+    add_thread_info(new_ts)
 
     new_tags = Tagger(MsgThread).new
     new_tags.setmode(self)
@@ -647,6 +718,7 @@ class ThreadIndexMode < LineCursorMode
     else
       t.apply_label :inbox
       Notmuch.save_thread t
+      #STDERR.puts "relay unarchived thread #{t.id}"
       UpdateManager.relay self, :unarchived, t
       return -> do
         #STDERR.puts "undo lambda removing :inbox"
@@ -739,17 +811,19 @@ class ThreadIndexMode < LineCursorMode
 
   ## returns an undo lambda
   def actually_toggle_deleted(t : MsgThread) : Proc(Nil)
-    thread = t
+    thread = t			# save for undo proc
     tagged = @tags.tagged?(t)	# used only in debug statements
     if t.has_label? :deleted
       #STDERR.puts "actually_toggle_deleted: remove :deleted, thread #{t.object_id}, tagged = #{tagged}"
       t.remove_label :deleted
       Notmuch.save_thread t
+      unhide_thread t
       UpdateManager.relay self, :undeleted, t
       return -> do
         #STDERR.puts "undo lambda add :deleted, thread #{thread.object_id}, tagged = #{tagged}"
         thread.apply_label :deleted
 	Notmuch.save_thread thread
+	hide_thread thread
         UpdateManager.relay self, :deleted, thread
 	nil
       end
@@ -757,11 +831,13 @@ class ThreadIndexMode < LineCursorMode
       #STDERR.puts "actually_toggle_deleted: add :deleted, thread #{t.object_id}, tagged = #{tagged}"
       t.apply_label :deleted
       Notmuch.save_thread t
+      hide_thread t
       UpdateManager.relay self, :deleted, t
       return -> do
         #STDERR.puts "undo lambda remove :deleted, thread #{thread.object_id}, tagged = #{tagged}"
         thread.remove_label :deleted
 	Notmuch.save_thread thread
+	unhide_thread thread
         UpdateManager.relay self, :undeleted, thread
 	nil
       end
@@ -776,14 +852,13 @@ class ThreadIndexMode < LineCursorMode
       #STDERR.puts "Undo block in multi_toggle_deleted"
       if undos.size > 0
 	undos.each {|u| u.call }
-	reload
-	regen_text
+	#regen_text
+	update
       end
       tagged_threads.each { |t| tag_old_thread(t) }
     end
-    reload
-    regen_text
-    #threads.each { |t| Notmuch.save_thread t }
+    #regen_text
+    update
   end
 
   def multi_toggle_deleted(*args)
@@ -803,20 +878,24 @@ class ThreadIndexMode < LineCursorMode
     if t.has_label? :spam
       t.remove_label :spam
       Notmuch.save_thread t
+      unhide_thread t
       UpdateManager.relay self, :unspammed, t
       return -> do
         thread.apply_label :spam
         Notmuch.save_thread thread
+	hide_thread thread
         UpdateManager.relay self, :spammed, thread
 	nil
       end
     else
       t.apply_label :spam
       Notmuch.save_thread t
+      hide_thread t
       UpdateManager.relay self, :spammed, t
       return -> do
         thread.remove_label :spam
         Notmuch.save_thread thread
+	unhide_thread thread
         UpdateManager.relay self, :unspammed, thread
 	nil
       end
@@ -830,14 +909,15 @@ class ThreadIndexMode < LineCursorMode
     UndoManager.register "marking/unmarking #{threads.size.pluralize "thread"} as spam" do
       if undos.size > 0
 	undos.each {|u| u.call }
-	reload
-	regen_text
+	#reload
+	#regen_text
+	update
       end
       tagged_threads.each { |t| tag_old_thread(t) }
     end
-    reload
-    regen_text
-    #threads.each { |t| Notmuch.save_thread t }
+    #reload
+    #regen_text
+    update
   end
 
   def multi_toggle_spam(*args)

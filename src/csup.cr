@@ -234,7 +234,7 @@ def compose
 end
 
 def help
-  STDERR.puts "help command"
+  #STDERR.puts "help command"
   return unless global_keymap = @@global_keymap
   return unless focus_buf = BufferManager.focus_buf
   return unless curmode = focus_buf.mode
