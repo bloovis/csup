@@ -7,6 +7,11 @@ require "./thread_view_mode"
 
 module Redwood
 
+# Information about a message thread that will make it easier to hide/unhide it
+# if it's deleted/undeleted, spammed/unspammed. or archived/unarchived.
+# In ThreadIndexMode, there is a hash of these objects called tinfo that
+# is indexed by thread ID.
+
 class ThreadInfo
   property thread : MsgThread
   property hidden : Bool
@@ -122,7 +127,7 @@ class ThreadIndexMode < LineCursorMode
   # this to get the actual thread being updated.  We need to do this because
   # the sender's thread object may be different from the receiver's, even when
   # both refer to the same Notmuch thread.  So we have to find a matching thread
-  # based on the sent thread's top message's ID.
+  # based on thread ID.
   def get_update_thread(*args) : MsgThread?
     t = args[1]?
     #STDERR.puts "get_update_thread: t = #{t} (#{t.class.name})"
@@ -174,17 +179,21 @@ class ThreadIndexMode < LineCursorMode
 
   # Completely reload the thread list, because something happened
   # that could have caused one or more threads to change their visibility
-  # or their message tree.
+  # or their message tree, and in a way that we can't simulate by hiding
+  # or unhiding a previously seen thread.  This can happen if thread
+  # wasn't in the initial thread list but should be now, e.g., because
+  # it was undeleted or unarchived.
   def reload(*args)
     #STDERR.puts "ThreadIndexMode: reload"
     load_more_threads(0)
   end
 
-  # These update handlers were much more complicated in Sup, because
-  # they were trying to make the thread list look like what notmuch
-  # would have produced, apparently in an effort to make things go faster.
-  # But it's much simpler to let notmuch do all the work, and it's fast
-  # enough, so just reload the thread list from notmuch.
+  # These update handlers have to decide whether to do an "easy" update or
+  # a hard "update".  They can do an "easy" update if the thread being updated
+  # was previously seen, and so has a record in the @tinfo hash, so
+  # can be hidden or unhidden easily.  If the thread wasn't previously seen, the handlers
+  # have to do a "hard" update, which involves completely reloading the thread
+  # list for the current query.
 
   def hide_thread(t : MsgThread)
     if ti = @tinfo[t.id]?
@@ -292,26 +301,6 @@ class ThreadIndexMode < LineCursorMode
       BufferManager.flash "#{n.pluralize "thread"} updated"
       #STDERR.puts "handle_poll_update: calling update"
       update
-
-{% if false %}
-      #STDERR.puts "handle_poll_update: updated new thread list size #{new_ts.threads.size}"
-
-{% end %}
-
-{% if false %}
-      # If any of the updated threads are already in the existing thread list,
-      # replace their top-level messages.  Otherwise add the updated thread
-      # to the existing thread list.
-      new_ts.threads.each do |thread|
-        if t = ts.find_thread(thread)
-	  if msg = thread.msg
-	    t.set_msg(msg)
-	  end
-	else
-	  ts.threads << thread
-	end
-      end
-{% end %}
     end
   end
 
