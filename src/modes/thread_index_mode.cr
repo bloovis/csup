@@ -142,6 +142,18 @@ class ThreadIndexMode < LineCursorMode
     nil
   end
 
+  # Similar to get_update_thread, except it returns the sender's thread,
+  # not the matching thread in this thread list.
+  def get_sender_thread(*args) : MsgThread?
+    t = args[1]?
+    #STDERR.puts "get_update_thread: t = #{t} (#{t.class.name})"
+    if t && t.is_a?(MsgThread)
+      return t
+    else
+      return nil
+    end
+  end
+
   # This is called from DraftManager.write_draft with the updated
   # thread containing the newly created draft message.  Replace
   # the matching thread in the current thread list with this new thread.
@@ -171,9 +183,11 @@ class ThreadIndexMode < LineCursorMode
   end
 
   def handle_labeled_update(*args)
+    return unless sender_t = get_sender_thread(*args)
     return unless t = get_update_thread(*args)
     return unless l = @lines[t]?
-    #STDERR.puts "handle_labeled_update: thread #{t.object_id}, starred = #{t.has_label? :starred}"
+    t.labels = sender_t.labels
+    #STDERR.puts "handle_labeled_update: thread #{t.id} (#{t.object_id}), starred = #{t.has_label? :starred}"
     update_text_for_line l
   end
 
@@ -653,23 +667,29 @@ class ThreadIndexMode < LineCursorMode
     thread = t
     if t.has_label? :starred # if ANY message has a star
       t.remove_label :starred # remove from all
-      UpdateManager.relay self, :unstarred, t
+      Notmuch.save_thread t
+      UpdateManager.relay self, :labeled, t
       return -> do
         if msg = t.msg
 	  msg.add_label :starred
 	end
-        UpdateManager.relay self, :starred, t
+	Notmuch.save_thread t
+        UpdateManager.relay self, :labeled, t
         regen_text
 	nil
       end
     else
       if msg = t.msg
+	STDERR.puts "adding starred to #{t.id}, #{msg.id}"
 	msg.add_label :starred # add only to first
+	STDERR.puts "#{t.id} (#{t.object_id}) has label :starred? #{t.has_label? :starred}"
       end
-      UpdateManager.relay self, :starred, t
+      Notmuch.save_thread t
+      UpdateManager.relay self, :labeled, t
       return -> do
         t.remove_label :starred
-        UpdateManager.relay self, :unstarred, t
+	Notmuch.save_thread t
+        UpdateManager.relay self, :labeled, t
         regen_text
 	nil
       end
@@ -682,7 +702,6 @@ class ThreadIndexMode < LineCursorMode
     UndoManager.register("toggling thread starred status", undo) { Notmuch.save_thread t}
     update_text_for_line curpos
     cursor_down
-    Notmuch.save_thread t
   end
 
   def multi_toggle_starred(*args)
@@ -690,11 +709,11 @@ class ThreadIndexMode < LineCursorMode
     undos = threads.map {|t| actually_toggle_starred t}
     UndoManager.register("toggling #{threads.size.pluralize "thread"} starred status") do
       undos.each {|u| u.call}
-      regen_text
       threads.each { |t| Notmuch.save_thread t }
+      regen_text
     end
-    regen_text
     threads.each { |t| Notmuch.save_thread t }
+    regen_text
   end
 
   # Toggle archived commands
@@ -738,11 +757,10 @@ class ThreadIndexMode < LineCursorMode
     UndoManager.register("archiving/unarchiving #{threads.size.pluralize "thread"}") do
       #STDERR.puts "Undo block in multi_toggle_archived"
       undos.each {|u| u.call }
-      regen_text
       threads.each { |t| Notmuch.save_thread t }
+      regen_text
     end
     regen_text
-    threads.each { |t| Notmuch.save_thread t }
   end
 
   def toggle_archived(*args)

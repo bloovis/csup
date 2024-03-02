@@ -271,9 +271,9 @@ class ThreadViewMode < LineCursorMode
     ## TODO: don't recalculate EVERYTHING just to add a stupid little
     ## star to the display
     update
+    Notmuch.save_thread @thread
     #STDERR.puts "toggle_label: relay :single_message_labeled, starred = #{@thread.has_label? :starred}"
     UpdateManager.relay self, :single_message_labeled, @thread
-    Notmuch.save_thread @thread
   end
 
   def update
