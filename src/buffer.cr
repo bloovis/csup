@@ -619,7 +619,8 @@ class BufferManager
         elsif File.directory?(answer) && !allow_directory
           spawn_modal "file browser", FileBrowserMode.new(answer)
         else
-          File.expand_path answer
+	  # Replace ~name/ or ~/ with actual directory name.
+          answer.untwiddle
         end
     end
     return answer

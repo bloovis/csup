@@ -157,6 +157,26 @@ class String
     {ret, remainder}
   end
 
+  def untwiddle
+    s = self
+    if s =~ /(~([^\s\/]*))/ # twiddle directory expansion
+      full = $1
+      name = $2
+      if name.empty?
+	dir = Path.home.to_s
+      else
+	if u = System::User.find_by?(name: name)
+	  dir = u.home_directory
+	else
+	  dir = "~#{name}"        # probably doesn't exist!
+	end
+      end
+      return s.sub(full, dir)
+    else
+      return s
+    end
+  end
+
 end
 
 # Enumerable extensions
