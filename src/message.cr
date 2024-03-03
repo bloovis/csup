@@ -753,7 +753,7 @@ class ThreadList
   # Run 'notmuch search' and 'notmuch show' to obtain the threads for the
   # specified query string.
   def run_notmuch_show(query : String, offset : Int32? = nil, limit : Int32? = nil,
-		       body = false, force = true)
+		       body = false, force = false)
     #puts "run_notmuch_show: query #{query}, caller #{caller[0]}"
     #system("echo run_notmuch_show query #{query}, offset #{offset}, limit #{limit} >>/tmp/csup.log")
     @query = query
@@ -774,15 +774,9 @@ class ThreadList
     # the JSON output.  Add resulting threads to the cache.
     if ids_to_load.size > 0
       show_query = ids_to_load.join(" or ") + " and (#{query})"
-      ids = ids_to_load
-    else
-      show_query = query
-      ids = thread_ids
-    end
-    STDERR.puts "run_notmuch_show: query '#{show_query}'"
-    if show_query && (show_query.size > 0)
+      STDERR.puts "run_notmuch_show: query '#{show_query}'"
       json = Notmuch.show(show_query, body: body, html: body)
-      parse_json(json, ids)
+      parse_json(json, ids_to_load)
     end
 
     # Make an array of MsgThread objects.  At this point,
@@ -812,8 +806,9 @@ class ThreadList
   # that two different thread objects in diffent modes may refer
   # to the same thread.
   def find_thread(other : MsgThread) : MsgThread?
-    #STDERR.puts "find_thread: other thread id #{other.id}"
+    #STDERR.puts "find_thread: searching for thread id #{other.id}"
     threads.each do |t|
+      #STDERR.puts "find_thread: checking thread id #{t.id}"
       if t.id == other.id
 	return t
       end

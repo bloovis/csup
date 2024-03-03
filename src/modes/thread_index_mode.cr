@@ -130,15 +130,15 @@ class ThreadIndexMode < LineCursorMode
   # based on thread ID.
   def get_update_thread(*args) : MsgThread?
     t = args[1]?
-    #STDERR.puts "get_update_thread: t = #{t} (#{t.class.name})"
+    STDERR.puts "get_update_thread: t = #{t}"
     if t && t.is_a?(MsgThread)
-      #STDERR.puts "get_update_thread: ts = #{@ts}"
+      STDERR.puts "get_update_thread: seaching for thread id #{t.id}"
       if (ts = @ts) && (t = ts.find_thread(t))
-	#STDERR.puts "get_update_thread: found thread #{t}"
+	STDERR.puts "get_update_thread: found thread id #{t.id}"
         return t
       end
     end
-    #STDERR.puts "get_update_thread: couldn't find thread #{t}"
+    STDERR.puts "get_update_thread: couldn't find thread #{t}"
     nil
   end
 
@@ -217,44 +217,49 @@ class ThreadIndexMode < LineCursorMode
 
   def unhide_thread(t : MsgThread)
     if ti = @tinfo[t.id]?
-      #STDERR.puts "unhide #{t.id}"
-      ti.hidden = false
+        ti.hidden = false
+    end
+  end
+
+  def hide_foreign_thread(*args)
+    if t = get_update_thread(*args)
+      STDERR.puts "hide_foreign_thread: hiding thread #{t.id}"
+      hide_thread t
     else
-      # Thread wasn't in the original list.  Do a full reload in case it should
-      # be in the list.
-      #STDERR.puts "unhide #{t.id}: not in list, so doing a reload"
+      reload
+    end
+  end
+
+  def unhide_foreign_thread(*args)
+    if t = get_update_thread(*args)
+      STDERR.puts "unhide_foreign_thread: unhiding thread #{t.id}"
+      unhide_thread t
+    else
       reload
     end
   end
 
   def handle_deleted_update(*args)
-    #STDERR.puts "ThreadIndexMode.handle_deleted_update calling reload"
-    #reload
-    return unless t = get_update_thread(*args)
-    hide_thread t
+    STDERR.puts "ThreadIndexMode.handle_deleted_update"
+    hide_foreign_thread(*args)
     update
   end
 
   def handle_undeleted_update(*args)
-    #reload
-    return unless t = get_update_thread(*args)
-    unhide_thread t
+    STDERR.puts "ThreadIndexMode.handle_undeleted_update"
+    unhide_foreign_thread(*args)
     update
   end
 
   def handle_spammed_update(*args)
-    #STDERR.puts "ThreadIndexMode.handle_spammed_update calling reload"
-    #reload
-    return unless t = get_update_thread(*args)
-    hide_thread t
+    STDERR.puts "ThreadIndexMode.handle_spammed_update"
+    hide_foreign_thread(*args)
     update
   end
 
   def handle_unspammed_update(*args)
-    #STDERR.puts "ThreadIndexMode.handle_unspammed_update calling reload"
-    #reload
-    return unless t = get_update_thread(*args)
-    unhide_thread t
+    STDERR.puts "ThreadIndexMode.handle_unspammed_update"
+    unhide_foreign_thread(*args)
     update
   end
 
@@ -284,7 +289,7 @@ class ThreadIndexMode < LineCursorMode
 
       # Now reload the entire thread list, but use cached threads
       # if available.
-      STDERR.puts "translated query: #{@translated_query}"
+      STDERR.puts "handle_poll_update: translated query #{@translated_query}"
       ts = ThreadList.new(@translated_query, offset: 0, limit: limit, force: false)
       @ts = ts
       add_thread_info(ts)
