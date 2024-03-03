@@ -79,7 +79,7 @@ class SearchListMode < LineCursorMode
       begin
         query = Notmuch.translate_query(search_string)
         total = Notmuch.count(query)
-        unread = Notmuch.count("tag:unread")
+        unread = Notmuch.count("(#{query}) and tag:unread")
       rescue e : Notmuch::ParseError
         BufferManager.flash "Problem: #{e.message}!"
         total = 0
