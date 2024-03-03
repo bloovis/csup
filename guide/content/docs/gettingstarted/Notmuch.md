@@ -35,7 +35,7 @@ file:
 This creates a file `~/.notmuch-config`.  I edited this file as follows:
 
 * *VERY IMPORTANT*: Changed `synchronize_flags` to false.  This prevents notmuch from modifying email filenames,
-  which will confuse Csup and cause it to crash when editing draft messages.
+  which would confuse Csup and cause it to crash when editing draft messages.
 
 * Changed the `tags=unread;inbox;` line to `tags=new;`.  The reason for this will become
   clear later in the discussion about using a `post-new` hook to tag new email.
@@ -79,7 +79,8 @@ if you have thousands of emails.
 
 My `~/.fetchmailrc` looks something like this:
 
-    poll mail.example.com port 995 with proto POP3 user 'me@example.com' pass 'mypassword' options ssl
+    poll mail.example.com port 995 with proto POP3 user 'me@example.com'
+      pass 'mypassword' options ssl
       mda "notmuch insert --folder=inbox"
 
 This setup uses POP3 to download the mails into the `inbox` folder of `~/mail`, and then

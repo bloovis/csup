@@ -1,3 +1,9 @@
+---
+weight: 4
+bookFlatSection: true
+title: "New User Guide"
+---
+
 # New User Guide
 
 Welcome to CSup! Here's how to get started.
@@ -7,6 +13,8 @@ you'll be
 confronted with a mostly blank screen, and a notice at the bottom that
 you have no new messages.  If you do have messages in notmuch, you'll
 see your inbox with the most recent unarchived messages.
+
+![Inbox mode screenshot](/csupguide/images/inbox-mode.png)
 
 If you want to play around a little at this point, you can press 'b'
 to cycle between buffers, ';' to get a list of the open buffers, and
@@ -54,23 +62,25 @@ threads as it takes to fill the window; if you'd like to load more,
 press 'M' or try to scroll past the bottom of the thread list. You can
 hit tab to cycle between only threads with new messages.
 
-Highlight a thread and press enter to view it. You'll notice that all
+Highlight a thread and press Enter to view it. You'll notice that all
 messages in the thread are displayed together, laid out graphically by
 their relationship to each other (replies are nested under parents).
 By default, only the new messages in a thread are expanded, and the
 others are hidden. You can toggle an individual message's state by
-highlighting a green line and pressing enter. You can use 'E' to
+highlighting a green line and pressing Enter. You can use 'E' to
 expand or collapse all messages. You'll also notice that Csup hides quoted text and
 signatures. If you highlight a particular hidden chunk, you can press
-enter to expand it, or you can press 'o' to toggle every hidden chunk
+Enter to expand it, or you can press 'o' to toggle every hidden chunk
 in a particular message.
+
+![Thread view screenshot](/csupguide/images/thread-view-mode.png)
 
 Other useful keyboard commands when viewing a thread are: 'n' and 'p'
 to jump to the next and previous open messages, 'h' to toggle the
-detailed headers for the current message, and enter to expand or
+detailed headers for the current message, and Enter to expand or
 collapse the current message (when it's on a text region). Enter and
 'n' in combination are useful for scanning through a thread---press
-enter to close the current message and jump to the next open one, and
+Enter to close the current message and jump to the next open one, and
 'n' to keep it open and jump. If the buffer is misaligned with a
 message, you can press 'z' to highlight it.
 
@@ -111,44 +121,49 @@ command to the set of threads. '=t', of course, will untag all tagged
 messages.
 
 Ok, let's try using labels and search. Press 'L' to do a quick label
-search. You'll be prompted for a label; simply hit enter to bring up
+search. You'll be prompted for a label; simply hit Enter to bring up
 scrollable list of all the labels you've ever used, along with some
 special labels (Draft, Starred, Sent, Spam, etc.). Highlight a label
-and press enter to view all the messages with that label.
+and press Enter to view all the messages with that label.
 
 What you just did was actually a specific search. For a general search,
-press '\' (backslash---forward slash is used for in-buffer search,
-following console conventions). Now type in your query (again, Ctrl-G to
+press '\' or 'F' (forward slash is used for in-buffer search). Now type in your query (again, Ctrl-G to
 cancel at any point.) You can just type in arbitrary text, which will be
 matched on a per-word basis against the bodies of all email in the
-index, or you can make use of the full Xapian query syntax
-<http://xapian.org/docs/queryparser.html>:
+index. Csup supports the older Sup query syntax, which Csup translates into
+the equivalent [Notmuch query syntax](https://notmuchmail.org/searching/).
+Or you can make use of the Notmuch query syntax directly.
+
+Some of the features of the query syntax:
 
 - Phrasal queries using double-quotes, e.g.: "three contiguous words"
 - Queries against a particular field using <field name>:<query>,
   e.g.: label:ruby-talk, or from:matz@ruby-lang.org. (Fields include:
   body, from, to, and subject.)
 - Force non-occurrence by -, e.g. -body:"hot soup".
-- If you have the chronic gem installed, date queries like
-  "before:today", "on:today", "after:yesterday", "after:(2 days ago)"
+- Date queries like "before:today", "on:today", "after:yesterday", "after:(2 days ago)"
   (parentheses required for multi-word descriptions).
 
 You can combine those all together. For example:
 
      label:ruby-talk subject:[ANN] -rails on:today
 
-Play around with the search, and see the Xapian documentation for
-details on more sophisticated queries (date ranges, "within n words",
-etc.)
+Play around with the search, and see the
+[Notmuch documentation](https://notmuchmail.org/searching/)
+for details on the underlying query language.
+
+![Search results mode](/csupguide/images/search-results-mode.png)
 
 At this point, you're well on your way to figuring out all the cool
 things Csup can do. By repeated application of the '?' key, see if you
 can figure out how to:
 
-- List some recent contacts
-- Easily search for all mail from a recent contact
-- Easily search for all mail from several recent contacts
-- Add someone to your address book
+- List your contacts
+- Easily search for all mail from a contact
+- Add someone to your contact list
+
+![Contact list mode](/csupguide/images/contact-list-mode.png)
+
 - Postpone a message (i.e., save a draft)
 - Quickly re-edit a just-saved draft message
 - View the raw header of a message

@@ -729,8 +729,7 @@ end	# ThreadData
 class MsgThread
   property id : String
 
-  def initialize(json : JSON::Any, @id)
-    ThreadCache.add(ThreadData.new(json, id))
+  def initialize(@id)
   end
 
   def cache : ThreadData
@@ -744,16 +743,17 @@ class ThreadList
   property threads = Array(MsgThread).new
   property query = ""
 
-  def initialize(@query, offset : Int32, limit : Int32, body = false)
+  def initialize(@query, offset : Int32, limit : Int32, body = false, force = true)
     debug "ThreadList.new: query #{@query}, offset #{offset}, limit #{limit}"
     if query
-      run_notmuch_show(@query, offset: offset, limit: limit, body: body)
+      run_notmuch_show(@query, offset: offset, limit: limit, body: body, force: force)
     end
   end
 
   # Run 'notmuch search' and 'notmuch show' to obtain the threads for the
   # specified query string.
-  def run_notmuch_show(query : String, offset : Int32? = nil, limit : Int32? = nil, body = false)
+  def run_notmuch_show(query : String, offset : Int32? = nil, limit : Int32? = nil,
+		       body = false, force = true)
     #puts "run_notmuch_show: query #{query}, caller #{caller[0]}"
     #system("echo run_notmuch_show query #{query}, offset #{offset}, limit #{limit} >>/tmp/csup.log")
     @query = query
@@ -765,12 +765,30 @@ class ThreadList
       return
     end
 
+    # Make a list of threads that much be loaded into the cache:
+    # - either all threads, if force is true
+    # - only threads not already in cache, if force is false
+    ids_to_load = thread_ids.select {|id| force || !ThreadCache.cached?(id)}
+
     # Construct a show query from the list of threads and obtain
-    # the JSON output.
-    show_query = thread_ids.join(" or ") + " and (#{query})"
-    debug "run_notmuch_show: query #{show_query}"
-    json = Notmuch.show(show_query, body: body, html: body)
-    parse_json(json, thread_ids)
+    # the JSON output.  Add resulting threads to the cache.
+    if ids_to_load.size > 0
+      show_query = ids_to_load.join(" or ") + " and (#{query})"
+      ids = ids_to_load
+    else
+      show_query = query
+      ids = thread_ids
+    end
+    STDERR.puts "run_notmuch_show: query '#{show_query}'"
+    if show_query && (show_query.size > 0)
+      json = Notmuch.show(show_query, body: body, html: body)
+      parse_json(json, ids)
+    end
+
+    # Make an array of MsgThread objects.  At this point,
+    # we can assume that all required thread data objects
+    # have been loaded into the cache.
+    thread_ids.each {|id| @threads << MsgThread.new(id)}
   end
 
   def parse_json(json : JSON::Any, thread_ids : Array(String))
@@ -781,8 +799,7 @@ class ThreadList
 	raise "thread list should contain #{thread_ids.size} items, but has #{results.size} items!"
       end
       results.each_with_index do |result, i|
-        thread = MsgThread.new(result, thread_ids[i])
-	threads << thread
+	ThreadCache.add(ThreadData.new(result, thread_ids[i]))
       end
     else
       STDERR.puts "results is a #{json.class.name}, expected array"

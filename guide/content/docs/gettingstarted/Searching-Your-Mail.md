@@ -1,3 +1,9 @@
+---
+weight: 6
+bookFlatSection: true
+title: "Searching Your Mail"
+---
+
 # Searching Your Mail
 
 Sup supports the following kind of searches:

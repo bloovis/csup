@@ -262,57 +262,34 @@ class ThreadIndexMode < LineCursorMode
   # that looks like "lastmod:X..Y", which, when added to the existing query,
   # should result in a list of threads that are new/changed since the last poll.
   def handle_poll_update(*args)
+    return if @translated_query.empty?
     #STDERR.puts "handle_poll_update started"
     arg = args[1]?
     if arg && arg.is_a?(String) && (ts = @ts)
       # arg is a search term like "lastmod:X..Y"
-      #STDERR.puts "handle_poll_update: search terms #{arg}, translated query #{@translated_query}"
+      STDERR.puts "handle_poll_update: search terms #{arg}, translated query #{@translated_query}"
 
       # Add the lastmod search term to our existing query.
-      query = "(#{@translated_query}) and (#{arg})"
+      new_query = [@translated_query, arg].map {|x| "(#{x})"}.join(" and ")
+      STDERR.puts "handle_poll_update: new_query #{new_query}"
 
       # Find out how many threads match the new query.  Use that to set
       # a limit on how many threads to fetch for the query.
-      count = Notmuch.count(query)
-      limit = [ts.threads.size + count, buffer.content_height].max
+      count = Notmuch.count(new_query)
+      limit = ts.threads.size + [count, buffer.content_height].max
 
-      # Get the list of updated threads.
-      new_ts = ThreadList.new(query, offset: 0, limit: limit)
+      # Load the updated threads into the cache.
+      new_ts = ThreadList.new(new_query, offset: 0, limit: limit, force: true)
       #STDERR.puts "handle_poll_update: new thread list size #{n}"
 
-      # If any new thread is already in the existing thread list, and has
-      # the same number of messages, replace the top-level message in the
-      # existing thread, and remove it from the new thread list.
-      new_ts.threads.select! do |thread|
-        if (t = ts.find_thread(thread)) && (t.size == thread.size)
-	  #STDERR.puts "handle_poll_update: new thread #{thread.id} found in old list"
-	  if msg = thread.msg
-	    t.set_msg(msg)
-	    #STDERR.puts "handle_poll_update: setting top message for #{thread.id}, tags #{t.labels}"
-	  end
-	  false
-	else
-	  #STDERR.puts "handle_poll_update: new thread #{thread.id} not in old list"
-	  true
-	end
-      end
+      # Now reload the entire thread list, but use cached threads
+      # if available.
+      STDERR.puts "translated query: #{@translated_query}"
+      ts = ThreadList.new(@translated_query, offset: 0, limit: limit, force: false)
+      @ts = ts
+      add_thread_info(ts)
 
-      # Add thread info for the new threads.
-      add_thread_info(new_ts)
-      n = new_ts.threads.size
-
-      # Append to the new list all threads from the old thread list that haven't
-      # already been added to the new list.
-      ts.threads.each do |thread|
-        unless new_ts.find_thread(thread)
-	  new_ts.threads << thread
-	end
-      end
-
-      # Replace this thread list with the new one.
-      @ts = new_ts
-
-      BufferManager.flash "#{n.pluralize "thread"} updated"
+      BufferManager.flash "#{count.pluralize "thread"} updated"
       #STDERR.puts "handle_poll_update: calling update"
       update
     end
