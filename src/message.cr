@@ -743,7 +743,7 @@ class ThreadList
   property threads = Array(MsgThread).new
   property query = ""
 
-  def initialize(@query, offset : Int32, limit : Int32, body = false, force = true)
+  def initialize(@query, offset : Int32, limit : Int32, body = false, force = false)
     debug "ThreadList.new: query #{@query}, offset #{offset}, limit #{limit}"
     if query
       run_notmuch_show(@query, offset: offset, limit: limit, body: body, force: force)
