@@ -7,30 +7,6 @@ require "./thread_view_mode"
 
 module Redwood
 
-# Information about a message thread that will make it easier to hide/unhide it
-# if it's deleted/undeleted, spammed/unspammed. or archived/unarchived.
-# In ThreadIndexMode, there is a hash of these objects called tinfo that
-# is indexed by thread ID.
-
-class ThreadInfo
-  property thread : MsgThread
-  property hidden : Bool
-  property size_widget : String
-  property date_widget : String
-
-  def initialize(@thread)
-    @hidden = false
-    @size_widget = case @thread.size
-      when 1
-        ""
-      else
-        "(#{@thread.size})"
-      end
-    @date_widget = @thread.date.to_local.to_nice_s
-  end
-
-end
-
 class ThreadIndexMode < LineCursorMode
   mode_class load_more_threads, reload,
 	     read_and_archive, multi_read_and_archive,
@@ -79,7 +55,7 @@ class ThreadIndexMode < LineCursorMode
   @size_widget_width = 0
   @date_widget_width = 0
   @hidden_labels = Set(String).new
-  @tinfo = Hash(String, ThreadInfo).new		# indexed by thread.id
+  @hidden = Hash(String, Bool).new		# indexed by thread.id
 
   def killable?
     true
@@ -103,24 +79,16 @@ class ThreadIndexMode < LineCursorMode
 		     Set.new(Config.strarray(:hidden_labels)) +
 		     Set.new(hidden_labels.map(&.to_s))
     @ts = ThreadList.new(translated_query, offset: 0, limit: buffer.content_height)
-    @tinfo = Hash(String, ThreadInfo).new
     if ts = @ts
       num = ts.threads.size
       if num == 0
 	BufferManager.flash "No matches."
       else
 	BufferManager.flash "Found #{num.pluralize "thread"}."
-	add_thread_info(ts)
         update
       end
     end
     UpdateManager.register self
-  end
-
-  # Create a ThreadInfo for each thread in the thread list.  Call this
-  # whenever a new thread list is obtained.
-  def add_thread_info(ts : ThreadList)
-    ts.threads.each {|t| @tinfo[t.id] = ThreadInfo.new(t)}
   end
 
   # handle_{type}_update methods invoked by UpdateManager.relay should call
@@ -204,22 +172,16 @@ class ThreadIndexMode < LineCursorMode
 
   # These update handlers have to decide whether to do an "easy" update or
   # a hard "update".  They can do an "easy" update if the thread being updated
-  # was previously seen, and so has a record in the @tinfo hash, so
-  # can be hidden or unhidden easily.  If the thread wasn't previously seen, the handlers
-  # have to do a "hard" update, which involves completely reloading the thread
-  # list for the current query.
+  # was previously seen, so can be hidden or unhidden easily.  If the thread
+  # wasn't previously seen, the handlers have to do a "hard" update, which
+  # involves completely reloading the thread list for the current query.
 
   def hide_thread(t : MsgThread)
-    if ti = @tinfo[t.id]?
-      #STDERR.puts "hide_thread #{t.id}"
-      ti.hidden = true
-    end
+    @hidden[t.id] = true
   end
 
   def unhide_thread(t : MsgThread)
-    if ti = @tinfo[t.id]?
-        ti.hidden = false
-    end
+    @hidden[t.id] = false
   end
 
   def hide_foreign_thread(*args)
@@ -293,7 +255,6 @@ class ThreadIndexMode < LineCursorMode
       STDERR.puts "handle_poll_update: translated query #{@translated_query}"
       ts = ThreadList.new(@translated_query, offset: 0, limit: limit, force: false)
       @ts = ts
-      add_thread_info(ts)
 
       BufferManager.flash "#{count.pluralize "thread"} updated"
       #STDERR.puts "handle_poll_update: calling update"
@@ -309,7 +270,7 @@ class ThreadIndexMode < LineCursorMode
     #STDERR.puts "update: threadlist is nil: #{threadlist.nil?}"
     return unless threadlist
     #STDERR.puts "update: nthreads = #{threadlist.threads.size}"
-    @threads = threadlist.threads.select {|t| !@tinfo[t.id].hidden}
+    @threads = threadlist.threads.select {|t| !@hidden[t.id]?}
     #STDERR.puts "update: no. of non-hidden threads = #{@threads.size}"
     if @threads.size == 0
       # The thread list is now empty
@@ -317,9 +278,9 @@ class ThreadIndexMode < LineCursorMode
       return
     end
 
-    @size_widgets = @threads.map { |t| @tinfo[t.id].size_widget }
+    @size_widgets = @threads.map { |t| t.size_widget }
     @size_widget_width = @size_widgets.max_of { |w| w.display_length }
-    @date_widgets = @threads.map { |t| @tinfo[t.id].date_widget }
+    @date_widgets = @threads.map { |t| t.date_widget }
     @date_widget_width = @date_widgets.max_of { |w| w.display_length }
 
     if old_cursor_thread
@@ -340,11 +301,10 @@ class ThreadIndexMode < LineCursorMode
     #
     # probably a race condition between thread modification and updating
     # going on.
-    return if @threads[l].empty?
+    return unless thread = @threads[l]?
 
-    tid = @threads[l].id
-    @size_widgets[l] = @tinfo[tid].size_widget
-    @date_widgets[l] = @tinfo[tid].date_widget
+    @size_widgets[l] = thread.size_widget
+    @date_widgets[l] = thread.date_widget
 
     ## if a widget size has increased, we need to redraw everyone
     need_update =
@@ -546,7 +506,6 @@ class ThreadIndexMode < LineCursorMode
 
     #STDERR.puts "load_more_threads: query #{translated_query}, offset #{offset}, limit #{limit}"
     new_ts = ThreadList.new(translated_query, offset: offset, limit: limit)
-    add_thread_info(new_ts)
 
     new_tags = Tagger(MsgThread).new
     new_tags.setmode(self)

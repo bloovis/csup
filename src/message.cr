@@ -560,10 +560,12 @@ alias ThreadEach = Tuple(Message, Int32, Message?)	# thread, depth, parent
 class ThreadData
   include Enumerable(ThreadEach)
 
+  property id = ""
   property msg : Message?
   property size = 0
   property subj = "<no subject>"
-  property id = ""
+  property size_widget = ""
+  property date_widget = ""
 
   def initialize(json : JSON::Any, @id)
     #STDERR.puts "MsgData: json #{json}"
@@ -585,6 +587,14 @@ class ThreadData
       @subj = m.subj
       set_msg(m)
     end
+
+    @size_widget = case self.size
+      when 1
+        ""
+      else
+        "(#{self.size})"
+      end
+    @date_widget = self.date.to_local.to_nice_s
   end
 
   # Reload message thread data with body and html content.  This involves
@@ -592,7 +602,7 @@ class ThreadData
   # the current top level message, which doesn't have body and html content.
   def load_body
     return unless m = @msg
-    ts = ThreadList.new("id:#{m.id}", offset: 0, limit: 1, body: true)
+    ts = ThreadList.new("id:#{m.id}", offset: 0, limit: 1, body: true, force: true)
     if ts
       if (thread = ts.threads[0]?) && (m = thread.msg)
 	set_msg(m)
