@@ -774,7 +774,7 @@ class ThreadList
     # the JSON output.  Add resulting threads to the cache.
     if ids_to_load.size > 0
       show_query = ids_to_load.join(" or ") + " and (#{query})"
-      STDERR.puts "run_notmuch_show: query '#{show_query}'"
+      #STDERR.puts "run_notmuch_show: query '#{show_query}'"
       json = Notmuch.show(show_query, body: body, html: body)
       parse_json(json, ids_to_load)
     end

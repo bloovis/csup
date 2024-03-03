@@ -130,15 +130,15 @@ class ThreadIndexMode < LineCursorMode
   # based on thread ID.
   def get_update_thread(*args) : MsgThread?
     t = args[1]?
-    STDERR.puts "get_update_thread: t = #{t}"
+    #STDERR.puts "get_update_thread: t = #{t}"
     if t && t.is_a?(MsgThread)
-      STDERR.puts "get_update_thread: seaching for thread id #{t.id}"
+      #STDERR.puts "get_update_thread: searching for thread id #{t.id}"
       if (ts = @ts) && (t = ts.find_thread(t))
-	STDERR.puts "get_update_thread: found thread id #{t.id}"
+	#STDERR.puts "get_update_thread: found thread id #{t.id}"
         return t
       end
     end
-    STDERR.puts "get_update_thread: couldn't find thread #{t}"
+    #STDERR.puts "get_update_thread: couldn't find thread #{t}"
     nil
   end
 
@@ -211,6 +211,7 @@ class ThreadIndexMode < LineCursorMode
 
   def hide_thread(t : MsgThread)
     if ti = @tinfo[t.id]?
+      #STDERR.puts "hide_thread #{t.id}"
       ti.hidden = true
     end
   end
@@ -223,7 +224,7 @@ class ThreadIndexMode < LineCursorMode
 
   def hide_foreign_thread(*args)
     if t = get_update_thread(*args)
-      STDERR.puts "hide_foreign_thread: hiding thread #{t.id}"
+      #STDERR.puts "hide_foreign_thread: hiding thread #{t.id}"
       hide_thread t
     else
       reload
@@ -232,7 +233,7 @@ class ThreadIndexMode < LineCursorMode
 
   def unhide_foreign_thread(*args)
     if t = get_update_thread(*args)
-      STDERR.puts "unhide_foreign_thread: unhiding thread #{t.id}"
+      #STDERR.puts "unhide_foreign_thread: unhiding thread #{t.id}"
       unhide_thread t
     else
       reload
@@ -240,25 +241,25 @@ class ThreadIndexMode < LineCursorMode
   end
 
   def handle_deleted_update(*args)
-    STDERR.puts "ThreadIndexMode.handle_deleted_update"
+    #STDERR.puts "ThreadIndexMode.handle_deleted_update"
     hide_foreign_thread(*args)
     update
   end
 
   def handle_undeleted_update(*args)
-    STDERR.puts "ThreadIndexMode.handle_undeleted_update"
+    #STDERR.puts "ThreadIndexMode.handle_undeleted_update"
     unhide_foreign_thread(*args)
     update
   end
 
   def handle_spammed_update(*args)
-    STDERR.puts "ThreadIndexMode.handle_spammed_update"
+    #STDERR.puts "ThreadIndexMode.handle_spammed_update"
     hide_foreign_thread(*args)
     update
   end
 
   def handle_unspammed_update(*args)
-    STDERR.puts "ThreadIndexMode.handle_unspammed_update"
+    #STDERR.puts "ThreadIndexMode.handle_unspammed_update"
     unhide_foreign_thread(*args)
     update
   end
@@ -312,7 +313,7 @@ class ThreadIndexMode < LineCursorMode
     #STDERR.puts "update: no. of non-hidden threads = #{@threads.size}"
     if @threads.size == 0
       # The thread list is now empty
-      @text = Array(Text).new
+      regen_text
       return
     end
 
@@ -820,7 +821,7 @@ class ThreadIndexMode < LineCursorMode
       unhide_thread t
       UpdateManager.relay self, :undeleted, t
       return -> do
-        #STDERR.puts "undo lambda add :deleted, thread #{thread.object_id}, tagged = #{tagged}"
+        #STDERR.puts "undo lambda add :deleted, thread #{thread.id}, tagged = #{tagged}"
         thread.apply_label :deleted
 	Notmuch.save_thread thread
 	hide_thread thread
@@ -828,13 +829,13 @@ class ThreadIndexMode < LineCursorMode
 	nil
       end
     else
-      #STDERR.puts "actually_toggle_deleted: add :deleted, thread #{t.object_id}, tagged = #{tagged}"
+      #STDERR.puts "actually_toggle_deleted: add :deleted, thread #{t.id}, tagged = #{tagged}"
       t.apply_label :deleted
       Notmuch.save_thread t
       hide_thread t
       UpdateManager.relay self, :deleted, t
       return -> do
-        #STDERR.puts "undo lambda remove :deleted, thread #{thread.object_id}, tagged = #{tagged}"
+        #STDERR.puts "undo lambda remove :deleted, thread #{thread.id}, tagged = #{tagged}"
         thread.remove_label :deleted
 	Notmuch.save_thread thread
 	unhide_thread thread
