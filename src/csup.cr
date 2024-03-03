@@ -46,6 +46,7 @@ module Redwood
     lm = LabelManager.new(File.join(basedir, "labels.txt"))
     sentm = SentManager.new(Config.str(:sent_folder) || "sent")
     dm = DraftManager.new(Config.str(:draft_folder) || "draft")
+    tc = ThreadCache.new
 
     log_io = File.open(File.join(basedir, "log"), "a")
     if log_io

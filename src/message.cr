@@ -8,8 +8,34 @@ require "./notmuch"
 require "./person"
 require "./time"
 require "./chunks"
+require "./singleton"
 
 module Redwood
+
+class ThreadCache
+  singleton_class
+
+  def initialize
+    singleton_pre_init
+    @cache = Hash(String, ThreadData).new
+    singleton_post_init
+  end
+
+  def get(threadid : String) : ThreadData
+    @cache[threadid]
+  end
+  singleton_method get, threadid
+
+  def add(thread : ThreadData)
+    @cache[thread.id] = thread
+  end
+  singleton_method add, thread
+
+  def cached?(threadid : String)
+    @cache.has_key?(threadid)
+  end
+  singleton_method cached?, threadid
+end
 
 # A message is actually a tree of messages: it can have multiple children.
 class Message
@@ -48,7 +74,7 @@ class Message
   property timestamp : Int64
   property filename : String
   property date_relative : String
-  property thread : MsgThread?		# containing thread
+  property thread : ThreadData?		# containing thread
   property from : Person
   property to : Array(Person)
   property cc : Array(Person)
@@ -531,27 +557,25 @@ end	# Message
 
 alias ThreadEach = Tuple(Message, Int32, Message?)	# thread, depth, parent
 
-class MsgThread
+class ThreadData
   include Enumerable(ThreadEach)
 
   property msg : Message?
-  property next : MsgThread?
-  property prev : MsgThread?
   property size = 0
   property subj = "<no subject>"
   property id = ""
 
   def initialize(json : JSON::Any, @id)
-    #STDERR.puts "MsgThread: json #{json}"
+    #STDERR.puts "MsgData: json #{json}"
     # There usually seems to be only one message in the array, but occasionally
     # there is more than one.  Treat the messages after the first one as children
     # of the first message.
     msglist = json.as_a
-    #STDERR.puts "MsgThread: msglist size #{msglist.size}"
+    #STDERR.puts "MsgData: msglist size #{msglist.size}"
     m = Message.new(msglist[0])
     if msglist.size > 1
       msglist[1..].each do |json|
-        #STDERR.puts "MsgThread: adding unexpected child"
+        #STDERR.puts "MsgData: adding unexpected child"
         child = Message.new(json)
 	m.add_child child
       end
@@ -657,7 +681,7 @@ class MsgThread
 {% if flag?(:TEST) %}
   def print(print_content = false)
     if m = @msg
-      puts "Thread object id #{self.object_id}, prev #{@prev.object_id}, next #{@next.object_id}"
+      puts "Thread object id #{self.object_id}"
       m.print(level: 0, print_content: print_content)
     else
       puts "Thread is empty!"
@@ -665,7 +689,7 @@ class MsgThread
   end
 {% end %}
 
-  # This allows MsgThread.map to be used.  We can't yield inside
+  # This allows MsgData.map to be used.  We can't yield inside
   # the walktree block, so we have to save the results of walktree, then
   # yield them afterwards.
   def each
@@ -700,7 +724,21 @@ class MsgThread
     return latest
   end
 
-end	# MsgThread
+end	# ThreadData
+
+class MsgThread
+  property id : String
+
+  def initialize(json : JSON::Any, @id)
+    ThreadCache.add(ThreadData.new(json, id))
+  end
+
+  def cache : ThreadData
+    ThreadCache.get(id)
+  end
+
+  forward_missing_to cache
+end
 
 class ThreadList
   property threads = Array(MsgThread).new
@@ -742,14 +780,8 @@ class ThreadList
       if results.size != thread_ids.size
 	raise "thread list should contain #{thread_ids.size} items, but has #{results.size} items!"
       end
-      prev_thread = nil
       results.each_with_index do |result, i|
         thread = MsgThread.new(result, thread_ids[i])
-	thread.prev = prev_thread
-	if prev_thread
-	  prev_thread.next = thread
-	end
-	prev_thread = thread
 	threads << thread
       end
     else
