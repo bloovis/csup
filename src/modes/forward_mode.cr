@@ -109,8 +109,20 @@ class ForwardMode < EditMessageMode
   end
 
   def forward_body_lines(m : Message) : Array(String)
-    #attribution = HookManager.run("forward-attribution", :message => m) || default_attribution(m)
-    attribution = default_attribution(m)
+    attribution = ["", ""]
+    success = HookManager.run("forward-attribution") do |pipe|
+      pipe.transmit do |f|
+	f.puts m.from.name
+	f.puts m.timestamp
+      end
+      pipe.receive do |f|
+	attribution[0] = (f.gets || "").strip
+	attribution[1] = (f.gets || "").strip
+      end
+    end
+    unless success
+      attribution = default_attribution(m)
+    end
     attribution[0,1] +
     m.quotable_header_lines +
     [""] +

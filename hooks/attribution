@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+name = STDIN.gets.strip
+timestamp = STDIN.gets.strip.to_i
+t = Time.at(timestamp)
+puts "The Great and Powerful #{name} wrote the following on #{t.strftime('%B %H, %Y at %H:%M')}:"

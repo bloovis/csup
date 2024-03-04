@@ -159,8 +159,19 @@ class ReplyMode < EditMessageMode
   end
 
   def reply_body_lines(m : Message) : Array(String)
-    #attribution = HookManager.run("attribution", :message => m) || default_attribution(m)
-    attribution = default_attribution(m)
+    attribution = ""
+    success = HookManager.run("attribution") do |pipe|
+      pipe.transmit do |f|
+	f.puts m.from.name
+	f.puts m.timestamp
+      end
+      pipe.receive do |f|
+	attribution = f.gets_to_end.rstrip
+      end
+    end
+    unless success
+      attribution = default_attribution(m)
+    end
     lines = attribution.split("\n") + m.quotable_body_lines.map { |l| "> #{l}" }
     while lines.last =~ /^\s*$/
       lines.pop

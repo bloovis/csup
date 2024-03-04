@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+name = STDIN.gets.strip
+timestamp = STDIN.gets.strip.to_i
+t = Time.at(timestamp)
+puts "--- Start of amazing forwarded message from #{name} of #{t.strftime('%B %H, %Y at %H:%M')} ---"
+puts "--- End of amazing forwarded message from #{name} of #{t.strftime('%B %H, %Y at %H:%M')} ---"
