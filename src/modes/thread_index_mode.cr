@@ -78,15 +78,14 @@ class ThreadIndexMode < LineCursorMode
     @hidden_labels = LabelManager::HIDDEN_RESERVED_LABELS +
 		     Set.new(Config.strarray(:hidden_labels)) +
 		     Set.new(hidden_labels.map(&.to_s))
-    @ts = ThreadList.new(translated_query, offset: 0, limit: buffer.content_height)
-    if ts = @ts
-      num = ts.threads.size
-      if num == 0
-	BufferManager.flash "No matches."
-      else
-	BufferManager.flash "Found #{num.pluralize "thread"}."
-        update
-      end
+    ts = ThreadList.new(translated_query, offset: 0, limit: buffer.content_height)
+    @ts = ts
+    num = ts.threads.size
+    if num == 0
+      BufferManager.flash "No matches."
+    else
+      BufferManager.flash "Found #{num.pluralize "thread"}."
+      update
     end
     UpdateManager.register self
   end
@@ -181,7 +180,11 @@ class ThreadIndexMode < LineCursorMode
   end
 
   def unhide_thread(t : MsgThread)
-    @hidden[t.id] = false
+    if @hidden.has_key?(t.id)
+      @hidden[t.id] = false
+    else
+      reload
+    end
   end
 
   def hide_foreign_thread(*args)
@@ -255,6 +258,7 @@ class ThreadIndexMode < LineCursorMode
       STDERR.puts "handle_poll_update: translated query #{@translated_query}"
       ts = ThreadList.new(@translated_query, offset: 0, limit: limit, force: false)
       @ts = ts
+      @hidden = Hash(String, Bool).new
 
       BufferManager.flash "#{count.pluralize "thread"} updated"
       #STDERR.puts "handle_poll_update: calling update"
@@ -530,6 +534,7 @@ class ThreadIndexMode < LineCursorMode
       end
     end
     @ts = new_ts
+    @hidden = Hash(String, Bool).new
     @tags = new_tags
     update
   end
