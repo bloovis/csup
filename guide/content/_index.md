@@ -29,3 +29,4 @@ only if I find that I need them.
 ## What's Here
 
 * [Getting Started and Basic Configuration]({{< relref "gettingstarted" >}})
+* [Advanced Usage]({{< relref "advancedusage" >}})

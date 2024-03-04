@@ -1,5 +1,5 @@
 ---
-weight: 3
+weight: 2
 bookFlatSection: true
 title: "Getting Started and Basic Configuration"
 ---
@@ -13,3 +13,4 @@ title: "Getting Started and Basic Configuration"
 * [Keyboard Reference]({{< relref "Keyboard-reference" >}})
 * [Searching your mail]({{< relref "Searching-Your-Mail" >}})
 * [Mouse Support]({{< relref "Mouse-Support" >}})
+* [Polling and Loading New Threads]({{< relref "Polling" >}})
