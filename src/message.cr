@@ -12,6 +12,12 @@ require "./singleton"
 
 module Redwood
 
+# By caching message thread data, we can reduce the size and number of
+# "notmuch search" queries.  Once a thread is loaded into the cache,
+# it doesn't need to be reloaded unless one of the following happens:
+# - The user wants to view the thread's body contents (see load_body).
+# - The user deletes a draft message, forcing notmuch to recreate its containing thread.
+
 class ThreadCache
   singleton_class
 
@@ -557,6 +563,12 @@ end	# Message
 
 alias ThreadEach = Tuple(Message, Int32, Message?)	# thread, depth, parent
 
+# ThreadData contains the information about the messages in a single thread.
+# This is the object that is stored in the thread cache (ThreadCache).
+# There should be only one copy of a ThreadData object for any given thread.
+# We ensure this through the use of the MsgThread object, which refers to
+# to a ThreadData object in the cache via the thread ID.
+
 class ThreadData
   include Enumerable(ThreadEach)
 
@@ -736,6 +748,12 @@ class ThreadData
 
 end	# ThreadData
 
+# This is the message thread object that is returned to all modes that
+# use message threads, i.e. ThreadViewMode and modes derived from ThreadIndexMode.
+# It refers to the actual cached thread data (ThreadData) via the thread ID.
+# This indirection ensures that there is only one copy of ThreadData
+# for any given thread.
+
 class MsgThread
   property id : String
 
@@ -748,6 +766,13 @@ class MsgThread
 
   forward_missing_to cache
 end
+
+# This is the list of threads that results from any given notmuch search.
+# It is responsible for placing found threads in the thread cache.
+# The `force` parameter to the constructor has this meaning:
+# - If true, all found threads should be stored in the cache, overwriting
+#   any cached data that may already be in the cache
+# - If false, only threads that are not already in the cache are loaded.
 
 class ThreadList
   property threads = Array(MsgThread).new
