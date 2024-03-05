@@ -28,30 +28,8 @@ The result is a mail client that looks and behaves almost identically
 to Sup but is a bit faster (in most cases) and uses much less memory.  It is also
 easier to deploy, being a single compiled binary.
 
-## Notmuch configuration
+## Installation and Configuration
 
-Csup works best if you make the following changes to your `.notmuch-config` file:
-
-Add the following line to the `[maildir]` section:
-
-    synchronize_flags=false
-
-This is *very* important, because without it, csup may crash when you
-try to edit a draft message, due to notmuch renaming the file containing
-the draft message.
-
-Add the following line to the `[search]` section:
-
-    exclude_tags=spam;deleted;killed
-
-(*NOTE*: This line will cause sup to crash, so comment it out before using sup.)
-
-You can still search for messages with any of these tags by explicitly specifying
-the tag in a search: e.g., `tag:deleted` .
-
-Add the following lines to the end of the file:
-
-    [show]
-    extra_headers=Delivered-To;X-Original-To;List-Post;Reply-To;References
-
-I will provide full installation and configuration instructions soon.
+See the [Csup Guide](https://www.bloovis.com/csupguide/) for information
+on how to set up notmuch and Csup.  Or look in the `guide/content` subdirectory
+of the source repository for the source to the guide.
