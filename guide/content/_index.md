@@ -30,3 +30,4 @@ only if I find that I need them.
 
 * [Getting Started and Basic Configuration]({{< relref "gettingstarted" >}})
 * [Advanced Usage]({{< relref "advancedusage" >}})
+* [Developer Notes]({{< relref "developernotes" >}})
