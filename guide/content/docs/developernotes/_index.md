@@ -12,4 +12,4 @@ and some of the problems I had to solve.
 * [Ruby 3 Problems]({{< relref "Ruby3" >}})
 * [Singleton Classes]({{< relref "Singleton" >}})
 * [Class Ancestors and Key Bindings]({{< relref "Ancestors" >}})
-
+* [Dealing With Arbitrary Data Types]({{< relref "Datatypes" >}})
