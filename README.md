@@ -33,3 +33,22 @@ easier to deploy, being a single compiled binary.
 See the [Csup Guide](https://www.bloovis.com/csupguide/) for information
 on how to set up notmuch and Csup.  Or look in the `guide/content` subdirectory
 of the source repository for the source to the guide.
+
+To generate the guide on your local machine, first install [Hugo](https://gohugo.io/installation/linux/).
+The guide uses the [hugo-book theme](https://github.com/alex-shpak/hugo-book)
+as a git submodule.  To load the theme, do this:
+
+    git submodule init
+    git submodule update
+
+Then you can build the guide using:
+
+    cd guide
+    hugo
+
+To view the guide on your local machine, use this:
+
+    hugo server
+
+Then point your browser to the URL printed by the above command,
+typically something like <http://localhost:1313/csupguide/> .
