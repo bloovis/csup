@@ -126,7 +126,7 @@ to sent emails.  If the hook does not exist, Csup will use
 the contents of the signature file named in the `signature` part
 of the sender's account information in `~/.csup/config.yaml`
 
-Here is a `~/.csup/signature` hook that outputs a random fortune
+Here is a `~/.csup/hooks/signature` hook that outputs a random fortune
 to be used as a signature.
 
 ```
@@ -150,11 +150,11 @@ looks like this:
 
 The forward attribution can be customized in the `forward-attribution` hook.
 Csup sends the hook a line containing the message's author, followed
-by a line containing the message's timestamp (number seconds since the Epoch).
+by a line containing the message's timestamp (number of seconds since the Epoch).
 The hook responds by outputting two lines: the text of the begin line
 and the text of the end line.
 
-Here is a sample `~/.csup/forward-attribution` hook:
+Here is a sample `~/.csup/hooks/forward-attribution` hook:
 
 ```
 #!/usr/bin/env ruby
@@ -176,10 +176,10 @@ Excerpts from Joe Blogg's message of 1 Jan 1999:
 The attribution for replies can be customized in the `attribution` hook.
 As with the `forward-attribution` hook, 
 Csup sends the hook a line containing the message's author, followed
-by a line containing the message's timestamp (number seconds since the Epoch).
+by a line containing the message's timestamp (number of seconds since the Epoch).
 The hook responds by outputting the text of the quote line (can be multi-line).
 
-Here is a sample `~/.csup/attribution` hook:
+Here is a sample `~/.csup/hooks/attribution` hook:
 
 ```
 #!/usr/bin/env ruby
