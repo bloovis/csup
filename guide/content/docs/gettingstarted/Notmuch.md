@@ -44,7 +44,7 @@ This creates a file `~/.notmuch-config`.  I edited this file as follows:
   still search for spam, deleted, or killed emails by explicitly using those
   tags in a search query.
 
-* Add the line `extra_headers=Delivered-To;X-Original-To;List-Post` to the `[show]`
+* Add the line `extra_headers=Delivered-To;X-Original-To;List-Post;References` to the `[show]`
   section.
 
 * Left the `path` value in the `[database]` section unchanged:
@@ -64,7 +64,7 @@ Here is a sample `.notmuch-config` file with all comments removed:
     [maildir]
     synchronize_flags=false
     [show]
-    extra_headers=Delivered-To;X-Original-To;List-Post
+    extra_headers=Delivered-To;X-Original-To;List-Post;References
 
 ## Create an index
 
