@@ -9,17 +9,10 @@ targets:
     main: src/csup.cr
 
 dependencies:
-#  quoted_printable:
-#    github: arcage/crystal-quotedprintable
-#    version: 0.1.3
-#  email:
-#    github: arcage/crystal-email
   email:
     github: bloovis/crystal-email
   ncurses:
     github: SamualLB/ncurses
-  uniwidth:
-    github: naqvis/uni_char_width
 
 crystal: 0.28.0
 
