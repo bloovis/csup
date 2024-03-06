@@ -617,6 +617,16 @@ class ThreadData
     ts = ThreadList.new("id:#{m.id}", offset: 0, limit: 1, body: true, force: true)
     if ts
       if (thread = ts.threads[0]?) && (m = thread.msg)
+	# In each message in the thread, if the "Reply-To" header is present,
+	# replace @from with that person.  This allows the thread view mode
+	# to show the actual sender in messages from mailing lists.
+	thread.each do |m, d, p|
+	  if replyto = m.replyto
+	    m.from = replyto
+	  end
+	end
+
+	# Set the thread top level message, which copies the entire thread tree.
 	set_msg(m)
       end
     end
