@@ -38,7 +38,7 @@ class HorizontalSelector
   def line(width=nil) : WidgetArray
     label =
       if width
-        (" " * width) + @label
+        @label.pad_left(width)
       else
         "#{@label} "
       end
