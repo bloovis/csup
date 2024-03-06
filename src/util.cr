@@ -30,8 +30,7 @@ class String
 
   def slice_by_display_length(len)
     # Chop it down to the maximum allowable size before attempting to
-    # get the Unicode width, because UnicodeCharWidth is VERY slow
-    # on big strings.
+    # get the Unicode width.
     s = self[0, len]
 
     # Chop off characters on the right until the display length fits.
