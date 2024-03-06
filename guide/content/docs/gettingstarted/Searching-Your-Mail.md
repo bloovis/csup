@@ -88,6 +88,14 @@ Note that it will be OR'd with other `label:` queries!
 
 `id:123456789@example.com` is useful if you have a unique identifier for an email.
 
+### Saved searches
+
+You can save a search by pressing the `%` key in any search results mode.
+Then in subsequent searches, you can refer to the saved search by enclosing
+its name in `{}` brackets in the search query.  For example, if you previously
+saved the search `from:joeblow@example.com` as `fromjb`, you can refer
+to that search as `{fromjb}` in subsequent searches.
+
 ### Even more advanced queries
 
 Play around with the search, and see the
