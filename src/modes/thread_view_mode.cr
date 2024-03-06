@@ -15,7 +15,7 @@ class ThreadViewMode < LineCursorMode
 	     jump_to_next_open, jump_to_prev_open,
 	     compose, search, reply_cmd, reply_all, edit_draft, send_draft,
 	     edit_labels, forward, save_to_disk, save_all_to_disk, edit_alias,
-	     toggle_starred, toggle_new, toggle_wrap,
+	     toggle_starred, toggle_new, toggle_wrap, goto_uri,
 	     archive_and_kill, delete_and_kill, spam_and_kill, unread_and_kill, do_nothing_and_kill,
 	     archive_and_next, delete_and_next, spam_and_next, unread_and_next, do_nothing_and_next,
 	     archive_and_prev, delete_and_prev, spam_and_prev, unread_and_prev, do_nothing_and_prev
@@ -69,6 +69,7 @@ class ThreadViewMode < LineCursorMode
     k.add :archive_and_next, "Archive this thread, kill buffer, and view next", 'a'
     k.add :delete_and_next, "Delete this thread, kill buffer, and view next", 'd'
     k.add :toggle_wrap, "Toggle wrapping of text", 'w'
+    k.add :goto_uri, "Goto uri under cursor", 'g'
 
     k.add_multi "(a)rchive/(d)elete/mark as (s)pam/mark as u(N)read:", '.' do |kk|
       kk.add :archive_and_kill, "Archive this thread and kill buffer", 'a'
@@ -771,6 +772,54 @@ class ThreadViewMode < LineCursorMode
       newstate = numopen > quotes.length / 2 ? :closed : :open
       quotes.each { |c| @chunk_layout[c].state = newstate }
       update
+    end
+  end
+
+  # This differs from the goto_uri in Sup in that it only looks at one line.
+  # That's because it almost never worked when it tried to collect several
+  # lines together.  You should first use the 'w' command to un-wrap the text;
+  # that way the URL will appear on one line.
+  def goto_uri(*args)
+    unless (chunk = @chunk_lines[curpos])
+      BufferManager.flash "No text chunk under cursor."
+      return
+    end
+    unless HookManager.enabled? "goto"
+      BufferManager.flash "You must add a ~/.csup/hooks/goto hook before you can goto a URI."
+      return
+    end
+
+    # The text line under the cursor either is an array of widgets like this:
+    #   [{:text_color, "Some text"}, {:text_color, " continued here"}]
+    # or it is a simple string.
+    linetext = @text[curpos]
+    if linetext.is_a?(WidgetArray)
+      # extract the strings from the widgets
+      linetext = linetext.map {|w| w[1]}.join("")
+    end
+    if match = linetext.match(URI.regexp)
+      url = match[0]
+      # The goto hook reads a line containing the URL, and runs
+      # the appropriate viewer.  If there's an error, it sends
+      # an error message to stdout
+      error_message = nil
+      success = HookManager.run("goto") do |pipe|
+	pipe.transmit do |f|
+	  f.puts url
+	end
+	pipe.receive do |f|
+	  error_message = f.gets
+	end
+      end
+      if !success
+	if error_message
+	  BufferManager.flash error_message.strip
+	else
+	  BufferManager.flash "goto hook failed with unknown error"
+	end
+      end
+    else
+      BufferManager.flash "No URI found."
     end
   end
 

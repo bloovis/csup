@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# The goto hook reads a URL from standard input, then
+# runs the appropriate viewer for that URL.
+
+read url
+xdg-open "$url"

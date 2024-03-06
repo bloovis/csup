@@ -32,6 +32,11 @@ class HookManager
     end
   end
 
+  def self.enabled?(name : String) : Bool
+    path = File.join(self.instance.dir, name)
+    File.exists?(path)
+  end
+
 end	# HookManager
 
 end	# Redwood
