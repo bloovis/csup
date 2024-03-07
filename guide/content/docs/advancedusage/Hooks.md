@@ -188,3 +188,20 @@ timestamp = STDIN.gets.strip.to_i
 t = Time.at(timestamp)
 puts "The Great and Powerful #{name} wrote the following on #{t.strftime('%B %H, %Y at %H:%M')}:"
 ```
+
+## goto
+
+The `g` command in thread view mode looks for a URL in the line under
+the cursor, and if it finds one, it sends it to the goto hook.  The hook
+reads one line containing the URL, then invokes the appropriate browser
+program to view the URL.
+
+Here is a sample `~/.csup/hooks/goto` hook:
+
+```
+#!/bin/sh
+# The goto hook reads a URL from standard input, then
+# runs the appropriate viewer for that URL.
+read url
+xdg-open "$url"
+```
