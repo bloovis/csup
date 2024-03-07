@@ -30,7 +30,7 @@ at compile time.
 
 My solution was to implement a hack using some macros:
 
-* Each singleton class needs to call the `singleton_class` somewhere near
+* Each singleton class must call the `singleton_class` macro somewhere near
 the top of the class.  This macro sets up the instance variable
 and defines some methods (`instance`, `instantiated?`, and `deinstantiate`)
 that Sup expected.
@@ -47,8 +47,3 @@ all of its arguments.  This macro defines a new class method that invokes
 the instance method of the same name.
 
 For more details, see the `src/singleton.cr` file in the source repository.
-
-(*Note*: it occurs to me now that it might have been possible to implement
-singletons using the `forward_missing_to` macro in Crystal.  I might try
-this some time, but I'm not highly motivated to do so, since my
-existing hack works well enough.)
