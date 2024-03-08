@@ -1,8 +1,17 @@
+.PHONY: guide guideview tests
+
 % : test/%.cr
 	crystal build --no-color --error-trace -D TEST $<
 
 csup : $(wildcard src/*.cr) $(wildcard src/modes/*.cr)
 	crystal build --no-color --error-trace -D MAIN src/csup.cr
+
+
+guide :
+	(cd guide && hugo)
+
+guideview :
+	(cd guide && hugo server)
 
 .PHONY: tests
 tests : colormap_test keymap_test ncurses_test email_test logger_test \

@@ -127,7 +127,7 @@ special labels (Draft, Starred, Sent, Spam, etc.). Highlight a label
 and press Enter to view all the messages with that label.
 
 What you just did was actually a specific search. For a general search,
-press '\' or 'F' (forward slash is used for in-buffer search). Now type in your query (again, Ctrl-G to
+press 'F' or '\\' (forward slash is used for in-buffer search). Now type in your query (again, Ctrl-G to
 cancel at any point.) You can just type in arbitrary text, which will be
 matched on a per-word basis against the bodies of all email in the
 index. Csup supports the older Sup query syntax, which Csup translates into
