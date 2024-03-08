@@ -50,7 +50,7 @@ alias Text = WidgetArray | String
 alias TextLines = Array(Text)
 ```
 
-Here we can see that a widget in Sup is a tuple, not an array.
+Here we can see that a widget in Csup is a tuple, not an array.
 This allows the compiler to insure that the first element
 of a widget is always a symbol, and the second element is always a string.
 This kind of type checking is possible in Ruby only at run time, and
