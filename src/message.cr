@@ -613,8 +613,7 @@ class ThreadData
   # using notmuch search and show to get the thread data, and replacing
   # the current top level message, which doesn't have body and html content.
   def load_body
-    return unless m = @msg
-    ts = ThreadList.new("id:#{m.id}", offset: 0, limit: 1, body: true, force: true)
+    ts = ThreadList.new(@id, offset: 0, limit: 1, body: true, force: true)
     if ts
       if (thread = ts.threads[0]?) && (m = thread.msg)
 	# In each message in the thread, if the "Reply-To" header is present,
@@ -799,12 +798,13 @@ class ThreadList
   # specified query string.
   def run_notmuch_show(query : String, offset : Int32? = nil, limit : Int32? = nil,
 		       body = false, force = false)
-    #puts "run_notmuch_show: query #{query}, caller #{caller[0]}"
-    #system("echo run_notmuch_show query #{query}, offset #{offset}, limit #{limit} >>/tmp/csup.log")
     @query = query
 
-    # First, get the list of threads matching the query.
-    thread_ids = Notmuch.search(query, offset: offset, limit: limit)
+    # First, get the list of threads matching the query.  If body is true,
+    # we're trying to load the body of a message we've already found,
+    # so set --exclude=false to ignore the exclude tags in .notmuch-config.
+    #STDERR.puts "run_notmuch_show: search query '#{query}', body #{body}"
+    thread_ids = Notmuch.search(query, exclude: !body, offset: offset, limit: limit)
     if thread_ids.size == 0
       #puts "run_notmuch_show: query '#{query}' produced no results"
       return
@@ -819,7 +819,7 @@ class ThreadList
     # the JSON output.  Add resulting threads to the cache.
     if ids_to_load.size > 0
       show_query = ids_to_load.join(" or ") + " and (#{query})"
-      #STDERR.puts "run_notmuch_show: query '#{show_query}'"
+      #STDERR.puts "run_notmuch_show: show query '#{show_query}'"
       json = Notmuch.show(show_query, body: body, html: body)
       parse_json(json, ids_to_load)
     end
