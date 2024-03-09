@@ -13,3 +13,5 @@ and some of the problems I had to solve.
 * [Singleton Classes]({{< relref "Singleton" >}})
 * [Class Ancestors and Key Bindings]({{< relref "Ancestors" >}})
 * [Dealing With Arbitrary Data Types]({{< relref "Datatypes" >}})
+* [Message Threading]({{< relref "Message-Threading" >}})
+* [Ncurses]({{< relref "Ncurses" >}})
