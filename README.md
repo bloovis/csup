@@ -1,7 +1,7 @@
-# Csup - a Crystal rewrite of the Sup mail client that uses notmuch
+# Csup - a Crystal port of the Sup mail client that uses notmuch
 
-This is rewrite in [Crystal](https://crystal-lang.org/)
-of the [Sup mail client](https://github.com/sup-heliotrope/sup).
+This is a port of the [Sup mail client](https://github.com/sup-heliotrope/sup)
+to [Crystal](https://crystal-lang.org/).
 I call it by the unoriginal and unpronounceable name Csup.
 It uses [notmuch](https://notmuchmail.org/)
 as the mail store and search engine.  I based this work on Ju Wu's
