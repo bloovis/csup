@@ -307,8 +307,6 @@ end	# NCurses
 
 module Redwood
 
-  VERSION = "0.1"
-
   @@cursing = false
 
   def self.start_cursing

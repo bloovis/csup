@@ -19,6 +19,7 @@ require "./modes/contact_list_mode"
 require "./draft"
 require "./modes/label_search_results_mode"
 require "./modes/label_list_mode"
+require "../version"
 
 module Redwood
   BASE_DIR = File.join(ENV["HOME"], ".csup")
@@ -166,7 +167,7 @@ end
 # Commands.  Every command must be listed in the actions macro below.
 actions quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards,
         list_buffers, list_contacts, redraw, search, poll, compose, help,
-	list_labels
+	list_labels, version
 
 def quit_now
   #BufferManager.say "This is the global quit command."
@@ -257,6 +258,10 @@ def list_labels
   end
 end
 
+def version
+  BufferManager.flash "Csup version #{Redwood::VERSION}"
+end
+
 # Main program
 def main
   init_managers
@@ -292,6 +297,7 @@ def main
     k.add :list_labels, "List labels", 'L'
     k.add :poll, "Poll for new messages", 'P', "ERR"
     k.add :compose, "Compose new message", 'm', 'c'
+    k.add :version, "Display version number", 'v'
   end
   @@global_keymap = global_keymap
 
