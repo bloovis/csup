@@ -59,7 +59,7 @@ typically something like <http://localhost:1313/csupguide/> .
 
 ## Acknowledgements
 
-Csup is built on the work of other, smarter people, including (but not limited) to the following:
+Csup is built on the work of other, smarter people, including (but not limited to) the following:
 
 * William Morgan and the Sup developers
 * Carl Worth and the notmuch developers
