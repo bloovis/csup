@@ -1,4 +1,4 @@
-.PHONY: guide guideview tests
+.PHONY: guidesetup guide guideview tests
 
 % : test/%.cr
 	crystal build --no-color --error-trace -D TEST $<
@@ -6,6 +6,10 @@
 csup : $(wildcard src/*.cr) $(wildcard src/modes/*.cr)
 	crystal build --no-color --error-trace -D MAIN src/csup.cr
 
+
+guidesetup :
+	git submodule init
+	git submodule update
 
 guide :
 	(cd guide && hugo)
