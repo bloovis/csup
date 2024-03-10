@@ -3,12 +3,12 @@ require "./line_cursor_mode"
 module Redwood
 
 class SearchListMode < LineCursorMode
-  mode_class select_search, reload, jump_to_next_new, toggle_show_unread_only,
+  mode_class select_item, reload, jump_to_next_new, toggle_show_unread_only,
 	     delete_selected_search, rename_selected_search, edit_selected_search,
 	     add_new_search
 
   register_keymap do |k|
-    k.add :select_search, "Open search results", "C-m"
+    k.add :select_item, "Open search results", "C-m"
     k.add :reload, "Discard saved search list and reload", '@'
     k.add :jump_to_next_new, "Jump to next new thread", "C-i"
     k.add :toggle_show_unread_only, "Toggle between showing all saved searches and those with unread mail", 'u'
@@ -111,7 +111,7 @@ class SearchListMode < LineCursorMode
     BufferManager.flash "No saved searches with unread messages!" if counts.empty? && @unread_only
   end
 
-  def select_search(*args)
+  def select_item(*args)
     name, num_unread = @searches[curpos]
     return unless name
     query = SearchManager.search_string_for(name)
