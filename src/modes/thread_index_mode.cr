@@ -517,18 +517,8 @@ class ThreadIndexMode < LineCursorMode
     new_ts.threads.each do |new_t|
       # Find the thread in the old thread list that matches the one in the new list, if any.
       if old_t = old_ts.find_thread(new_t)
-	# If the thread from the old list had loaded its bodies, load the new thread's bodies.
-	# This will keep snippets from disappearing.
-	if (old_msg = old_t.msg) && (old_msg.parts.size > 0)
-	  #STDERR.puts "loading body for new thread #{old_msg.id}"
-	  new_t.load_body
-	end
-
 	# If the thread from the old thread list was tagged, tag it in the new thread list.
 	if @tags.tagged?(old_t)
-	  if new_msg = new_t.msg
-	    #STDERR.puts "load_more_threads: tagging new thread #{new_msg.id}, old thread #{old_t.object_id}"
-	  end
 	  new_tags.tag(new_t)
 	end
       end

@@ -810,8 +810,8 @@ class ThreadList
       return
     end
 
-    # Make a list of threads that much be loaded into the cache:
-    # - either all threads, if force is true
+    # Make a list of threads that must be loaded into the cache:
+    # - all threads, if force is true; or
     # - only threads not already in cache, if force is false
     ids_to_load = thread_ids.select {|id| force || !ThreadCache.cached?(id)}
 
