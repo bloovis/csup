@@ -149,12 +149,10 @@ def finish
   SearchManager.save if Redwood::SearchManager.instantiated?
   Logger.remove_sink @@log_io
 
-  #managers.each { |x| x.deinstantiate! if x.instantiated? }
-  # Need to add DraftManager, PollManager, CryptoManager, LayoutManager
-  # if they ever get implemented.
+  # De-instantiate all managers.
   {% for name in [HookManager, ContactManager, LabelManager, AccountManager,
 		  UpdateManager, UndoManager,
-		  SearchManager, SentManager] %}
+		  SearchManager, SentManager, DraftManager] %}
     {{name.id}}.deinstantiate! if {{name.id}}.instantiated?
   {% end %}
 
