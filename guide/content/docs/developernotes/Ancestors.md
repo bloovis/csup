@@ -32,7 +32,7 @@ methods must be known at compile time.
 So this meant two problems had to be solved: creating the ancestors list,
 and creating a `send` equivalent.  This is done with macros.
 
-First, there is an `action` macro that takes as arguments the names
+First, there is an `actions` macro that takes as arguments the names
 of one or more methods.  It creates a `send` method that takes
 a method name as a parameter (either a string or a symbol), and invokes that method via a large
 `case` statement.  it also creates a `respond_to?` method that
@@ -42,7 +42,7 @@ Then there is a `mode_class` macro that must be invoked near
 the top of any class derived from Mode.  The arguments to
 the macro are the names of all functions that the Mode expects
 to be invoked via `send`.  In other words, the arguments to `mode_class`
-are passed directly to `action`.  Additionally, `mode_class` defines
+are passed directly to `actions`.  Additionally, `mode_class` defines
 an `ancestors` method that, when invoked, returns an array of class
 names that represents the class hierarchy.
 
