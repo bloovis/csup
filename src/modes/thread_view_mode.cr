@@ -753,6 +753,7 @@ class ThreadViewMode < LineCursorMode
   end
 
   def expand_all_messages(*args)
+    #STDERR.puts "ThreadViewMode: expand_all_messages"
     if @global_message_state == :none
       @global_message_state = :closed
     end
@@ -773,6 +774,17 @@ class ThreadViewMode < LineCursorMode
       quotes.each { |c| @chunk_layout[c].state = newstate }
       update
     end
+  end
+
+  def status
+    #STDERR.puts "ThreadViewMode.status, caller #{caller[1]}"
+    set_status	# let LineCursorMode set its status first
+    user_labels = @thread.labels.to_a.map do |l|
+      l.to_s if LabelManager.user_defined_labels.member?(l)
+    end.compact.join(",")
+    user_labels = (user_labels.empty? && "" || "<#{user_labels}>")
+    #STDERR.puts "ThreadViewMode.status: user labels #{user_labels}"
+    [user_labels, super].join(" -- ")
   end
 
   # This differs from the goto_uri in Sup in that it only looks at one line.

@@ -63,6 +63,7 @@ class Buffer
   end
 
   def draw(status)
+    #STDERR.puts "Buffer.draw, caller #{caller[1]}"
     @mode.draw
     draw_status status
     commit

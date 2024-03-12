@@ -40,6 +40,7 @@ class LineCursorMode < ScrollMode
   end
 
   def draw
+    #STDERR.puts "LineCursorMode.draw: caller #{caller[1]}"
     super
     set_status
   end
@@ -228,7 +229,8 @@ class LineCursorMode < ScrollMode
   private def select_item(*args)
   end
 
-  private def set_status
+  def set_status
+    #STDERR.puts "LineCursorMode: set_status, caller #{caller[1]}"
     l = lines
     @status = l > 0 ? "line #{@curpos + 1} of #{l}" : ""
   end

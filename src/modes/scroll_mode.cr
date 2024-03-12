@@ -79,7 +79,6 @@ class ScrollMode < Mode
         buffer.write ln, 0, "", Opts.new({:color => :text_color})
       end
     end
-    set_status
   end
 
   def in_search?; @search_line end
@@ -155,7 +154,7 @@ class ScrollMode < Mode
     @topline = l
     @botline = [l + buffer.content_height, lines].min
     buffer.mark_dirty
-    set_status
+    @status = "lines #{@topline + 1}:#{@botline}/#{lines}"
   end
 
   def at_top?; @topline == 0 end
@@ -293,10 +292,6 @@ class ScrollMode < Mode
 			   :color => opts.sym(:color) || :none})
   end
 
-  private def set_status
-    l = lines
-    @status = "lines #{@topline + 1}:#{@botline}/#{lines}"
-  end
 end
 
 end

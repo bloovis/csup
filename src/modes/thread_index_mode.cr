@@ -483,9 +483,12 @@ class ThreadIndexMode < LineCursorMode
     end
   end
 
-  def set_status
-    l = lines
-    @status = l > 0 ? "\"#{@query}\" line #{@curpos + 1} of #{l}" : ""
+  def status
+    if (l = lines) == 0
+      "line 0 of 0"
+    else
+      "line #{curpos + 1} of #{l}"
+    end
   end
 
   # Commands
