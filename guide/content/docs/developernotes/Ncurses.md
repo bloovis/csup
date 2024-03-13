@@ -11,6 +11,8 @@ In order to make it easier to port the existing Sup code that used `ncursesw`,
 I wrote an interface library that wraps the `ncurses` shard in a way that makes
 it look like the `ncursesw` gem.  See the source file `src/supcurses.cr` for details.
 
+## Keyboard and Mouse
+
 There are a few differences in the way Csup uses ncurses, as compared with Sup.
 The biggest difference is in how Csup handles keyboard and mouse events.
 In Sup, this is quite complicated,
@@ -35,3 +37,26 @@ If the timeout occurs, `getkey` returns the string "ERR".  Csup uses
 this feature to handle the `poll_interval` option in `~/.csup/config.yaml`.
 If Csup receives "ERR" at the main command prompt, it runs the poll command,
 which is also bound to "P".
+
+## Forms
+
+Sup uses Ncurses forms to implement the "ask" buffer, where users
+type an input line in response to a question.  Tab-initiated completions
+complicate this code even more.  The result is a very confusing control
+flow that switches back and forth between the form handling in `textfield.rb`
+and the completion handling in `buffer.rb`.  The following comment by William Morgan
+in `textfield.rb` expresses his feelings about this code:
+
+> writing this fucking sucked. if you thought ncurses was some 1970s
+> before-people-knew-how-to-program bullshit, wait till you see
+> ncurses forms.
+
+Writing the code must have been bad enough, but reading it sucks, too.
+So in Csup I chose to eliminate the use of Ncurses forms.  Instead,
+I implemented a line buffer editor, which was really not very difficult to write,
+and which keeps the control flow all in one place.  See the `do_ask` method
+in `src/buffer.cr` for details.
+
+The one feature of Sup's form handling that I didn't implement was
+history.  I'm not sure how useful this would be, and I was not even
+aware of the feature until I started reading the code.
