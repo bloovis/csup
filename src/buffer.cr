@@ -380,6 +380,7 @@ class BufferManager
 	  #end
 	  if comps.size > 0
 	    ret = comps.map { |t| t[0] }.shared_prefix(true)	# t[0] = full
+	    pos = ret.size
 	    shorts = comps.map { |t| t[1] }			# t[1] = short
 	    kill_buffer(completion_buf) if completion_buf
 	    prefix_len = shorts.shared_prefix(caseless=true).size
