@@ -307,6 +307,7 @@ class BufferManager
     Ncurses.refresh
 
     ret = default || ""
+    pos = ret.size
     done = false
     aborted = false
     completion_buf = nil
@@ -324,15 +325,38 @@ class BufferManager
 
       # Redraw the ret buffer.
       Ncurses.mvaddstr(row, leftcol, ret + (" " * (fillcols - ret.size)))
-      Ncurses.move(row, leftcol + ret.size)
+      Ncurses.move(row, leftcol + pos)
       Ncurses.refresh
 
       c = Ncurses.getkey
       next if c == ""
       case c
-      when "C-h"
-	if ret.size > 0
-	  ret = ret[0..-2]
+      when "C-a"
+        pos = 0
+      when "C-e"
+        pos = ret.size
+      when "Left", "C-b"
+        if pos > 0
+	  pos -= 1
+	end
+      when "Right", "C-f"
+        if pos < ret.size
+	  pos += 1
+	end
+      when "C-h", "Delete", "C-d"
+        if !(c == "C-h" && pos == 0)
+	  if c == "C-h"
+	    pos -= 1
+	  end
+	  left = (pos == 0) ? "" : ret[0..pos-1]
+	  right = (pos >= ret.size - 1) ? "" : ret[pos+1..]
+	  ret = left + right
+	end
+      when "C-k"
+        if pos == 0
+	  ret = ""
+	else
+	  ret = ret[0..pos-1]
 	end
       when "C-u"
         ret = ""
@@ -342,6 +366,7 @@ class BufferManager
 	done = true
 	aborted = true
       when "C-i"
+        pos = ret.size
         if lastc == "C-i"
 	  if completion_mode
 	    completion_mode.roll
@@ -367,7 +392,8 @@ class BufferManager
 	end
       else
 	if c.size == 1
-	  ret += c
+	  ret = ret.insert(pos, c)
+	  pos += 1
 	end
       end
       lastc = c
