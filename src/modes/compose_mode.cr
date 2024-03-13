@@ -58,7 +58,7 @@ class ComposeMode < EditMessageMode
 	question = "From: "
       end
       if from.nil? && Config.bool(:ask_for_from)
-        return unless from = BufferManager.ask_for_account(:account, question)
+	from = BufferManager.ask_for_account(:account, question)
       end
     end
     return unless from
@@ -74,7 +74,7 @@ class ComposeMode < EditMessageMode
 
     if Config.bool(:ask_for_cc)
       # opts[:cc] is never used.
-      cc = BufferManager.ask_for_contacts(:people, "Cc: ")
+      return unless cc = BufferManager.ask_for_contacts(:people, "Cc: ")
     end
     newopts[:cc] = cc || [""]
 

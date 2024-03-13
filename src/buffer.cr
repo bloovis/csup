@@ -360,6 +360,7 @@ class BufferManager
 	end
       when "C-u"
         ret = ""
+	pos = 0
       when "C-m"
         done = true
       when KEY_CANCEL
@@ -502,7 +503,7 @@ class BufferManager
   # If a name doesn't have a contact, it is assumed to be an email address and
   # is returned unchanged.  Default, if present, is a string of comma-separated
   # email addresses to use if the user enters nothing.
-  def ask_for_contacts(domain : Symbol, question : String, default = "") : Array(String)
+  def ask_for_contacts(domain : Symbol, question : String, default = "") : Array(String)?
     default += " " unless default == ""
 
     recent = Notmuch.load_contacts(AccountManager.user_emails, 10).map { |c| [c.full_address, c.email] }
@@ -522,16 +523,18 @@ class BufferManager
     completions = (recent + contacts).flatten.uniq
     #completions += HookManager.run("extra-contact-addresses") || []
 
-    email_list = Array(String).new
     answer = BufferManager.ask_many_emails_with_completions(domain, question, completions, default)
     if answer && answer.size > 0
+      email_list = Array(String).new
       answer.split_on_commas.each do |x|
         if email = (ContactManager.email_for(x) || x)
 	  email_list << email
 	end
       end
+      return email_list
+    else
+      return nil
     end
-    return email_list
   end
   singleton_method ask_for_contacts, domain, question, default
 
