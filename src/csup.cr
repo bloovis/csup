@@ -301,7 +301,14 @@ def main
 
   # Interactive loop.
   begin
-    event_loop(global_keymap) {|ch| BufferManager.flash "No action for #{ch}"}
+    event_loop(global_keymap) do |ch|
+      if (b = BufferManager.focus_buf) && (m = b.mode)
+	modename = m.name
+      else
+	modename = "unknown mode"
+      end
+      BufferManager.flash "Unknown keypress '#{ch}' for #{modename}."
+    end
   rescue ex
     Ncurses.end
     puts "Oh crap!  An exception occurred!"
