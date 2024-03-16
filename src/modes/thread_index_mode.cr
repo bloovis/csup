@@ -139,7 +139,7 @@ class ThreadIndexMode < LineCursorMode
     #STDERR.puts "handle_updated_update: setting thread msg"
     oldt.set_msg(msg)
 
-    # Notmuch.save_thread t # do we need this?
+    # t.save # do we need this?
     update_text_for_line l
   end
 
@@ -558,7 +558,7 @@ class ThreadIndexMode < LineCursorMode
     ## are set, and the second to show the cursor having moved
 
     t.remove_label :unread
-    Notmuch.save_thread t
+    t.save
 
     update_text_for_line curpos
     UpdateManager.relay self, :read, t
@@ -607,13 +607,13 @@ class ThreadIndexMode < LineCursorMode
     thread = t
     if t.has_label? :starred # if ANY message has a star
       t.remove_label :starred # remove from all
-      Notmuch.save_thread t
+      t.save
       UpdateManager.relay self, :labeled, t
       return -> do
         if msg = t.msg
 	  msg.add_label :starred
 	end
-	Notmuch.save_thread t
+	t.save
         UpdateManager.relay self, :labeled, t
         regen_text
 	nil
@@ -624,11 +624,11 @@ class ThreadIndexMode < LineCursorMode
 	msg.add_label :starred # add only to first
 	STDERR.puts "#{t.id} (#{t.object_id}) has label :starred? #{t.has_label? :starred}"
       end
-      Notmuch.save_thread t
+      t.save
       UpdateManager.relay self, :labeled, t
       return -> do
         t.remove_label :starred
-	Notmuch.save_thread t
+	t.save
         UpdateManager.relay self, :labeled, t
         regen_text
 	nil
@@ -639,7 +639,7 @@ class ThreadIndexMode < LineCursorMode
   def toggle_starred(*args)
     return unless t = cursor_thread
     undo = actually_toggle_starred t
-    UndoManager.register("toggling thread starred status", undo) { Notmuch.save_thread t}
+    UndoManager.register("toggling thread starred status", undo) { t.save}
     update_text_for_line curpos
     cursor_down
   end
@@ -649,10 +649,10 @@ class ThreadIndexMode < LineCursorMode
     undos = threads.map {|t| actually_toggle_starred t}
     UndoManager.register("toggling #{threads.size.pluralize "thread"} starred status") do
       undos.each {|u| u.call}
-      threads.each { |t| Notmuch.save_thread t }
+      threads.each { |t| t.save }
       regen_text
     end
-    threads.each { |t| Notmuch.save_thread t }
+    threads.each { |t| t.save }
     regen_text
   end
 
@@ -664,25 +664,25 @@ class ThreadIndexMode < LineCursorMode
     pos = curpos
     if t.has_label? :inbox
       t.remove_label :inbox
-      Notmuch.save_thread t
+      t.save
       UpdateManager.relay self, :archived, t
       return -> do
         #STDERR.puts "undo lambda applying :inbox"
         thread.apply_label :inbox
-	Notmuch.save_thread thread
+	thread.save
         update_text_for_line pos
         UpdateManager.relay self, :unarchived, thread
 	nil
       end
     else
       t.apply_label :inbox
-      Notmuch.save_thread t
+      t.save
       #STDERR.puts "relay unarchived thread #{t.id}"
       UpdateManager.relay self, :unarchived, t
       return -> do
         #STDERR.puts "undo lambda removing :inbox"
         thread.remove_label :inbox
-	Notmuch.save_thread thread
+	thread.save
         update_text_for_line pos
         UpdateManager.relay self, :unarchived, thread
 	nil
@@ -697,7 +697,7 @@ class ThreadIndexMode < LineCursorMode
     UndoManager.register("archiving/unarchiving #{threads.size.pluralize "thread"}") do
       #STDERR.puts "Undo block in multi_toggle_archived"
       undos.each {|u| u.call }
-      threads.each { |t| Notmuch.save_thread t }
+      threads.each { |t| t.save }
       regen_text
     end
     regen_text
@@ -713,10 +713,10 @@ class ThreadIndexMode < LineCursorMode
     end
     UndoManager.register("archiving/unarchiving thread for message #{mid}", undo) do
       update_text_for_line curpos
-      Notmuch.save_thread t
+      t.save
     end
     update_text_for_line curpos
-    Notmuch.save_thread t
+    t.save
   end
 
   # Toggle new commands
@@ -726,14 +726,14 @@ class ThreadIndexMode < LineCursorMode
     t.toggle_label :unread
     update_text_for_line curpos
     cursor_down
-    Notmuch.save_thread t
+    t.save
   end
 
   def multi_toggle_new(*args)
     threads = @tags.all
     threads.each do |t|
       t.toggle_label :unread
-      Notmuch.save_thread t
+      t.save
     end
     regen_text
   end
@@ -774,13 +774,13 @@ class ThreadIndexMode < LineCursorMode
     if t.has_label? :deleted
       #STDERR.puts "actually_toggle_deleted: remove :deleted, thread #{t.object_id}, tagged = #{tagged}"
       t.remove_label :deleted
-      Notmuch.save_thread t
+      t.save
       unhide_thread t
       UpdateManager.relay self, :undeleted, t
       return -> do
         #STDERR.puts "undo lambda add :deleted, thread #{thread.id}, tagged = #{tagged}"
         thread.apply_label :deleted
-	Notmuch.save_thread thread
+	t.save
 	hide_thread thread
         UpdateManager.relay self, :deleted, thread
 	nil
@@ -788,13 +788,13 @@ class ThreadIndexMode < LineCursorMode
     else
       #STDERR.puts "actually_toggle_deleted: add :deleted, thread #{t.id}, tagged = #{tagged}"
       t.apply_label :deleted
-      Notmuch.save_thread t
+      t.save
       hide_thread t
       UpdateManager.relay self, :deleted, t
       return -> do
         #STDERR.puts "undo lambda remove :deleted, thread #{thread.id}, tagged = #{tagged}"
         thread.remove_label :deleted
-	Notmuch.save_thread thread
+	thread.save
 	unhide_thread thread
         UpdateManager.relay self, :undeleted, thread
 	nil
@@ -835,24 +835,24 @@ class ThreadIndexMode < LineCursorMode
     thread = t
     if t.has_label? :spam
       t.remove_label :spam
-      Notmuch.save_thread t
+      t.save
       unhide_thread t
       UpdateManager.relay self, :unspammed, t
       return -> do
         thread.apply_label :spam
-        Notmuch.save_thread thread
+        thread.save
 	hide_thread thread
         UpdateManager.relay self, :spammed, thread
 	nil
       end
     else
       t.apply_label :spam
-      Notmuch.save_thread t
+      t.save
       hide_thread t
       UpdateManager.relay self, :spammed, t
       return -> do
         thread.remove_label :spam
-        Notmuch.save_thread thread
+        thread.save
 	unhide_thread thread
         UpdateManager.relay self, :unspammed, thread
 	nil
@@ -931,12 +931,12 @@ class ThreadIndexMode < LineCursorMode
       thread.labels = old_labels
       update_text_for_line pos
       UpdateManager.relay self, :labeled, thread
-      Notmuch.save_thread thread
+      thread.save
     end
 
     UpdateManager.relay self, :labeled, thread
     #STDERR.puts "edit_labels: calling save_thread"
-    Notmuch.save_thread thread
+    thread.save
   end
 
   def multi_edit_labels(*args)
@@ -978,12 +978,12 @@ class ThreadIndexMode < LineCursorMode
       threads.each do |t|
         t.labels = old_labels
         UpdateManager.relay self, :labeled, t
-        Notmuch.save_thread t
+        t.save
       end
       regen_text
     end
 
-    threads.each { |t| Notmuch.save_thread t }
+    threads.each { |t| t.save }
   end
 
   def reply(type_arg : String)
@@ -1009,14 +1009,14 @@ class ThreadIndexMode < LineCursorMode
     UndoManager.register "reading and archiving thread" do
       thread.apply_label :inbox
       thread.apply_label :unread if was_unread
-      Notmuch.save_thread thread
+      thread.save
       reload
       regen_text
     end
 
     thread.remove_label :unread
     thread.remove_label :inbox
-    Notmuch.save_thread thread
+    thread.save
     reload
     regen_text
   end
@@ -1028,7 +1028,7 @@ class ThreadIndexMode < LineCursorMode
     threads.each do |t|
       t.remove_label :unread
       t.remove_label :inbox
-      Notmuch.save_thread t
+      t.save
     end
     reload
     regen_text
@@ -1037,7 +1037,7 @@ class ThreadIndexMode < LineCursorMode
       threads.zip(was_unread).each do |t, u|
 	t.apply_label :inbox
 	t.apply_label :unread if u
-        Notmuch.save_thread t
+        t.save
       end
       reload
       regen_text

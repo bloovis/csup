@@ -755,6 +755,9 @@ class ThreadData
     return latest
   end
 
+  def save
+    Message.sync_back_labels messages
+  end
 end	# ThreadData
 
 # This is the message thread object that is returned to all modes that

@@ -245,10 +245,10 @@ class ThreadViewMode < LineCursorMode
     new_labels.each { |l| LabelManager << l }
     update
     UpdateManager.relay self, :labeled, thread
-    Notmuch.save_thread thread
+    thread.save
     UndoManager.register "labeling thread" do
       thread.labels = old_labels
-      Notmuch.save_thread thread
+      thread.save
       UpdateManager.relay self, :labeled, thread
     end
   end
@@ -272,7 +272,7 @@ class ThreadViewMode < LineCursorMode
     ## TODO: don't recalculate EVERYTHING just to add a stupid little
     ## star to the display
     update
-    Notmuch.save_thread @thread
+    @thread.save
     #STDERR.puts "toggle_label: relay :single_message_labeled, starred = #{@thread.has_label? :starred}"
     UpdateManager.relay self, :single_message_labeled, @thread
   end
@@ -879,13 +879,13 @@ class ThreadViewMode < LineCursorMode
     dispatch(op) do
       undo_thread = @thread	# save thread for the undo block, because @thread might change
       @thread.remove_label :inbox
-      Notmuch.save_thread @thread
+      @thread.save
       #STDERR.puts "archive_and_then about to relay :archived for #{@thread.to_s}"
       UpdateManager.relay self, :archived, @thread 	# .first is bogus!
       UndoManager.register "archiving 1 thread" do
         #STDERR.puts "undoing archive of #{undo_thread.to_s}"
         undo_thread.apply_label :inbox
-        Notmuch.save_thread undo_thread
+        undo_thread.save
         UpdateManager.relay self, :unarchived, undo_thread
       end
     end
@@ -895,11 +895,11 @@ class ThreadViewMode < LineCursorMode
     dispatch(op) do
       undo_thread = @thread	# save thread for the undo block, because @thread might change
       @thread.apply_label :spam
-      Notmuch.save_thread @thread
+      @thread.save
       UpdateManager.relay self, :spammed, @thread
       UndoManager.register "marking 1 thread as spam" do
         undo_thread.remove_label :spam
-        Notmuch.save_thread undo_thread
+        undo_thread.save
         UpdateManager.relay self, :unspammed, undo_thread
       end
     end
@@ -909,11 +909,11 @@ class ThreadViewMode < LineCursorMode
     dispatch op do
       undo_thread = @thread	# save thread for the undo block, because @thread might change
       @thread.apply_label :deleted
-      Notmuch.save_thread @thread
+      @thread.save
       UpdateManager.relay self, :deleted, @thread
       UndoManager.register "deleting 1 thread" do
         undo_thread.remove_label :deleted
-        Notmuch.save_thread undo_thread
+        undo_thread.save
         UpdateManager.relay self, :undeleted, undo_thread
       end
     end
@@ -922,7 +922,7 @@ class ThreadViewMode < LineCursorMode
   def unread_and_then(op : Symbol)
     dispatch op do
       @thread.apply_label :unread
-      Notmuch.save_thread @thread
+      @thread.save
       UpdateManager.relay self, :labeled, @thread
     end
   end

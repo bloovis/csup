@@ -42,14 +42,14 @@ class InboxMode < ThreadIndexMode
 
     UndoManager.register "archiving thread" do
       thread.apply_label :inbox
-      Notmuch.save_thread thread
+      thread.save
       unhide_thread thread
       #reload
       update
     end
 
     thread.remove_label :inbox
-    Notmuch.save_thread thread
+    thread.save
     hide_thread thread
     #reload
     #regen_text
@@ -62,7 +62,7 @@ class InboxMode < ThreadIndexMode
     UndoManager.register "archiving #{threads.size.pluralize "thread"}" do
       threads.each do |t|
         t.apply_label :inbox
-        Notmuch.save_thread t
+        t.save
 	unhide_thread t
       end
       #reload
@@ -72,7 +72,7 @@ class InboxMode < ThreadIndexMode
 
     threads.each do |t|
       t.remove_label :inbox
-      Notmuch.save_thread t
+      t.save
       hide_thread t
     end
     #reload

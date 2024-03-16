@@ -147,20 +147,6 @@ module Notmuch
     search("id:#{mid}", exclude: false, output: "tags")
   end
 
-  def save_thread(t : MsgThread)
-{% if false %}
-    tags = t.labels.to_a.join(",")
-    if m = t.msg
-      mid = m.id
-    else
-      mid = "<unknown>"
-    end
-    STDERR.puts "Notmuch.save_thread: saving thread for message #{mid}, tags #{tags}"
-{% end %}
-    #STDERR.puts "save_thread: labels = #{t.labels}"
-    Message.sync_back_labels t.messages
-  end
-
   # It's too expensive to search notmuch for addresses, so just return an empty list.
   def load_contacts(email_addresses : Array(String), limit : Int32 = 20)
     return Array(Person).new
