@@ -241,21 +241,20 @@ class ThreadIndexMode < LineCursorMode
       STDERR.puts "handle_poll_update: search terms #{arg}, translated query #{@translated_query}"
 
       # Add the lastmod search term to our existing query.
-      new_query = [@translated_query, arg].map {|x| "(#{x})"}.join(" and ")
+      new_query = "(#{@translated_query}) and (#{arg})"
       STDERR.puts "handle_poll_update: new_query #{new_query}"
 
       # Find out how many threads match the new query.  Use that to set
       # a limit on how many threads to fetch for the query.
       count = Notmuch.count(new_query)
-      limit = ts.threads.size + [count, buffer.content_height].max
+      limit = ts.threads.size + count
 
       # Load the updated threads into the cache.
       new_ts = ThreadList.new(new_query, offset: 0, limit: limit, force: true)
-      #STDERR.puts "handle_poll_update: new thread list size #{n}"
+      STDERR.puts "handle_poll_update: limit #{limit}, new thread list size #{new_ts.threads.size}"
 
       # Now reload the entire thread list, but use cached threads
       # if available.
-      STDERR.puts "handle_poll_update: translated query #{@translated_query}"
       ts = ThreadList.new(@translated_query, offset: 0, limit: limit, force: false)
       @ts = ts
       @hidden = Hash(String, Bool).new
