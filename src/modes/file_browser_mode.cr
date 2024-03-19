@@ -77,7 +77,7 @@ class FileBrowserMode < LineCursorMode
     t = @files[curpos - RESERVED_ROWS]
     name = t[0]
     f = t[1]
-    STDERR.puts "select: name = #{name}, f = #{f}"
+    #STDERR.puts "select: name = #{name}, f = #{f}"
     return unless f
 
     if File.directory?(f) && name != "./"
