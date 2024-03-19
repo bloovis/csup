@@ -31,7 +31,8 @@ class Attachment
       unless File.exists?(@filename)
         raise "Attachment file #{@filename} does not exist!"
       end
-      @content_type = `file -b --mime-type #{@filename}`.strip
+      cmd = Shellwords.join(["file", "-b", "--mime-type", filename])
+      @content_type = `#{cmd}`.strip
       @size = File.size(@filename)
       @basename = Path[@filename].basename
       #STDERR.puts "Created file attachment: #{@filename}, base name #{@basename}, size #{@size}, content type #{@content_type}"

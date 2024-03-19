@@ -25,7 +25,7 @@ tests : colormap_test keymap_test ncurses_test email_test logger_test \
 	search_test time_test string_test label_test person_test \
 	notmuch_save_part notmuch_view_part notmuch_write_part \
 	scroll_mode_test line_cursor_mode_test thread_index_mode_test \
-	inbox_mode_test
+	inbox_mode_test shellwords_test
 
 # Manager tests
 colormap_test : test/colormap_test.cr src/colormap.cr src/supcurses.cr
