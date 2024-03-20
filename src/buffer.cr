@@ -812,7 +812,8 @@ class BufferManager
 
     # Ncurses.mutex.lock unless opts[:sync] == false
 
-    buf = @buffers.last
+    # last can be nil if quitting and the edit message buffer hasn't been sent.
+    return unless buf = @buffers.last?
     #STDERR.puts "BufferManager.draw_screen: buffer = #{buf.object_id}, dirty = #{@dirty}"
     buf.resize Ncurses.rows - minibuf_lines, Ncurses.cols
     if @dirty
