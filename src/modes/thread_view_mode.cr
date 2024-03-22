@@ -390,7 +390,7 @@ class ThreadViewMode < LineCursorMode
         # 'to',
         # m.recipients.map { |l| l.shortname.fix_encoding! }.join(', '),
         m.subj,
-        m.date.to_nice_s,
+        m.date.to_local.to_nice_s,
         "(#{m.date.to_nice_distance_s})",
       ]
       title_widget = {color, segments.join("  ")}
