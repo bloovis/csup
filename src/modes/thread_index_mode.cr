@@ -242,11 +242,12 @@ class ThreadIndexMode < LineCursorMode
 
       # Add the lastmod search term to our existing query.
       new_query = "(#{@translated_query}) and (#{arg})"
-      STDERR.puts "handle_poll_update: new_query #{new_query}"
 
       # Find out how many threads match the new query.  Use that to set
       # a limit on how many threads to fetch for the query.
       count = Notmuch.count(new_query)
+      STDERR.puts "handle_poll_update: new_query #{new_query}, count #{count}"
+      return if count == 0
       limit = ts.threads.size + count
 
       # Load the updated threads into the cache.

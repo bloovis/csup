@@ -70,7 +70,7 @@ module Redwood
       # Get a key with five minute timeout.  If the timeout occurs,
       # ch will equal "ERR" and the poll command will run.
       ch = Ncurses.getkey(poll_interval)
-      BufferManager.erase_flash
+      BufferManager.erase_flash if ch != "ERR"
       unless BufferManager.handle_input(ch)
 	action = BufferManager.resolve_input_with_keymap(ch, keymap)
 	if action
@@ -105,7 +105,9 @@ module Redwood
       end
       #STDERR.puts "before-poll: success #{success}, result #{result}"
       if success
-	BufferManager.flash result
+	if result && (result.size > 0)
+	  BufferManager.flash result
+	end
       else
 	if result.size > 0
 	  BufferManager.flash "before-poll hook failed: #{result}"
