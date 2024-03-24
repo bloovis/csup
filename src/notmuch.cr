@@ -11,6 +11,15 @@ module Notmuch
   class ParseError < Exception
   end
 
+  # Completion prefixes for search command.
+  COMPL_OPERATORS = %w(and or not)
+  COMPL_PREFIXES =
+    %w(
+      body from to subject attachment mimetype tag id thread path folder
+      date lastmod
+      is has label filename filetype before on in during after
+    ).map{|p|p+":"} + COMPL_OPERATORS
+
   extend self
 
   # low-level

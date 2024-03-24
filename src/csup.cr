@@ -215,13 +215,9 @@ def redraw
 end
 
 def search
-  # FIXME: This is much simpler than in Sup: no completions, no SearchListMode.
-  #completions = LabelManager.all_labels.map { |l| "label:#{LabelManager.string_for l}" }
-  #completions = completions.each { |l| l.fix_encoding! }
-  #completions += Index::COMPL_PREFIXES
-  #query = BufferManager.ask_many_with_completions :search, "Search all messages (enter for saved searches): ", completions
-  query = BufferManager.ask :search, "Search all messages (enter for saved searches): "
-  #STDERR.puts "about to spawn search results mode with '#{query}'"
+  completions = LabelManager.all_labels.map { |l| "label:#{LabelManager.string_for l}" }
+  completions += Notmuch::COMPL_PREFIXES
+  query = BufferManager.ask_many_with_completions :search, "Search all messages (enter for saved searches): ", completions
   unless query.nil?
     if query.empty?
       BufferManager.spawn_unless_exists("Saved searches") { SearchListMode.new }

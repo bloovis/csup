@@ -453,13 +453,13 @@ class BufferManager
 				completions : Array(String),
 				default=nil) : String?
     do_ask domain, question, true, default do |partial|
-      STDERR.puts "ask_many_with_completions, partial #{partial}"
+      #STDERR.puts "ask_many_with_completions, partial '#{partial}'"
       prefix, target =
         case partial
         when /^\s*$/
           ["", ""]
         when /^(.*\s+)?(.*?)$/
-          [$1 || "", $2]
+          [$1? || "", $2]
         else
           raise "william screwed up completion: #{partial.inspect}"
         end
