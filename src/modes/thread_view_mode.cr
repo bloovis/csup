@@ -949,23 +949,28 @@ class ThreadViewMode < LineCursorMode
 
     pipe = Pipe.new(command, [] of String, shell: true)
     output = ""
-    exit_status = pipe.start do |p|
-      # Send the part data to the command.
-      p.transmit do |cmd|
-        Notmuch.write_part(msgid, partid) do |part|
-          IO.copy(part, cmd)
+    begin
+      exit_status = pipe.start do |p|
+	# Send the part data to the command.
+	p.transmit do |cmd|
+	  Notmuch.write_part(msgid, partid) do |part|
+	    IO.copy(part, cmd)
+	  end
+	end
+
+	# Read the output of the command (should only be present
+	# in case of an error).
+	p.receive do |cmd|
+	  output = cmd.gets_to_end
 	end
       end
 
-      # Read the output of the command (should only be present
-      # in case of an error).
-      p.receive do |cmd|
-        output = cmd.gets_to_end
+      if exit_status != 0
+	BufferManager.flash "Command '#{command}' returned exit status #{exit_status}"
+	return
       end
-    end
-
-    if exit_status != 0
-      BufferManager.flash "Command '#{command}' returned exit status #{exit_status}"
+    rescue ex
+      BufferManager.flash "Command '#{command}' failed: #{ex.message}"
       return
     end
 
