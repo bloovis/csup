@@ -69,7 +69,7 @@ class EditMessageMode < LineCursorMode
 	     #edit_subject,  alternate_edit_message,
 
 
-  # HeaderHash, defined in ScrollMode, is a representation
+  # HeaderHash, defined in opts.cr, is a representation
   # of email headers that is "cooked", where headers that can
   # have multiple values (To:, CC, and Cc:) are arrays of strings,
   # not strings.
