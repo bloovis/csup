@@ -230,11 +230,14 @@ module NCurses
   end
 
   # Get a keystroke and return a string representation:
-  #  printable key: one-character string containg the key
+  #  printable key: one-character string containing the key
   #  ctrl-key:  C-<lowercase-key>
   #  alt-key;   M-<lowercase-key>
   #  ctrl-alt-key: C-M-<lowercase-key>
   #  function key: name of key ("F1", "End", "Insert", "PgDn", etc.)
+  # Simple left button mouse clicks are also handled, returning
+  # either "click" or "doubleclick".  Use the getmouse_y method
+  # to get the row number of the click.
   protected def do_getkey(prefix = "") : String
     if (result = LibNCurses.get_wch(out ch)) == ERR
       return "ERR"
