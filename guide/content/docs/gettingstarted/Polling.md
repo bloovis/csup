@@ -16,7 +16,7 @@ Csup does not poll asynchronously.  It polls in two situations:
 * If the user doesn't type a key at the main command prompt for
 a given number of seconds.  The default number of seconds is 300
 (i.e., five minutes), but you can change this by setting the
-`poll_interval` in `~/.csup/config.yaml`, for example:
+`poll_interval` value in `~/.csup/config.yaml`, for example:
 
 ```
 poll_interval: 300
@@ -43,5 +43,5 @@ a screen.  Csup will add more threads to the botton of a thread list
 if you attempt to move the cursor past the end of the buffer.
 
 This behavior differs from Sup, which would load new threads asynchronously
-as the user moved the cursor within a half screen of the end of the buffer.
+as the user moved the cursor to within a half screen of the end of the buffer.
 Csup does not load new threads asynchronously.

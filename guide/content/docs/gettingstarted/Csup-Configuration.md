@@ -19,7 +19,7 @@ When you are asked whether you want dash to be the default shell, select "No".
 ## Receiving email
 
 If you chose not to use a notmuch hook to fetch mail, you can
-create a Csup hook do the same.
+create a Csup hook to do the same.
 See the [before-poll hook]({{< relref "Hooks#before-poll" >}})
 for more information.
 
@@ -104,8 +104,7 @@ explicitly specified.
 
 If true, and you top-post, Sup will tell you that you are a bad
 person and will prompt you to confirm that before posting.
-This will be true when a default config.yaml is generated,
-but are considered false if not explicitly specified. 
+By default this is true.
 
 ### Ask for fields
 
@@ -113,12 +112,12 @@ but are considered false if not explicitly specified.
     :ask_for_bcc
     :ask_for_subject
 
-These determine which fields you're asked for when composing and
+These true/false fields determine which fields you're asked for when composing and
 (except for subject) forwarding messages.
 
 ### Continuous scrolling
 
-    :continuous_scrolling     
+    :continuous_scroll
 
 Continuous scrolling is enabled when this is true. 
 By default this is false; continuous scrolling can be 
