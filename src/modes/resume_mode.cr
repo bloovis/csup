@@ -18,18 +18,18 @@ class ResumeMode < EditMessageMode
       #   that matches the ID saved in the first step
       # - Scan the message parts to find the one with the plain text body.
       # - Construct a HeaderHash from the message.
-      STDERR.puts "ResumeMode.initialize about to parse #{m.draft_filename}"
+      #STDERR.puts "ResumeMode.initialize about to parse #{m.draft_filename}"
       header, body = parse_file m.draft_filename
       header.delete "Date"
 
       super Opts.new({:header => header, :body => body, :have_signature => true})
     rescue ex
-      STDERR.puts "ResumeMode.initialize exception #{ex.message}"
+      #STDERR.puts "ResumeMode.initialize exception #{ex.message}"
       BufferManager.flash "Draft deleted outside of sup: #{ex.message}"
       DraftManager.discard m
     end
     @m = m
-    STDERR.puts "ResumeMode.initialize returning"
+    #STDERR.puts "ResumeMode.initialize returning"
   end
 
   def unsaved?; !@safe end

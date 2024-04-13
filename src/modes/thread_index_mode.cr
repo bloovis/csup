@@ -238,7 +238,7 @@ class ThreadIndexMode < LineCursorMode
     arg = args[1]?
     if arg && arg.is_a?(String) && (ts = @ts)
       # arg is a search term like "lastmod:X..Y"
-      STDERR.puts "handle_poll_update: search terms #{arg}, translated query #{@translated_query}"
+      #STDERR.puts "handle_poll_update: search terms #{arg}, translated query #{@translated_query}"
 
       # Add the lastmod search term to our existing query.
       new_query = "(#{@translated_query}) and (#{arg})"
@@ -246,13 +246,13 @@ class ThreadIndexMode < LineCursorMode
       # Find out how many threads match the new query.  Use that to set
       # a limit on how many threads to fetch for the query.
       count = Notmuch.count(new_query)
-      STDERR.puts "handle_poll_update: new_query #{new_query}, count #{count}"
+      #STDERR.puts "handle_poll_update: new_query #{new_query}, count #{count}"
       return if count == 0
       limit = ts.threads.size + count
 
       # Load the updated threads into the cache.
       new_ts = ThreadList.new(new_query, offset: 0, limit: limit, force: true)
-      STDERR.puts "handle_poll_update: limit #{limit}, new thread list size #{new_ts.threads.size}"
+      #STDERR.puts "handle_poll_update: limit #{limit}, new thread list size #{new_ts.threads.size}"
 
       # Now reload the entire thread list, but use cached threads
       # if available.
@@ -620,9 +620,9 @@ class ThreadIndexMode < LineCursorMode
       end
     else
       if msg = t.msg
-	STDERR.puts "adding starred to #{t.id}, #{msg.id}"
+	#STDERR.puts "adding starred to #{t.id}, #{msg.id}"
 	msg.add_label :starred # add only to first
-	STDERR.puts "#{t.id} (#{t.object_id}) has label :starred? #{t.has_label? :starred}"
+	#STDERR.puts "#{t.id} (#{t.object_id}) has label :starred? #{t.has_label? :starred}"
       end
       t.save
       UpdateManager.relay self, :labeled, t
