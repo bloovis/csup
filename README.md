@@ -7,7 +7,8 @@ It uses [notmuch](https://notmuchmail.org/)
 as the mail store and search engine.  I based this work on Ju Wu's
 notmuch-enabled variant of Sup, which I call Sup-notmuch.
 You can find my fork of this Sup-notmuch variant
-[here](https://www.bloovis.com/cgit/sup-notmuch/).
+[here](https://www.bloovis.com/cgit/sup-notmuch/)
+([Github mirror](https://github.com/bloovis/sup-notmuch)).
 
 As of this writing (2024-03-09), Csup has nearly all of of the
 functionality of Sup-notmuch, but is missing:
