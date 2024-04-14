@@ -359,6 +359,7 @@ class ThreadViewMode < LineCursorMode
 	    else
 	      line.each {|widget| lw += widget[1].display_length}
 	    end
+	    lw -= depth * @indent_spaces
             l.width = lw if lw > l.width
           end
           @text += text
