@@ -95,11 +95,19 @@ class FileBrowserMode < LineCursorMode
   end
 
   def file_human_size(path : String) : String
-    File.size(path).to_human_size
+    begin
+      File.size(path).to_human_size
+    rescue
+      "0"
+    end
   end
 
   def file_human_time(path : String) : String
-    File.info(path).modification_time.to_s("%Y-%m-%d %H:%M")
+    begin
+      File.info(path).modification_time.to_s("%Y-%m-%d %H:%M")
+    rescue
+      "0000-00-00 00:00"
+    end
   end
 
   def regen_text
