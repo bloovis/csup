@@ -102,6 +102,8 @@ class ThreadViewMode < LineCursorMode
   @person_lines = SparseArray(Person).new
   @global_message_state = :none
   @dying = false
+  @layout = SavingHash(Message, MessageLayout).new { MessageLayout.new }
+  @chunk_layout = SavingHash(Chunk, ChunkLayout).new { ChunkLayout.new }
 
   def lines
     @text.size
@@ -116,13 +118,20 @@ class ThreadViewMode < LineCursorMode
     @indent_spaces = Config.int(:indent_spaces)
     @thread = thread
 
+    regen_layout
+
+#    display_thread(thread) # old test code
+  end
+
+  def regen_layout
+    return unless thread = @thread
     @layout = SavingHash(Message, MessageLayout).new { MessageLayout.new }
     @chunk_layout = SavingHash(Chunk, ChunkLayout).new { ChunkLayout.new }
     earliest, latest = nil, nil
     latest_date = nil
     altcolor = false
 
-    @thread.each do |m, d, p|
+    thread.each do |m, d, p|
       next unless m
       earliest ||= m
       @layout[m].state = initial_state_for m
@@ -141,8 +150,6 @@ class ThreadViewMode < LineCursorMode
 
     @layout[latest].state = :open if @layout[latest].state == :closed
     @layout[earliest].state = :detailed if (earliest && earliest.has_label?(:unread)) || @thread.size == 1
-
-#    display_thread(thread) # old test code
   end
 
   def toggle_wrap(*args)
@@ -297,6 +304,23 @@ class ThreadViewMode < LineCursorMode
 
     prevm = nil
     return unless thread = @thread
+
+    # If any of the message in the thread is missing chunks, the thread
+    # may have been reloaded without bodies when a reply was sent, causing
+    # a poll (which forcibly reloads the thread cache without bodies).
+    # If that is the case, try reloading the bodies now.
+    need_body = false
+    thread.each do |m, depth, parent|
+      if m.chunks.size == 0
+	need_body = true
+      end
+    end
+    if need_body
+      thread.load_body
+      regen_layout
+    end
+
+    # Now generate the text of the messages.
     thread.each do |m, depth, parent|
       #unless m.is_a? Message # handle nil and :fake_root
       #  @text += chunk_to_lines m, nil, @text.length, depth, parent
@@ -331,6 +355,7 @@ class ThreadViewMode < LineCursorMode
       @text += text
       prevm = m
       if l.state != :closed
+	#STDERR.puts "message #{m.id} has #{m.chunks.size} chunks"
         m.chunks.each do |c|
 	  #STDERR.puts "regen_text: msg #{m.id}, chunk #{c.type} has #{c.lines.size} lines"
           cl = @chunk_layout[c]
