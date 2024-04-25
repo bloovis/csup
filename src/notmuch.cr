@@ -58,7 +58,7 @@ module Notmuch
 	   html : Bool = false) : JSON::Any
     JSON.parse(Pipe.run("notmuch",
 			["show", "--format=json", "--include-html=#{html}",
-                         "--body=#{body}", query]))
+                         "--body=#{body}", "--exclude=#{!body}", query]))
   end
 
   def tag(query : String)
