@@ -11,22 +11,11 @@ end
 
 module Redwood
 
-# We have to use a pseudo-global variable for the keymaps
-# because in Crystal, unlike in Ruby, a @@keymaps class variable
-# for Mode would get a unique instance for each subclass.
-@@keymaps = Hash(String, Keymap).new
-def self.keymaps
-  @@keymaps
-end
-
-# This macro defines a send method that given a symbol, calls the
-# method with the same name.  The arguments to the macro are
+# This macro defines a send method that given a string containing the name
+# of a method, calls that method.  The arguments to the macro are
 # the names of the allowed methods.
 macro actions(*names)
-  def send(action : String | Symbol, *args)
-    if action.is_a?(Symbol)
-      action = action.to_s
-    end
+  def send(action : String, *args)
     case action
     {% for name in names %}
     when {{ name.stringify }}
@@ -106,7 +95,7 @@ class Mode
 
   def self.register_keymap
     classname = self.name
-    #puts "register_keymap for class #{classname}, keymaps #{Redwood.keymaps.object_id}"
+    #STDERR.puts "register_keymap for class #{classname}, keymaps #{Redwood.keymaps.object_id}"
     if Redwood.keymaps.has_key?(classname)
       #puts "#{classname} already has a keymap"
       k = Redwood.keymaps[classname]
@@ -154,13 +143,13 @@ class Mode
     @buffer = nil
   end
 
-  def resolve_input (c : String) : Symbol | Nil
+  def resolve_input (c : String) : String | Nil
     ancestors.each do |classname|
       #STDERR.puts "Checking if #{classname} has a keymap"
       next unless Redwood.keymaps.has_key?(classname)
       #STDERR.puts "Yes, #{classname} has a keymap"
       action = BufferManager.resolve_input_with_keymap(c, Redwood.keymaps[classname])
-      return action if action
+      return action.to_s if action
     end
     nil
   end

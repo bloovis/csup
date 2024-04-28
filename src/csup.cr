@@ -28,7 +28,6 @@ module Redwood
 
   @@log_io : IO?
   @@poll_mode : PollMode?
-  @@global_keymap : Keymap?
 
   def init_managers
     basedir = BASE_DIR
@@ -233,7 +232,7 @@ end
 
 def help
   #STDERR.puts "help command"
-  return unless global_keymap = @@global_keymap
+  return unless global_keymap = Redwood.global_keymap
   return unless focus_buf = BufferManager.focus_buf
   return unless curmode = focus_buf.mode
   BufferManager.spawn_unless_exists("<help for #{curmode.name}>") do
@@ -295,7 +294,8 @@ def main
     k.add :compose, "Compose new message", 'm', 'c'
     k.add :version, "Display version number", 'v'
   end
-  @@global_keymap = global_keymap
+  Redwood.global_keymap = global_keymap
+  Keymap.load_keymap
 
   # Interactive loop.
   begin

@@ -658,7 +658,7 @@ class BufferManager
   end
   singleton_method ask_for_filename, domain, question, default, allow_directory
 
-  def resolve_input_with_keymap(c : String, keymap : Keymap) : Symbol | Nil
+  def resolve_input_with_keymap(c : String, keymap : Keymap) : String | Nil
     #STDERR.puts "resolve_input_with_keymap: c #{c}, keymap #{keymap.object_id}"
     action, text = keymap.action_for c
     #STDERR.puts "resolve_input_with_keymap: action for c is #{action}"
@@ -671,7 +671,7 @@ class BufferManager
       end
       action, text = action.action_for(key) if action.has_key?(key)
     end
-    action
+    action.to_s
   end
   singleton_method resolve_input_with_keymap, c, keymap
 

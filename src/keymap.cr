@@ -1,7 +1,23 @@
 module Redwood
 
+# We have to use pseudo-global variables for keymaps and global_keymap,
+# because in Crystal, unlike in Ruby, if these were class variables
+# for Mode, they would get a unique instance for each subclass of Mode.
+@@keymaps = Hash(String, Keymap).new
+def self.keymaps
+  @@keymaps
+end
+
+@@global_keymap : Keymap?
+def self.global_keymap
+  @@global_keymap
+end
+def self.global_keymap=(map)
+  @@global_keymap = map
+end
+
 class Keymap
-  alias Action = Symbol | Keymap
+  alias Action = String | Keymap
   alias Entry = Tuple(Action, String, Array(String)) # action, help, keynames
 
   property map = Hash(String, Entry).new	# keyname => entry
@@ -15,9 +31,12 @@ class Keymap
     return map.empty?
   end
 
-  def add(action : Action, help : String, *keynames)
+  def add(action : String | Symbol | Keymap, help : String, *keynames)
     keys = [] of String
     keynames.each {|k| keys << k.to_s}
+    if action.is_a?(Symbol)
+      action = action.to_s
+    end
     entry = Entry.new(action, help, keys)
     @order << entry
     keys.each do |k|
@@ -110,7 +129,7 @@ class Keymap
       valid_keys = keys.select { |k| !except_for.includes?(k) }
       next if valid_keys.size == 0
       case action
-      when Symbol
+      when String
         keynames = valid_keys.map { |k| prefix + fix_name(k) }.join(", ")
         lines << {keynames, help}
       when Keymap
@@ -124,6 +143,73 @@ class Keymap
     lines = help_lines except_for
     llen = lines.max_of { |kh| kh[0].size }
     lines.map { |a, b| sprintf " %#{llen}s : %s", a, b }.join("\n")
+  end
+
+  # Load user-defined key bindings from keymap.yaml.
+  # The file looks like this:
+  #   modename1:
+  #     action1:
+  #       - key1
+  #       - key2
+  #       [...]
+  #     action2:
+  #       [...]
+  #  modename2:
+  #    [...]
+  #
+  # The actions must already be defined and have default key bindings,
+  # but keymap.yaml can overwrite or add to those bindings.
+  def self.load_keymap
+    base_dir   = File.join(ENV["HOME"], ".csup")
+    keymap_fn  = File.join(base_dir, "keymap.yaml")
+    unless File.exists?(keymap_fn)
+      return
+    end
+    begin
+      yaml = File.open(keymap_fn) { |f| YAML.parse(f) }
+    rescue ex
+      BufferManager.flash "Error in keymap.yaml: #{ex.message}"
+      return
+    end
+    h = yaml.as_h
+    h.each do |k, v|
+      mode = k.as_s
+      #STDERR.puts "keymap for #{mode}:"
+      if mode == "global"
+	keymap = Redwood.global_keymap
+      else
+	keymap = Redwood.keymaps["Redwood::#{mode}"]?
+      end
+      unless keymap
+	BufferManager.flash "Error in keymap.yaml: invalid mode #{mode}"
+	return
+      end
+      h1 = v.as_h
+      h1.each do |k1, v1|
+	action = k1.as_s
+	#STDERR.puts "  action: #{action}"
+	val1 = v1.as_a
+	keys = [] of String
+	val1.each {|s| keys << s.as_s}
+	#STDERR.puts "  keys: #{keys}"
+
+	# Search the keymap for the entry for the specified action.
+	entry = keymap.order.find {|e| e[0] == action}
+	unless entry
+	  BufferManager.flash "Error in keymap.yaml: #{mode} has no action #{action}"
+	  return
+	end
+
+	# Add the keys to the entry if they're not already there.
+	# Then map the keys to the entry.
+	keys.each do |k|
+	  unless entry[2].includes?(k)
+	    entry[2] << k
+	  end
+	  keymap.map[k] = entry
+	end
+      end
+    end
   end
 
 end 	# class Keymap
