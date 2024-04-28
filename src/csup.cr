@@ -166,7 +166,7 @@ end
 # Commands.  Every command must be listed in the actions macro below.
 actions quit_now, quit_ask, kill_buffer, roll_buffers, roll_buffers_backwards,
         list_buffers, list_contacts, redraw, search, poll, compose, help,
-	list_labels, version
+	list_labels, version, display_keymap
 
 def quit_now
   #BufferManager.say "This is the global quit command."
@@ -257,6 +257,15 @@ def version
   BufferManager.flash "Csup version #{Redwood::VERSION}"
 end
 
+# Display in a text buffer the yaml representation of all keymaps.
+# This text can be used as the basis for the user-configurable
+# keymap.yaml file.
+def display_keymap
+  yaml = Keymap.keymaps_to_yaml
+  #STDERR.puts "keymap: yaml = '#{yaml}'"
+  BufferManager.spawn "Keymaps", TextMode.new(yaml)
+end
+
 # Main program
 def main
   init_managers
@@ -293,6 +302,7 @@ def main
     k.add :poll, "Poll for new messages", 'P', "ERR"
     k.add :compose, "Compose new message", 'm', 'c'
     k.add :version, "Display version number", 'v'
+    k.add :display_keymap, "Display keymaps", "C-k"
   end
   Redwood.global_keymap = global_keymap
   Keymap.load_keymap

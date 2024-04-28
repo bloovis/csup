@@ -217,6 +217,33 @@ class Keymap
     end
   end
 
+  # Return the yaml representation of this keymap.
+  def yaml(mode : String) : String
+    yaml = "#{mode}:\n"
+    @order.each do |entry|
+      action = entry[0]
+      if action.is_a?(String)
+	yaml += "  #{action}:\n"
+	entry[2].each {|k| yaml += "    - \"#{k}\"\n"}
+      end
+    end
+    return yaml
+  end
+
+  # Return the yaml representation of all keymaps, including
+  # the global keymap.
+  def self.keymaps_to_yaml : String
+    yaml = ""
+    Redwood.keymaps.each do |mode, keymap|
+      simple_mode = mode.sub("Redwood::", "")
+      yaml += keymap.yaml(simple_mode)
+    end
+    if keymap = Redwood.global_keymap
+      yaml += keymap.yaml("global")
+    end
+    return yaml
+  end
+
 end 	# class Keymap
 
 end	# module Redwood
