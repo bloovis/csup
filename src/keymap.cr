@@ -165,12 +165,7 @@ class Keymap
     unless File.exists?(keymap_fn)
       return
     end
-    begin
-      yaml = File.open(keymap_fn) { |f| YAML.parse(f) }
-    rescue ex
-      BufferManager.flash "Error in keymap.yaml: #{ex.message}"
-      return
-    end
+    yaml = File.open(keymap_fn) { |f| YAML.parse(f) }
     h = yaml.as_h
     h.each do |k, v|
       mode = k.as_s

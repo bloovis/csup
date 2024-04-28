@@ -298,25 +298,25 @@ def main
   Keymap.load_keymap
 
   # Interactive loop.
-  begin
-    event_loop(global_keymap) do |ch|
-      if (b = BufferManager.focus_buf) && (m = b.mode)
-	modename = m.name
-      else
-	modename = "unknown mode"
-      end
-      BufferManager.flash "Unknown keypress '#{ch}' for #{modename}."
+  event_loop(global_keymap) do |ch|
+    if (b = BufferManager.focus_buf) && (m = b.mode)
+      modename = m.name
+    else
+      modename = "unknown mode"
     end
-  rescue ex
-    Ncurses.end
-    puts "Oh crap!  An exception occurred!"
-    puts ex.inspect_with_backtrace
-    exit 1
+    BufferManager.flash "Unknown keypress '#{ch}' for #{modename}."
   end
-
 end
 
-main
+begin
+  main
+rescue ex
+  Ncurses.end
+  puts "Oh crap!  An exception occurred!"
+  puts ex.inspect_with_backtrace
+  exit 1
+end
+
 
 {% end %} # flag MAIN
 
