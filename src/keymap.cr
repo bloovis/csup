@@ -195,6 +195,15 @@ class Keymap
 	  return
 	end
 
+	# If the keys are currently bound to other entries, remove the keys
+	# from those entries.
+	keys.each do |k|
+	  if keymap.has_key?(k)
+	    old_entry = keymap[k]
+	    old_entry[2].delete(k)
+	  end
+	end
+
 	# Add the keys to the entry if they're not already there.
 	# Then map the keys to the entry.
 	keys.each do |k|
@@ -203,6 +212,7 @@ class Keymap
 	  end
 	  keymap.map[k] = entry
 	end
+
       end
     end
   end
