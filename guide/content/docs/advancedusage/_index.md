@@ -9,6 +9,7 @@ title: "Advanced Usage"
 * [Hooks]({{< relref "Hooks" >}})
 * [Viewing Attachments]({{< relref "Hooks#mime-view" >}})
 * [Customizing Colors]({{< relref "Customizing-colors" >}})
+* [Customizing Key Bindings]({{< relref "Customizing-Key-Bindings" >}})
 * [Select Signature]({{< relref "Select-Signature" >}})
 * [Customizing Attributions]({{< relref "Customizing-Attributions" >}})
 * [Vim Integration]({{< relref "Vim-Integration" >}})

@@ -170,3 +170,9 @@ mouse: true
 At startup, Csup reads the user interface color scheme from the file
 `~/.csup/colors.yaml`.  For more information, see
 [Customizing Colors]({{< relref "Customizing-Colors" >}}).
+
+## keymap.yaml
+
+Csup has a new feature not available in Sup: user-configurable
+key bindings.  For for more information, see
+[Customizing Key Bindings]({{< relref "Customizing-Key-Bindings" >}}).
