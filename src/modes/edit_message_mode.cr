@@ -423,10 +423,11 @@ class EditMessageMode < LineCursorMode
     # Probably only need this if async editing isn't supported.
     #return false if warn_editing
 
-    if  @account_selector
+    if  @account_selector && @header["From"]?
       old_from = @header["From"].as(String)
+    else
+      old_from = ""
     end
-    old_from ||= ""
 
     begin
       save_message_to_file
@@ -593,9 +594,15 @@ class EditMessageMode < LineCursorMode
     #set_sig_edit_flag
 
     #STDERR.puts "checking from"
+    unless @header["From"]?
+      BufferManager.flash "Missing From: header; using default."
+      if acct = AccountManager.default_account
+        @header["From"] = acct.full_address
+      end
+    end
     if (a = @account_selector) && @header["From"] != old_from
       @account_user = @header["From"].as(String)
-      a.set_to nil
+      a.set_to ""
     end
 
     #STDERR.puts "calling handle_new_text"
