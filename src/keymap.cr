@@ -18,7 +18,7 @@ end
 
 class Keymap
   alias Action = String | Keymap
-  alias Entry = Tuple(Action, String, Array(String)) # action, help, keynames
+  alias Entry = NamedTuple(action: Action, help: String, keynames: Array(String))
 
   property map = Hash(String, Entry).new	# keyname => entry
   property order = Array(Entry).new
@@ -37,10 +37,10 @@ class Keymap
     if action.is_a?(Symbol)
       action = action.to_s
     end
-    entry = Entry.new(action, help, keys)
+    entry = Entry.new(action: action, help: help, keynames: keys)
     @order << entry
     keys.each do |k|
-      raise ArgumentError.new("key '#{k}' already defined (as #{@map[k].first})") if @map.includes? k
+      raise ArgumentError.new("key '#{k}' already defined (as #{@map[k][:action]})") if @map.includes? k
       @map[k] = entry
     end
     if keys.size == 0
@@ -60,7 +60,7 @@ class Keymap
   def add_multi(prompt : String, k : String | Char)
     kc = k.to_s
     if @map.member? kc
-      action = @map[kc].first
+      action = @map[kc][:action]
       raise "existing action is not a keymap" unless action.is_a?(Keymap)
       yield action
     else
@@ -73,9 +73,9 @@ class Keymap
   def dump(int level = 1)
     puts "Keymap dump level #{level}:"
     @map.each do |k, entry|
-      action = entry[0]
-      help = entry[1]
-      keys = entry[2]
+      action = entry[:action]
+      help = entry[:help]
+      keys = entry[:keynames]
       if action.is_a?(Keymap)
 	puts "-" * level + "#{k} (#{help}):"
 	action.dump(level + 1)
@@ -89,7 +89,7 @@ class Keymap
     #puts "action_for: c #{c}, keymap #{self.object_id}, action map #{@map}"
     if has_key?(c)
       entry = @map[c]
-      {entry[0], entry[1]}	# action, help
+      {entry[:action], entry[:help]}	# action, help
     else
       {nil, nil}
     end
@@ -98,7 +98,7 @@ class Keymap
   def keysyms : Set(String)
     s = Set(String).new
     @map.each do |k, entry|
-      keys = entry[2]
+      keys = entry[:keynames]
       keys.each {|k| s.add(k)}
     end
     return s
@@ -123,9 +123,9 @@ class Keymap
   def help_lines(except_for = Set(String).new, prefix="") : Array(KeyHelp)
     lines = Array(KeyHelp).new
     @order.each do |entry|
-      action = entry[0]
-      help = entry[1]
-      keys = entry[2]
+      action = entry[:action]
+      help = entry[:help]
+      keys = entry[:keynames]
       valid_keys = keys.select { |k| !except_for.includes?(k) }
       next if valid_keys.size == 0
       case action
@@ -189,7 +189,7 @@ class Keymap
 	#STDERR.puts "  keys: #{keys}"
 
 	# Search the keymap for the entry for the specified action.
-	entry = keymap.order.find {|e| e[0] == action}
+	entry = keymap.order.find {|e| e[:action] == action}
 	unless entry
 	  BufferManager.flash "Error in keymap.yaml: #{mode} has no action #{action}"
 	  return
@@ -200,15 +200,15 @@ class Keymap
 	keys.each do |k|
 	  if keymap.has_key?(k)
 	    old_entry = keymap[k]
-	    old_entry[2].delete(k)
+	    old_entry[:keynames].delete(k)
 	  end
 	end
 
 	# Add the keys to the entry if they're not already there.
 	# Then map the keys to the entry.
 	keys.each do |k|
-	  unless entry[2].includes?(k)
-	    entry[2] << k
+	  unless entry[:keynames].includes?(k)
+	    entry[:keynames] << k
 	  end
 	  keymap.map[k] = entry
 	end
@@ -221,10 +221,10 @@ class Keymap
   def yaml(mode : String) : String
     yaml = "#{mode}:\n"
     @order.each do |entry|
-      action = entry[0]
+      action = entry[:action]
       if action.is_a?(String)
 	yaml += "  #{action}:\n"
-	entry[2].each {|k| yaml += "    - \"#{k}\"\n"}
+	entry[:keynames].each {|k| yaml += "    - \"#{k}\"\n"}
       end
     end
     return yaml
