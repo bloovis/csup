@@ -314,18 +314,20 @@ class BufferManager
     completion_mode = nil
     lastc = ""
     until done
-      # Don't let ret exceed the number of columns available.
-      if ret.size >= fillcols-1
-	ret = ret[0...fillcols-1]
-      end
-
       # CompletionMode changes the color to blue for its status line,
       # reset to the normal color.
       Ncurses.attrset Colormap.color_for(:text_color)
 
       # Redraw the ret buffer.
-      Ncurses.mvaddstr(row, leftcol, ret + (" " * (fillcols - ret.size)))
-      Ncurses.move(row, leftcol + pos)
+      if ret.size >= fillcols
+	# Answer is too big to fit on screen.  Just show the right portion that
+	# does fit.
+	Ncurses.mvaddstr(row, leftcol, ret[ret.size-fillcols..ret.size-1])
+        Ncurses.move(row, Ncurses.cols - 1)
+      else
+        Ncurses.mvaddstr(row, leftcol, ret + (" " * (fillcols - ret.size)))
+        Ncurses.move(row, leftcol + pos)
+      end
       Ncurses.refresh
 
       c = Ncurses.getkey
