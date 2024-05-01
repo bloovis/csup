@@ -58,7 +58,8 @@ module Notmuch
 	   html : Bool = false) : JSON::Any
     JSON.parse(Pipe.run("notmuch",
 			["show", "--format=json", "--include-html=#{html}",
-                         "--body=#{body}", "--exclude=#{!body}", query]))
+                         "--body=#{body}", "--exclude=#{!body}", query],
+			check_stderr: false))
   end
 
   def tag(query : String)
@@ -75,7 +76,7 @@ module Notmuch
     end.join
     # @@logger.debug("tag input: #{input}") if @@logger
     #STDERR.puts "notmuch tag --remove-all --batch, input:\n#{input}\n"
-    Pipe.run("notmuch", ["tag", "--remove-all", "--batch"], input: input)
+    Pipe.run("notmuch", ["tag", "--remove-all", "--batch"], input: input, check_stderr: false)
   end
 
   # Save a message part to a file.
