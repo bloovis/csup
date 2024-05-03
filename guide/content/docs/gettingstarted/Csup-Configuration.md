@@ -43,6 +43,7 @@ There are two configuration files:
 
 * `config.yaml` (primary configuration file)
 * `colors.yaml`  (user interface color scheme)
+* `keymap.yaml` (user-defined key bindings)
 
 Additionally, csup will create several more files in the `~/.csup` in
 response to user commands:
@@ -154,15 +155,15 @@ continuous_scroll: false
 crypto: false
 hidden_labels: []
 mouse: true
-  accounts:
-    default:
-      name: Joe User
-      email: joeuser@example.com
-      signature: /home/joeuser/.signature
-      smtp_server: smtp.example.com
-      smtp_port: 587
-      smtp_user: joeuser@example.com
-      smtp_password: SmTpPaSsWoRd
+accounts:
+  default:
+    name: Joe User
+    email: joeuser@example.com
+    signature: /home/joeuser/.signature
+    smtp_server: smtp.example.com
+    smtp_port: 587
+    smtp_user: joeuser@example.com
+    smtp_password: SmTpPaSsWoRd
 ```
 
 ## colors.yaml
