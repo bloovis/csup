@@ -444,7 +444,7 @@ class Message
 	lines = p.content.lines
 	@chunks = @chunks + text_to_chunks(lines)
       else
-	@chunks << AttachmentChunk.new(p, self, true) # was !found_plain
+	@chunks << AttachmentChunk.new(p, self, !found_plain)
       end
     end
   end
