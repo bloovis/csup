@@ -52,8 +52,9 @@ class Message
     property filename : String
     property content : String
     property content_size : Int32
+    property level : Int32
 
-    def initialize(@id, @content_type, @filename, @content, @content_size)
+    def initialize(@id, @content_type, @filename, @content, @content_size, @level)
     end
   end
 
@@ -256,7 +257,8 @@ class Message
   end
 
   # Code for constructing parts
-  def add_part(id : Int32, ctype : String, filename : String, s : String, content_size : Int32)
+  def add_part(id : Int32, ctype : String, filename : String, s : String,
+	       content_size : Int32, level = 0)
     if filename == ""
       newname = "csup-attachment-#{Time.now.to_i}-#{rand 10000}"
       if ctype =~ /text\/html/
@@ -267,7 +269,7 @@ class Message
 	filename = newname
       end
     end
-    @parts << Part.new(id, ctype, filename, s, content_size)
+    @parts << Part.new(id, ctype, filename, s, content_size, level)
   end
 
   def find_part(&b : Part -> Bool) : Part?
@@ -437,21 +439,21 @@ class Message
   # Find all chunks for this message.
   def find_chunks
     @chunks = [] of Chunk
-    found_plain = false
+    plain_level = -1
     @parts.each do |p|
-      if found_plain == false && p.content_type == "text/plain" && p.content_size > 0
-	found_plain = true
+      if plain_level == -1 && p.content_type == "text/plain" && p.content_size > 0
+	plain_level = p.level
 	lines = p.content.lines
 	@chunks = @chunks + text_to_chunks(lines)
       else
-	@chunks << AttachmentChunk.new(p, self, !found_plain)
+	@chunks << AttachmentChunk.new(p, self, p.level != plain_level)
       end
     end
   end
 
   # Functions for parsing messages.
 
-  def parse_part(p : JSON::Any)
+  def parse_part(p : JSON::Any, level = 0)
     part = p.as_h?
     if part
       #puts "part: #{part.inspect}"
@@ -472,12 +474,12 @@ class Message
 	content = part["content"].as_s?
 	if content
 	  #puts "Adding content for part #{id}, content:\n---\n#{content}\n---\n"
-	  add_part(id, ctype, filename, content, content.size)
+	  add_part(id, ctype, filename, content, content.size, level)
 	else
 	  content = part["content"].as_a?
 	  if content
 	    content.each do |c|
-	      parse_part(c)
+	      parse_part(c, level + 1)
 	    end
 	  end
 	end
