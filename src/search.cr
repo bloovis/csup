@@ -1,4 +1,4 @@
-# Much simpler than the version in sup-notmuch.  That's because because the predefined
+# Much simpler than the version in sup-notmuch.  That's because the predefined
 # queries stuff appeared to be a relic of the Xapian-enabled sup and wasn't used.
 # So I removed it entirely.
 
