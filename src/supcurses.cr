@@ -294,7 +294,10 @@ module NCurses
     #
     # Wrapper for `mvwaddstr()` (`mvaddstr()`)
     def mvaddstr(y, x, str)
-      raise "mvwaddstr error y=#{y} x=#{x} str='#{str}'" if LibNCurses.mvwaddstr(self, y, x, str.to_unsafe) == ERR
+      if LibNCurses.mvwaddstr(self, y, x, str.scrub.to_unsafe) == ERR
+	#raise "mvwaddstr error y=#{y} x=#{x} str='#{str}'"
+	STDERR.puts "mvwaddstr error y=#{y} x=#{x} str='#{str}'"
+      end
     end
 
     # Copy window to virtual screen
