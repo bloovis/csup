@@ -96,7 +96,7 @@ class Message
 
   property recipient_email : String?
   property replyto : Person?
-  property list_address : String?
+  property list_address : Person?
 
   # If a JSON result from "notmuch show" is provided in `data`, parse it
   # to fill in the message fields.  Otherwise use some empty default values, and
@@ -138,7 +138,19 @@ class Message
       @replyto = Person.from_address(replyto)
     end
     @recipient_email = @headers["X-Original-To"]? || @headers["Delivered-To"]?
-    @list_address = @headers["List-Post"]?
+    #@list_address = @headers["List-Post"]?
+    list_post = @headers["List-Post"]?
+    @list_address = if list_post
+      address = if list_post =~ /mailto:(.*?)[>\s$]/
+        $1
+      elsif list_post =~ /@/
+        list_post # just try the whole thing
+      end
+      address && Person.from_address(address)
+    #elsif @headers["x-mailing-list"]?
+    #  Person.from_address @headers["x-mailing-list"]
+    end
+
 
     @date = Time.unix(@timestamp)
 

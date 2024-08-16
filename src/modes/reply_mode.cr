@@ -95,8 +95,13 @@ class ReplyMode < EditMessageMode
     end
 
     if @m.is_list_message?
+      #STDERR.puts "list_address: #{@m.list_address}"
       h = HeaderHash.new
-      h["To"] = [@m.list_address || ""]
+      if addr = @m.list_address
+	h["To"] = [addr.full_address]
+      else
+	h["To"] = [""]
+      end
       h["Cc"] = Array(String).new
       @headers["list"] = h
     end
