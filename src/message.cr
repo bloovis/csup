@@ -468,7 +468,8 @@ class Message
   def parse_part(p : JSON::Any, level = 0)
     part = p.as_h?
     if part
-      #puts "part: #{part.inspect}"
+      #STDERR.puts "part: #{part.inspect}"
+      return unless part["id"]?
       id =      part["id"].as_i
       ctype =   part["content-type"].as_s.downcase
       if part.has_key?("filename")
