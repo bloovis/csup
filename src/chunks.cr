@@ -92,7 +92,7 @@ class AttachmentChunk < Chunk
       @quotable = true
       @patina_text = "Attachment: #{part.filename} (#{lines.length.pluralize "line"})"
     else
-      @patina_text = "Attachment: #{part.filename} (#{part.content_type}); #{part.content_size.to_human_size})"
+      @patina_text = "Attachment: #{part.filename} (#{part.content_type}; #{part.content_size.to_human_size})"
       @lines = [] of String
     end
     if filename != "" && !filename =~ /^c?sup-attachment-/
@@ -182,6 +182,34 @@ class SignatureChunk < Chunk
   def inlineable?; @lines.length == 1 end
   def quotable?; false end
   def expandable?; !inlineable? end
+  def viewable?; false end
+end
+
+class EnclosureChunk < Chunk
+  def initialize(p : Message::EnclosurePart)
+    super(:enclosure)
+
+    @initial_state = :closed
+
+    @lines << ""
+    @lines << "From: #{p.from}"
+    @lines << "To: #{p.to}"
+    unless p.cc.size == 0
+      @lines << "Cc: #{p.cc}"
+    end
+    @lines << "Date: #{p.date}"
+    @lines << "Subject: #{p.subject}"
+    @lines << ""
+
+    @patina_color = :generic_notice_patina_color
+    @patina_text = "Begin enclosed message sent on #{p.date}"
+    @color = :quote_color
+  end
+
+  def inlineable?; false end
+  def quotable?; false end
+  def expandable?; true end
+  def indexable?; true end
   def viewable?; false end
 end
 

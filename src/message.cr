@@ -10,6 +10,11 @@ require "./time"
 require "./chunks"
 require "./singleton"
 
+# Construct a random name for an attachment
+def random_name
+  "csup-attachment-#{Time.now.to_i}-#{rand 10000}"
+end
+
 module Redwood
 
 # By caching message thread data, we can reduce the size and number of
@@ -46,6 +51,7 @@ end
 # A message is actually a tree of messages: it can have multiple children.
 class Message
 
+  # Ordinary text part
   class Part
     property id : Int32
     property content_type : String
@@ -55,6 +61,20 @@ class Message
     property level : Int32
 
     def initialize(@id, @content_type, @filename, @content, @content_size, @level)
+    end
+  end
+
+  # message/rfc822 part (enclosed message)
+  class EnclosurePart < Part
+    property from : String
+    property to : String
+    property cc : String
+    property subject : String
+    property date : String
+    property body : String
+
+    def initialize(id, level, @from, @to, @cc, @date, @subject, @body)
+      super(id, "message/rfc822", random_name, "", 0, level)
     end
   end
 
@@ -272,7 +292,7 @@ class Message
   def add_part(id : Int32, ctype : String, filename : String, s : String,
 	       content_size : Int32, level = 0)
     if filename == ""
-      newname = "csup-attachment-#{Time.now.to_i}-#{rand 10000}"
+      newname = random_name
       if ctype =~ /text\/html/
 	filename = newname + "." + "html"
       elsif ctype =~ /image\/(.*)/
@@ -457,10 +477,24 @@ class Message
 	plain_level = p.level
 	lines = p.content.lines
 	@chunks = @chunks + text_to_chunks(lines)
+      elsif p.is_a?(EnclosurePart) # p.content_type == "message/rfc822"
+        @chunks << EnclosureChunk.new(p)
+	@chunks << TextChunk.new(p.body.split("\n"))
       else
 	@chunks << AttachmentChunk.new(p, self, p.level != plain_level)
       end
     end
+  end
+
+  # Get a string value from a hash, or the empty string if
+  # there is no such value, or the value is not a string.
+  def string_from_hash(h : Hash, key : String)
+    if h.has_key?(key)
+      if val = h[key].as_s?
+	return val
+      end
+    end
+    return ""
   end
 
   # Functions for parsing messages.
@@ -482,17 +516,40 @@ class Message
       else
 	content_length = 0
       end
-      #puts "about to get content for part #{id}, ctype #{ctype}"
+      #STDERR.puts "about to get content for part #{id}, ctype #{ctype}"
       if part.has_key?("content")
 	content = part["content"].as_s?
 	if content
-	  #puts "Adding content for part #{id}, content:\n---\n#{content}\n---\n"
+	  #STDERR.puts "Adding content for part #{id}, content:\n---\n#{content}\n---\n"
 	  add_part(id, ctype, filename, content, content.size, level)
 	else
 	  content = part["content"].as_a?
 	  if content
-	    content.each do |c|
-	      parse_part(c, level + 1)
+	    #STDERR.puts "Part #{id} has array content, type #{ctype}"
+	    if ctype == "message/rfc822"
+	      return unless content.size > 0
+	      #STDERR.puts "enclosure has non-zero content size"
+	      return unless msg = content[0].as_h?
+	      #STDERR.puts "enclosure has content hash"
+	      return unless hdr = msg["headers"].as_h?
+	      #STDERR.puts "enclosure has headers"
+	      return unless body_array = msg["body"].as_a?
+	      return unless body_array.size > 0
+	      return unless body = body_array[0].as_h?
+	      #STDERR.puts "enclosure has body"
+	      subject = string_from_hash(hdr, "Subject")
+	      from = string_from_hash(hdr, "From")
+	      to = string_from_hash(hdr, "To")
+	      cc = string_from_hash(hdr, "Cc")
+	      date = string_from_hash(hdr, "Date")
+	      body_text = string_from_hash(body, "content")
+	      #STDERR.puts "Adding EnclosurePart, id #{id}, body '#{body_text}'"
+	      @parts << EnclosurePart.new(id, level, from, to, cc, date, subject, body_text)
+	    else
+	      content.each do |c|
+		#STDERR.puts "Adding nested content, level #{level + 1}"
+		parse_part(c, level + 1)
+	      end
 	    end
 	  end
 	end
