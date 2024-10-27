@@ -50,7 +50,6 @@ response to user commands:
 
 * `contacts.txt` (contacts list)
 * `searches.txt` (saved searches)
-* `labels.txt` (user-defined labels)
 * `log` (log file)
 
 There is also a `hooks` directory containing optional [hook scripts]({{< relref "Hooks" >}}).
