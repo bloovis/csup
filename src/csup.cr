@@ -43,7 +43,7 @@ module Redwood
     upm = UpdateManager.new
     hm = HookManager.new(File.join(basedir, "hooks"))
     am = AccountManager.new(Config.accounts)
-    lm = LabelManager.new(File.join(basedir, "labels.txt"))
+    lm = LabelManager.new
     sentm = SentManager.new(Config.str(:sent_folder) || "sent")
     dm = DraftManager.new(Config.str(:draft_folder) || "draft")
     tc = ThreadCache.new
@@ -145,7 +145,6 @@ module Redwood
 extend self
 
 def finish
-  LabelManager.save if Redwood::LabelManager.instantiated?
   ContactManager.save if Redwood::ContactManager.instantiated?
   SearchManager.save if Redwood::SearchManager.instantiated?
   Logger.remove_sink @@log_io

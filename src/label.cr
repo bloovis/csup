@@ -1,5 +1,7 @@
 # Similar to LabelManager in Sup, except that labels are stored
-# as Strings, and label collections are Set(String).
+# as Strings, and label collections are Set(String).  Also,
+# labels are no longer saved in the file labels.txt; instead, we
+# rely on notmuch knowing all the labels in use.
 
 require "./singleton"
 
@@ -21,14 +23,10 @@ class LabelManager
   @labels = Set(String).new
   @new_labels = Set(String).new
 
-  def initialize(fn : String)
+  def initialize
     singleton_pre_init
 
-    @fn = fn
-    if File.exists? fn
-      File.each_line(fn) {|l| @labels << l.chomp}
-    end
-    @modified = false
+    Notmuch.all_tags.each {|t| @labels << t unless RESERVED_LABELS.includes?(t) }
 
     singleton_post_init
   end
@@ -84,7 +82,6 @@ class LabelManager
     unless @labels.includes?(ts) || RESERVED_LABELS.includes?(ts)
       @labels << ts
       @new_labels << ts
-      @modified = true
     end
   end
   def self.<<(t)
@@ -94,22 +91,10 @@ class LabelManager
   def delete(t : String | Symbol)
     ts = t.to_s
     if @labels.delete(ts)
-      @modified = true
     end
   end
   singleton_method delete, t
 
-  def save
-    return unless @modified
-    fn = @fn
-    if fn
-      File.open(fn, "w") do |f|
-        @labels.to_a.sort.each {|l| f.puts l}
-      end
-      @new_labels = Set(String).new
-    end
-  end
-  singleton_method save
 end
 
 end

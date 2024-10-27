@@ -281,6 +281,28 @@ module Notmuch
     return true
   end
 
+  # Run "notmuch search --output=tags '*'" to get a list of all tags.
+
+  def all_tags : Array(String)
+    ret = [] of String
+    cmd = "notmuch"
+    args = ["search", "--output=tags", "*"]
+    pipe = Pipe.new(cmd, args)
+    unless pipe.success
+      debug "Unable to run #{cmd} #{args.join(" ")}"
+      return ret
+    end
+    exit_status = pipe.start do |p|
+      p.receive do |f|
+	f.each_line {|l| ret << l.chomp}
+      end
+    end
+    if exit_status != 0
+      debug "notmuch insert returned exit status #{exit_status}"
+    end
+    return ret
+  end
+
 end	# module Notmuch
 
 end	# module Redwood
