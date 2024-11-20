@@ -452,16 +452,19 @@ class Message
         chunk_lines << line
       end
 
-      if !@have_snippet && state == :text && (@snippet.nil? || @snippet.length < SNIPPET_LEN) && line !~ /[=\*#_-]{3,}/ && line !~ /^\s*$/
+      if !@have_snippet && state == :text && (@snippet.empty? || @snippet.length < SNIPPET_LEN) && line !~ /[=\*#_-]{3,}/ && line !~ /^\s*$/
+	#STDERR.puts "old snippet for #{@id}: '#{@snippet}'"
         @snippet ||= ""
         @snippet += " " unless @snippet.empty?
         @snippet += line.gsub(/[\r\n]/, "").strip
         oldlen = @snippet.length
         @snippet = @snippet[0 ... SNIPPET_LEN].chomp
         @snippet += "..." if @snippet.length < oldlen
+	#STDERR.puts "new snippet for #{@id}: '#{@snippet}'"
         @snippet_contains_encrypted_content = true if encrypted
       end
     end
+    @have_snippet = true
 
     ## final object
     append_chunk(chunks, chunk_lines, state)
@@ -476,6 +479,7 @@ class Message
       if plain_level == -1 && p.content_type == "text/plain" && p.content_size > 0
 	plain_level = p.level
 	lines = p.content.lines
+	#STDERR.puts "find_chunks: calling text_to_chunks for msg #{@id}, part #{p.id}"
 	@chunks = @chunks + text_to_chunks(lines)
       elsif p.is_a?(EnclosurePart) # p.content_type == "message/rfc822"
         @chunks << EnclosureChunk.new(p)
