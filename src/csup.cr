@@ -70,13 +70,17 @@ module Redwood
       # ch will equal "ERR" and the poll command will run.
       ch = Ncurses.getkey(poll_interval)
       BufferManager.erase_flash if ch != "ERR"
-      unless BufferManager.handle_input(ch)
-	action = BufferManager.resolve_input_with_keymap(ch, keymap)
-	if action
-	  send action
-	else
-	  yield ch
+      begin
+	unless BufferManager.handle_input(ch)
+	  action = BufferManager.resolve_input_with_keymap(ch, keymap)
+	  if action
+	    send action
+	  else
+	    yield ch
+	  end
 	end
+      rescue InputSequenceAborted
+        # Do nothing.
       end
     end
   end

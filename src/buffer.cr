@@ -9,7 +9,8 @@ require "./modes/completion_mode"
 
 module Redwood
 
-# class InputSequenceAborted < StandardError; end
+class InputSequenceAborted < Exception
+end
 
 class Buffer
   getter x : Int32
@@ -227,7 +228,10 @@ class BufferManager
     until mode.done?
       c = Ncurses.getkey
       break if c == KEY_CANCEL
-      mode.handle_input c
+      begin
+        mode.handle_input c
+      rescue InputSequenceAborted # do nothing
+      end
       draw_screen
       erase_flash
     end
@@ -669,7 +673,7 @@ class BufferManager
       key = BufferManager.ask_getch(text || "")
       if key == "" # user canceled, abort
         erase_flash
-        raise "InputSequenceAborted"
+        raise InputSequenceAborted.new
       end
       action, text = action.action_for(key) if action.has_key?(key)
     end
