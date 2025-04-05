@@ -960,9 +960,11 @@ class ThreadViewMode < LineCursorMode
   def pipe_message(*args)
     msgid = ""
     partid = 0
+    filename = ""
     if (chunk = @chunk_lines[curpos]) && chunk.is_a?(AttachmentChunk)
       msgid = chunk.message.id
       partid = chunk.part.id
+      filename = chunk.filename
     elsif message = @message_lines[curpos]
       msgid = message.id
       partid = 0
@@ -973,7 +975,7 @@ class ThreadViewMode < LineCursorMode
     command = BufferManager.ask(:shell, "pipe command: ")
     return if command.nil? || command.empty?
 
-    pipe = Pipe.new(command, [] of String, shell: true)
+    pipe = Pipe.new(command + " " + filename, [] of String, shell: true)
     output = ""
     begin
       exit_status = pipe.start do |p|
