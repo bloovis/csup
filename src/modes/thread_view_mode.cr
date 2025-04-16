@@ -5,6 +5,7 @@ require "./reply_mode"
 require "./resume_mode"
 require "./forward_mode"
 require "./can_alias_contacts"
+require "../shellwords"
 
 module Redwood
 
@@ -975,7 +976,7 @@ class ThreadViewMode < LineCursorMode
     command = BufferManager.ask(:shell, "pipe command: ")
     return if command.nil? || command.empty?
 
-    pipe = Pipe.new(command + " " + filename, [] of String, shell: true)
+    pipe = Pipe.new(Shellwords.join([command, filename]), [] of String, shell: true)
     output = ""
     begin
       exit_status = pipe.start do |p|
